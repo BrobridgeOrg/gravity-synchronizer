@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package gravity;
+
+service Synchronizer {
+  rpc GetSnapshot(GetSnapshotRequest) returns (stream SnapshotPacket) {}
+}
+
+message GetSnapshotRequest {
+}
+
+message SnapshotPacket {
+  uint64 sequence = 1;
+  repeated SnapshotEntry entries = 2; 
+}
+
+message SnapshotEntry {
+  string table = 1;
+  string data = 2;
+}

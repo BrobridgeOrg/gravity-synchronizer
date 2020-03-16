@@ -1,0 +1,12 @@
+{
+	"rules": [
+		{
+			"event": "userCreated",
+			"database": "default"
+		},
+		{
+			"event": "userDeleted",
+			"database": "default"
+		}
+	]
+}
