@@ -2,7 +2,10 @@
 	"rules": [
 		{
 			"event": "userCreated",
-			"database": "default"
+			"database": "default",
+			"exporter": [
+				"myqueue"
+			]
 		},
 		{
 			"event": "userDeleted",

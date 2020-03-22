@@ -1,0 +1,13 @@
+{
+	"exporters": {
+		"myqueue": {
+			"type": "nats-streaming",
+			"host": "0.0.0.0",
+			"port": 32803,
+			"params": {
+				"cluster_id": "test-cluster",
+				"queue": "userCreated"
+			}
+		}
+	}
+}

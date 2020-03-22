@@ -8,3 +8,4 @@ cluster_id = "test-cluster"
 [rules]
 ruleconfig = "./rules/rules.json"
 dbconfig = "./rules/database.json"
+exporterconfig = "./rules/exporter.json"
