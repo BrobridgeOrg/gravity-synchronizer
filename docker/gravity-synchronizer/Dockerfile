@@ -10,4 +10,5 @@ COPY --from=builder /gravity-synchronizer /gravity-synchronizer
 COPY ./config/config.toml /config.toml
 COPY ./rules /rules
 COPY ./docker/gravity-synchronizer/startup.sh /startup.sh
+EXPOSE 44448
 CMD ["/bin/sh", "/startup.sh"]
