@@ -4,6 +4,8 @@ port = 44448
 [event_store]
 host = "0.0.0.0:32803"
 cluster_id = "test-cluster"
+client_name = "synchronizeri-1"
+durable_name = "synchronizeri-1"
 
 [rules]
 ruleconfig = "./rules/rules.json"

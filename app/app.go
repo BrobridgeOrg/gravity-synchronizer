@@ -11,29 +11,32 @@ import (
 )
 
 type App struct {
-	id       uint64
-	flake    *sonyflake.Sonyflake
+	clientID string
 	eventbus *eventbus.EventBus
 }
 
 func CreateApp() *App {
 
-	// Genereate a unique ID for instance
-	flake := sonyflake.NewSonyflake(sonyflake.Settings{})
-	id, err := flake.NextID()
-	if err != nil {
-		return nil
+	clientID := viper.GetString("event_store.client_name")
+	if len(clientID) == 0 {
+
+		// Genereate a unique ID for instance
+		flake := sonyflake.NewSonyflake(sonyflake.Settings{})
+		id, err := flake.NextID()
+		if err != nil {
+			return nil
+		}
+
+		clientID = strconv.FormatUint(id, 16)
 	}
 
-	idStr := strconv.FormatUint(id, 16)
-
 	return &App{
-		id:    id,
-		flake: flake,
+		clientID: clientID,
 		eventbus: eventbus.CreateConnector(
 			viper.GetString("event_store.host"),
 			viper.GetString("event_store.cluster_id"),
-			idStr,
+			clientID,
+			viper.GetString("event_store.durable_name"),
 		),
 	}
 }
@@ -41,7 +44,7 @@ func CreateApp() *App {
 func (a *App) Init() error {
 
 	log.WithFields(log.Fields{
-		"a_id": a.id,
+		"a_id": a.clientID,
 	}).Info("Starting application")
 
 	// Connect to event server
