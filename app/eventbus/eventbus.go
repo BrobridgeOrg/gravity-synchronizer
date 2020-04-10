@@ -57,7 +57,7 @@ func (eb *EventBus) Emit(eventName string, data []byte) error {
 
 func (eb *EventBus) On(eventName string, fn func(*stan.Msg)) error {
 
-	if _, err := eb.client.Subscribe(eventName, fn, stan.DurableName(eb.durableName)); err != nil {
+	if _, err := eb.client.Subscribe(eventName, fn, stan.DurableName(eb.durableName), stan.SetManualAckMode()); err != nil {
 		return err
 	}
 
