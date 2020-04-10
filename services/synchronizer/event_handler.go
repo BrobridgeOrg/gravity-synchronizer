@@ -68,6 +68,7 @@ func (eh *EventHandler) Initialize() error {
 		var pj projection.Projection
 		err := json.Unmarshal(msg.Data, &pj)
 		if err != nil {
+			msg.Ack()
 			return
 		}
 
@@ -77,6 +78,8 @@ func (eh *EventHandler) Initialize() error {
 			log.Error(err)
 			return
 		}
+
+		msg.Ack()
 	})
 
 	if err != nil {
