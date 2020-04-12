@@ -65,7 +65,7 @@ func (ccs *CacheStore) FetchSnapshot(collection string, fn func(map[string]inter
 	}
 
 	// Preparing context
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	// Connect to cache store
@@ -75,6 +75,7 @@ func (ccs *CacheStore) FetchSnapshot(collection string, fn func(map[string]inter
 	}
 
 	var seq uint64
+	var counter uint64 = 0
 	for {
 		packet, err := stream.Recv()
 		if err == io.EOF {
@@ -87,9 +88,14 @@ func (ccs *CacheStore) FetchSnapshot(collection string, fn func(map[string]inter
 
 		seq = packet.Sequence
 
-		for _, entry := range packet.Entries {
+		counter++
 
-			log.Info("Retriving ", entry.Data)
+		log.WithFields(log.Fields{
+			"counter": counter,
+			"seq":     seq,
+		}).Info("Retriving Packet...")
+
+		for _, entry := range packet.Entries {
 
 			data := make(map[string]interface{})
 			err := json.Unmarshal([]byte(entry.Data), &data)
