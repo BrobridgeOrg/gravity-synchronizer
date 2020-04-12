@@ -1,0 +1,9 @@
+{
+	"store": [
+		{
+			"collection": "users",
+			"database": "default",
+			"table": "users"
+		}
+	]
+}

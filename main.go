@@ -22,7 +22,8 @@ func init() {
 	viper.AddConfigPath("./config")
 
 	if err := viper.ReadInConfig(); err != nil {
-		log.Warn("No configuration file was loaded")
+		log.Error(err)
+		log.Warn("Failed to load configuration file")
 	}
 }
 

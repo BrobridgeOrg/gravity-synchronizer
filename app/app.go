@@ -70,6 +70,10 @@ func (a *App) Run() error {
 	return nil
 }
 
+func (a *App) GetClientID() string {
+	return a.clientID
+}
+
 func (a *App) GetEventBus() app.EventBusImpl {
 	return app.EventBusImpl(a.eventbus)
 }

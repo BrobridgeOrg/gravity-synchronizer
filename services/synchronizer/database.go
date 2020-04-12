@@ -42,7 +42,9 @@ func OpenDatabase(dbname string, info *DatabaseInfo) (*Database, error) {
 		sslmode,
 	)
 
-	log.Info("Connect to database: " + connStr)
+	log.WithFields(log.Fields{
+		"uri": connStr,
+	}).Info("Connecting to database...")
 
 	// Open database
 	db, err := sqlx.Open("postgres", connStr)
@@ -152,6 +154,27 @@ func (database *Database) UpdateRecord(sequence uint64, pj *projection.Projectio
 	return nil
 }
 
+func (database *Database) Import(table string, data map[string]interface{}) error {
+
+	colNames := make([]string, 0)
+	valNames := make([]string, 0)
+	for colName, _ := range data {
+		colNames = append(colNames, `"`+colName+`"`)
+		valNames = append(valNames, `:`+colName)
+	}
+
+	colsStr := strings.Join(colNames, ",")
+	valsStr := strings.Join(valNames, ",")
+
+	insertStr := fmt.Sprintf(`INSERT INTO "%s" (%s) VALUES (%s)`, table, colsStr, valsStr)
+	_, err := database.db.NamedExec(insertStr, data)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (database *Database) DeleteRecord(sequence uint64, pj *projection.Projection) error {
 
 	for _, field := range pj.Fields {
@@ -167,6 +190,17 @@ func (database *Database) DeleteRecord(sequence uint64, pj *projection.Projectio
 
 			break
 		}
+	}
+
+	return nil
+}
+
+func (database *Database) Truncate(table string) error {
+
+	sqlStr := fmt.Sprintf(`TRUNCATE TABLE "%s"`, table)
+	_, err := database.db.Exec(sqlStr)
+	if err != nil {
+		return err
 	}
 
 	return nil

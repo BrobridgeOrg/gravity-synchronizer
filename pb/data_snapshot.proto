@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+package gravity;
+
+service DataSnapshot {
+  rpc GetSnapshotState(GetSnapshotStateRequest) returns (GetSnapshotStateReply) {}
+  rpc GetSnapshot(GetSnapshotRequest) returns (stream SnapshotPacket) {}
+}
+
+message GetSnapshotStateRequest {
+  string collection = 1;
+}
+
+message GetSnapshotStateReply {
+  string collection = 1;
+  uint64 sequence = 2;
+}
+
+message GetSnapshotRequest {
+  string collection = 1;
+}
+
+message SnapshotPacket {
+  string collection = 1;
+  uint64 sequence = 2;
+  repeated SnapshotEntry entries = 3; 
+}
+
+message SnapshotEntry {
+  string data = 1;
+}

@@ -4,7 +4,6 @@ import (
 	"github.com/prometheus/common/log"
 
 	app "gravity-synchronizer/app/interface"
-	pb "gravity-synchronizer/pb"
 )
 
 type Service struct {
@@ -32,19 +31,4 @@ func CreateService(a app.AppImpl) *Service {
 	}
 
 	return service
-}
-
-func (service *Service) GetSnapshot(in *pb.GetSnapshotRequest, stream pb.Synchronizer_GetSnapshotServer) error {
-	/*
-		db := service.dbMgr.GetDatabase("users")
-		if db == nil {
-			return nil
-		}
-
-		err := db.FetchSnapshot(stream)
-		if err != nil {
-			return err
-		}
-	*/
-	return nil
 }
