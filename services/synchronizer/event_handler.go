@@ -186,89 +186,102 @@ func (eh *EventHandler) Recovery() error {
 
 	for _, store := range eh.storeMgr.Stores {
 
+		// Update global sequence
 		if store.State.Sequence > eh.sequence {
 			eh.sequence = store.State.Sequence
 		}
 
-		log.WithFields(log.Fields{
-			"collection": store.Collection,
-			"database":   store.Database,
-			"table":      store.Table,
-		}).Info("Checking store...")
-
-		// Getting state of store
-		seq, err := eh.cacheStore.GetSnapshotState(store.Collection)
-		if err != nil {
-			// cache store doesn't work
-			log.Info("No cache found")
-			continue
-		}
-
-		log.WithFields(log.Fields{
-			"collection": store.Collection,
-			"seq":        seq,
-		}).Info("Fetched cache state")
-
-		if seq == 0 {
-			// No need to recovery because no cache out there
-			continue
-		}
-
-		if store.State.Sequence+100000 > seq {
-			// Ignore if not being too far behind
-			log.WithFields(log.Fields{
-				"cache.seq": seq,
-				"store.seq": store.State.Sequence,
-			}).Info("No need to recovery from cache, because not being too far behind")
-			continue
-		}
-
-		// Get dataase handle
-		db := eh.dbMgr.GetDatabase(store.Database)
-		if db == nil {
-			return errors.New("Not found database \"" + store.Database + "\"")
-		}
-
-		// truncate table
-		log.WithFields(log.Fields{
-			"table": store.Table,
-		}).Warn("Truncate table...")
-
-		err = db.Truncate(store.Table)
-		if err != nil {
-			return err
-		}
-
-		// Start recovering
-		log.WithFields(log.Fields{
-			"collection": store.Collection,
-			"database":   store.Database,
-			"table":      store.Table,
-		}).Warn("Recovering store...")
-
-		newSeq, err := eh.cacheStore.FetchSnapshot(store.Collection, func(data map[string]interface{}) error {
-			err := db.Import(store.Table, data)
-			if err != nil {
-				log.Error(err)
-				return err
-			}
-
-			return nil
-		})
-		if err != nil {
-			return err
-		}
-
-		// Update state
-		store.State.Sequence = newSeq
-		err = store.State.Sync()
+		err := eh.RecoveryStore(store)
 		if err != nil {
 			log.Error(err)
+			continue
+		}
+	}
+
+	return nil
+}
+
+func (eh *EventHandler) RecoveryStore(store *Store) error {
+
+	log.WithFields(log.Fields{
+		"collection": store.Collection,
+		"database":   store.Database,
+		"table":      store.Table,
+	}).Info("Checking store...")
+
+	// Getting state of store
+	seq, err := eh.cacheStore.GetSnapshotState(store.Collection)
+	if err != nil {
+		// cache store doesn't work
+		log.Info("No cache found")
+		return err
+	}
+
+	log.WithFields(log.Fields{
+		"collection": store.Collection,
+		"seq":        seq,
+	}).Info("Fetched cache state")
+
+	if seq == 0 {
+		// No need to recovery because no cache out there
+		return nil
+	}
+
+	if store.State.Sequence+100000 > seq {
+		// Ignore if not being too far behind
+		log.WithFields(log.Fields{
+			"cache.seq": seq,
+			"store.seq": store.State.Sequence,
+		}).Info("No need to recovery from cache, because not being too far behind")
+		return nil
+	}
+
+	// Get dataase handle
+	db := eh.dbMgr.GetDatabase(store.Database)
+	if db == nil {
+		return errors.New("Not found database \"" + store.Database + "\"")
+	}
+
+	// truncate table
+	log.WithFields(log.Fields{
+		"table": store.Table,
+	}).Warn("Truncate table...")
+
+	err = db.Truncate(store.Table)
+	if err != nil {
+		return err
+	}
+
+	// Start recovering
+	log.WithFields(log.Fields{
+		"collection": store.Collection,
+		"database":   store.Database,
+		"table":      store.Table,
+	}).Warn("Recovering store...")
+
+	newSeq, err := eh.cacheStore.FetchSnapshot(store.Collection, func(data map[string]interface{}) error {
+		err := db.Import(store.Table, data)
+		if err != nil {
+			log.Error(err)
+			return err
 		}
 
-		if store.State.Sequence > eh.sequence {
-			eh.sequence = store.State.Sequence
-		}
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+
+	// Update state
+	store.State.Sequence = newSeq
+	err = store.State.Sync()
+	if err != nil {
+		log.Error(err)
+	}
+
+	// Update global sequence
+	if store.State.Sequence > eh.sequence {
+		eh.sequence = store.State.Sequence
 	}
 
 	return nil
