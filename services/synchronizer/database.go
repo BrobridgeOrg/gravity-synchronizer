@@ -59,16 +59,16 @@ func OpenDatabase(dbname string, info *DatabaseInfo) (*Database, error) {
 	}, nil
 }
 
-func (database *Database) ProcessData(sequence uint64, pj *projection.Projection) error {
+func (database *Database) ProcessData(table string, sequence uint64, pj *projection.Projection) error {
 
 	if pj.Method == "delete" {
-		return database.DeleteRecord(sequence, pj)
+		return database.DeleteRecord(table, sequence, pj)
 	}
 
-	return database.UpdateRecord(sequence, pj)
+	return database.UpdateRecord(table, sequence, pj)
 }
 
-func (database *Database) UpdateRecord(sequence uint64, pj *projection.Projection) error {
+func (database *Database) UpdateRecord(table string, sequence uint64, pj *projection.Projection) error {
 
 	// Preparing SQL string
 	var columnDefs []*ColumnDef
@@ -112,7 +112,7 @@ func (database *Database) UpdateRecord(sequence uint64, pj *projection.Projectio
 	}
 
 	updateStr := strings.Join(updates, ",")
-	sqlStr := fmt.Sprintf(`UPDATE "%s" SET %s WHERE "%s" = :primary_val`, pj.Table, updateStr, primaryColumn)
+	sqlStr := fmt.Sprintf(`UPDATE "%s" SET %s WHERE "%s" = :primary_val`, table, updateStr, primaryColumn)
 
 	// Trying to update database
 	result, err := database.db.NamedExec(sqlStr, values)
@@ -145,7 +145,7 @@ func (database *Database) UpdateRecord(sequence uint64, pj *projection.Projectio
 	colsStr := strings.Join(colNames, ",")
 	valsStr := strings.Join(valNames, ",")
 
-	insertStr := fmt.Sprintf(`INSERT INTO "%s" (%s) VALUES (%s)`, pj.Table, colsStr, valsStr)
+	insertStr := fmt.Sprintf(`INSERT INTO "%s" (%s) VALUES (%s)`, table, colsStr, valsStr)
 	_, err = database.db.NamedExec(insertStr, values)
 	if err != nil {
 		return err
@@ -175,14 +175,14 @@ func (database *Database) Import(table string, data map[string]interface{}) erro
 	return nil
 }
 
-func (database *Database) DeleteRecord(sequence uint64, pj *projection.Projection) error {
+func (database *Database) DeleteRecord(table string, sequence uint64, pj *projection.Projection) error {
 
 	for _, field := range pj.Fields {
 
 		// Primary key
 		if field.Primary == true {
 
-			sqlStr := fmt.Sprintf(`DELETE FROM "%s" WHERE "%s" = $1`, pj.Table, field.Name)
+			sqlStr := fmt.Sprintf(`DELETE FROM "%s" WHERE "%s" = $1`, table, field.Name)
 			_, err := database.db.Exec(sqlStr, field.Value)
 			if err != nil {
 				return err

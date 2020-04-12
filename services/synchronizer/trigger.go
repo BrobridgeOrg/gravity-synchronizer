@@ -24,7 +24,7 @@ type Action struct {
 func (trigger *Trigger) IsMatch(pj *projection.Projection) bool {
 
 	if len(trigger.Condition.Collection) > 0 {
-		if pj.Table != trigger.Condition.Collection {
+		if pj.Collection != trigger.Condition.Collection {
 			return false
 		}
 	}

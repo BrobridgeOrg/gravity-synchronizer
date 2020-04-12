@@ -19,7 +19,7 @@ func CreateStore() *Store {
 
 func (store *Store) IsMatch(pj *projection.Projection) bool {
 
-	if pj.Table != store.Collection {
+	if pj.Collection != store.Collection {
 		return false
 	}
 

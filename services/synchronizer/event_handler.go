@@ -123,7 +123,7 @@ func (eh *EventHandler) Initialize() error {
 		log.WithFields(log.Fields{
 			"seq":        msg.Sequence,
 			"event":      pj.EventName,
-			"collection": pj.Table,
+			"collection": pj.Collection,
 			"method":     pj.Method,
 		}).Info("Received event")
 
@@ -176,7 +176,6 @@ func (eh *EventHandler) ProcessEvent(sequence uint64, pj *projection.Projection)
 			continue
 		}
 	}
-
 	return nil
 }
 
@@ -296,7 +295,7 @@ func (eh *EventHandler) ApplyStore(store *Store, sequence uint64, pj *projection
 	}
 
 	// store data
-	err := db.ProcessData(sequence, pj)
+	err := db.ProcessData(store.Table, sequence, pj)
 	if err != nil {
 		return err
 	}

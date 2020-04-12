@@ -52,7 +52,7 @@ func (connector *Connector) Connect() error {
 		"host":       connector.host,
 		"clientName": connector.clientName,
 		"clusterID":  connector.clusterID,
-	}).Info("Connecting to event server")
+	}).Info("Connecting to NATS Streaming server")
 
 	// Connect to queue server
 	sc, err := stan.Connect(connector.clusterID, connector.clientName, stan.NatsURL(connector.host))

@@ -6,7 +6,7 @@
 			"port": 32803,
 			"params": {
 				"cluster_id": "test-cluster",
-				"queue": "userCreated"
+				"queue": "example.userSynced"
 			}
 		}
 	}

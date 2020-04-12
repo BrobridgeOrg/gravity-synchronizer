@@ -9,24 +9,24 @@ type Field struct {
 }
 
 type Projection struct {
-	EventName string  `json:"event"`
-	Table     string  `json:"table"`
-	Method    string  `json:"method"`
-	Fields    []Field `json:"fields"`
+	EventName  string  `json:"event"`
+	Collection string  `json:"collection"`
+	Method     string  `json:"method"`
+	Fields     []Field `json:"fields"`
 }
 
 type JSONResult struct {
-	EventName string                 `json:"event"`
-	Table     string                 `json:"table"`
-	Payload   map[string]interface{} `json:"payload"`
+	EventName  string                 `json:"event"`
+	Collection string                 `json:"table"`
+	Payload    map[string]interface{} `json:"payload"`
 }
 
 func (pj *Projection) ToJSON() ([]byte, error) {
 
 	result := JSONResult{
-		EventName: pj.EventName,
-		Table:     pj.Table,
-		Payload:   make(map[string]interface{}),
+		EventName:  pj.EventName,
+		Collection: pj.Collection,
+		Payload:    make(map[string]interface{}),
 	}
 
 	for _, field := range pj.Fields {
