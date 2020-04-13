@@ -8,15 +8,26 @@ get_args() {
 }
 
 [ "$#" -eq 0 ] || {
-	rules=$(get_args rules "$@")
-	[ "$rules" != "" ] && {
-		ruleConfigPath="./rules/rules.json"
+	stores=$(get_args stores "$@")
+	[ "$stores" != "" ] && {
+		storeConfigPath="./rules/stores.json"
 
-		[ "$GRAVITY_SYNCHRONIZER_RULES_RULECONFIG" != "" ] && {
-			ruleConfigPath=$GRAVITY_SYNCHRONIZER_RULES_RULECONFIG
+		[ "$GRAVITY_SYNCHRONIZER_RULES_STORECONFIG" != "" ] && {
+			storeConfigPath=$GRAVITY_SYNCHRONIZER_RULES_STORECONFIG
 		} 
 
-		echo $rules > $ruleConfigPath
+		echo $stores > $storeConfigPath
+	}
+
+	tiggers=$(get_args tiggers "$@")
+	[ "$tiggers" != "" ] && {
+		tiggerConfigPath="./rules/tiggers.json"
+
+		[ "$GRAVITY_SYNCHRONIZER_RULES_TIGGERCONFIG" != "" ] && {
+			tiggerConfigPath=$GRAVITY_SYNCHRONIZER_RULES_TIGGERCONFIG
+		} 
+
+		echo $tiggers > $tiggerConfigPath
 	}
 
 	db=$(get_args db "$@")
@@ -41,5 +52,5 @@ get_args() {
 		echo $exporter > $exporterConfigPath
 	}
 }
-
+export GRAVITY_SYNCHRONIZER_EVENT_STORE_CLIENT_NAME=$(hostname)
 /gravity-synchronizer
