@@ -8,6 +8,9 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
+	_ "github.com/denisenkom/go-mssqldb"
+	_ "github.com/go-sql-driver/mysql"
+	_ "github.com/godror/godror"
 	_ "github.com/lib/pq"
 
 	"github.com/jmoiron/sqlx"
@@ -47,7 +50,7 @@ func OpenDatabase(dbname string, info *DatabaseInfo) (*Database, error) {
 	}).Info("Connecting to database...")
 
 	// Open database
-	db, err := sqlx.Open("postgres", connStr)
+	db, err := sqlx.Open(info.Type, connStr)
 	if err != nil {
 		log.Error(err)
 		return nil, err
