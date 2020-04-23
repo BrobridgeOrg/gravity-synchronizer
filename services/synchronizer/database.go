@@ -34,16 +34,30 @@ func OpenDatabase(dbname string, info *DatabaseInfo) (*Database, error) {
 		sslmode = "enable"
 	}
 
-	connStr := fmt.Sprintf(
-		"%s://%s:%s@%s:%d/%s?sslmode=%s",
-		info.Type,
-		info.Username,
-		info.Password,
-		info.Host,
-		info.Port,
-		info.DbName,
-		sslmode,
-	)
+	var connStr string
+	if info.Type == "mysql" {
+		connStr = fmt.Sprintf(
+			"%s://%s:%s@(%s:%d)/%s?sslmode=%s",
+			info.Type,
+			info.Username,
+			info.Password,
+			info.Host,
+			info.Port,
+			info.DbName,
+			sslmode,
+		)
+	} else {
+		connStr = fmt.Sprintf(
+			"%s://%s:%s@%s:%d/%s?sslmode=%s",
+			info.Type,
+			info.Username,
+			info.Password,
+			info.Host,
+			info.Port,
+			info.DbName,
+			sslmode,
+		)
+	}
 
 	log.WithFields(log.Fields{
 		"uri": connStr,
