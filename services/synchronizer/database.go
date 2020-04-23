@@ -158,8 +158,6 @@ func (database *Database) UpdateRecord(table string, sequence uint64, pj *projec
 	updateStr := strings.Join(updates, ",")
 	sqlStr := fmt.Sprintf(template, table, updateStr, primaryColumn)
 
-	log.Info(sqlStr)
-
 	// Trying to update database
 	result, err := database.db.NamedExec(sqlStr, values)
 	if err != nil {
