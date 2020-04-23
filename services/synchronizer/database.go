@@ -9,11 +9,18 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	_ "github.com/denisenkom/go-mssqldb"
-	_ "github.com/go-sql-driver/mysql"
+	"github.com/go-sql-driver/mysql"
 	_ "github.com/godror/godror"
 	_ "github.com/lib/pq"
 
 	"github.com/jmoiron/sqlx"
+)
+
+const (
+	DatabaseTypePostgres = iota
+	DatabaseTypeMySQL
+	DatabaseTypeMSSQL
+	DatabaseTypeOracle
 )
 
 type ColumnDef struct {
@@ -23,30 +30,40 @@ type ColumnDef struct {
 }
 
 type Database struct {
-	name string
-	db   *sqlx.DB
+	name   string
+	dbType int
+	db     *sqlx.DB
 }
 
 func OpenDatabase(dbname string, info *DatabaseInfo) (*Database, error) {
 
-	sslmode := "disable"
-	if info.Secure {
-		sslmode = "enable"
-	}
+	dbType := DatabaseTypePostgres
 
 	var connStr string
 	if info.Type == "mysql" {
-		connStr = fmt.Sprintf(
-			"%s://%s:%s@(%s:%d)/%s?sslmode=%s",
-			info.Type,
-			info.Username,
-			info.Password,
-			info.Host,
-			info.Port,
-			info.DbName,
-			sslmode,
-		)
+		dbType = DatabaseTypeMySQL
+		var params map[string]string
+
+		if info.Secure {
+			params["tls"] = "true"
+		}
+
+		config := mysql.Config{
+			User:                 info.Username,
+			Passwd:               info.Password,
+			Addr:                 fmt.Sprintf("%s:%d", info.Host, info.Port),
+			Net:                  "tcp",
+			DBName:               info.DbName,
+			AllowNativePasswords: true,
+			Params:               params,
+		}
+		connStr = config.FormatDSN()
 	} else {
+		sslmode := "disable"
+		if info.Secure {
+			sslmode = "enable"
+		}
+
 		connStr = fmt.Sprintf(
 			"%s://%s:%s@%s:%d/%s?sslmode=%s",
 			info.Type,
@@ -71,8 +88,9 @@ func OpenDatabase(dbname string, info *DatabaseInfo) (*Database, error) {
 	}
 
 	return &Database{
-		name: dbname,
-		db:   db,
+		name:   dbname,
+		dbType: dbType,
+		db:     db,
 	}, nil
 }
 
@@ -124,12 +142,23 @@ func (database *Database) UpdateRecord(table string, sequence uint64, pj *projec
 
 	// Preparing SQL string
 	var updates []string
-	for _, def := range columnDefs {
-		updates = append(updates, `"`+def.ColumnName+`" = :`+def.BindingName)
+	var template string
+	if database.dbType == DatabaseTypeMySQL {
+		template = "UPDATE `%s` SET %s WHERE `%s` = :primary_val"
+		for _, def := range columnDefs {
+			updates = append(updates, "`"+def.ColumnName+"` = :"+def.BindingName)
+		}
+	} else {
+		template = `UPDATE "%s" SET %s WHERE "%s" = :primary_val`
+		for _, def := range columnDefs {
+			updates = append(updates, `"`+def.ColumnName+`" = :`+def.BindingName)
+		}
 	}
 
 	updateStr := strings.Join(updates, ",")
-	sqlStr := fmt.Sprintf(`UPDATE "%s" SET %s WHERE "%s" = :primary_val`, table, updateStr, primaryColumn)
+	sqlStr := fmt.Sprintf(template, table, updateStr, primaryColumn)
+
+	log.Info(sqlStr)
 
 	// Trying to update database
 	result, err := database.db.NamedExec(sqlStr, values)
@@ -154,15 +183,28 @@ func (database *Database) UpdateRecord(table string, sequence uint64, pj *projec
 		":primary_val",
 	}
 
-	for _, def := range columnDefs {
-		colNames = append(colNames, `"`+def.ColumnName+`"`)
-		valNames = append(valNames, `:`+def.BindingName)
+	// Preparing columns and bindings
+	if database.dbType == DatabaseTypeMySQL {
+		for _, def := range columnDefs {
+			colNames = append(colNames, "`"+def.ColumnName+"`")
+			valNames = append(valNames, `:`+def.BindingName)
+		}
+	} else {
+		for _, def := range columnDefs {
+			colNames = append(colNames, `"`+def.ColumnName+`"`)
+			valNames = append(valNames, `:`+def.BindingName)
+		}
 	}
 
 	colsStr := strings.Join(colNames, ",")
 	valsStr := strings.Join(valNames, ",")
 
-	insertStr := fmt.Sprintf(`INSERT INTO "%s" (%s) VALUES (%s)`, table, colsStr, valsStr)
+	if database.dbType == DatabaseTypeMySQL {
+		template = "INSERT INTO `%s` (%s) VALUES (%s)"
+	} else {
+		template = `INSERT INTO "%s" (%s) VALUES (%s)`
+	}
+	insertStr := fmt.Sprintf(template, table, colsStr, valsStr)
 	_, err = database.db.NamedExec(insertStr, values)
 	if err != nil {
 		return err
@@ -175,15 +217,30 @@ func (database *Database) Import(table string, data map[string]interface{}) erro
 
 	colNames := make([]string, 0)
 	valNames := make([]string, 0)
-	for colName, _ := range data {
-		colNames = append(colNames, `"`+colName+`"`)
-		valNames = append(valNames, `:`+colName)
+	// Preparing columns and bindings
+	if database.dbType == DatabaseTypeMySQL {
+		for colName, _ := range data {
+			colNames = append(colNames, "`"+colName+"`")
+			valNames = append(valNames, `:`+colName)
+		}
+	} else {
+		for colName, _ := range data {
+			colNames = append(colNames, `"`+colName+`"`)
+			valNames = append(valNames, `:`+colName)
+		}
 	}
 
 	colsStr := strings.Join(colNames, ",")
 	valsStr := strings.Join(valNames, ",")
 
-	insertStr := fmt.Sprintf(`INSERT INTO "%s" (%s) VALUES (%s)`, table, colsStr, valsStr)
+	var template string
+	if database.dbType == DatabaseTypeMySQL {
+		template = "INSERT INTO `%s` (%s) VALUES (%s)"
+	} else {
+		template = `INSERT INTO "%s" (%s) VALUES (%s)`
+	}
+
+	insertStr := fmt.Sprintf(template, table, colsStr, valsStr)
 	_, err := database.db.NamedExec(insertStr, data)
 	if err != nil {
 		return err
@@ -194,13 +251,22 @@ func (database *Database) Import(table string, data map[string]interface{}) erro
 
 func (database *Database) DeleteRecord(table string, sequence uint64, pj *projection.Projection) error {
 
+	var template string
+	if database.dbType == DatabaseTypeMySQL {
+		template = "DELETE FROM `%s` WHERE `%s` = :primary_val"
+	} else {
+		template = `DELETE FROM "%s" WHERE "%s" = :primary_val`
+	}
+
 	for _, field := range pj.Fields {
 
 		// Primary key
 		if field.Primary == true {
 
-			sqlStr := fmt.Sprintf(`DELETE FROM "%s" WHERE "%s" = $1`, table, field.Name)
-			_, err := database.db.Exec(sqlStr, field.Value)
+			sqlStr := fmt.Sprintf(template, table, field.Name)
+			_, err := database.db.NamedExec(sqlStr, map[string]interface{}{
+				"primary_val": field.Value,
+			})
 			if err != nil {
 				return err
 			}
@@ -214,7 +280,14 @@ func (database *Database) DeleteRecord(table string, sequence uint64, pj *projec
 
 func (database *Database) Truncate(table string) error {
 
-	sqlStr := fmt.Sprintf(`TRUNCATE TABLE "%s"`, table)
+	var template string
+	if database.dbType == DatabaseTypeMySQL {
+		template = "TRUNCATE TABLE `%s`"
+	} else {
+		template = `TRUNCATE TABLE "%s"`
+	}
+
+	sqlStr := fmt.Sprintf(template, table)
 	_, err := database.db.Exec(sqlStr)
 	if err != nil {
 		return err
