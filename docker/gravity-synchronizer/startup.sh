@@ -19,15 +19,15 @@ get_args() {
 		echo $stores > $storeConfigPath
 	}
 
-	tiggers=$(get_args tiggers "$@")
-	[ "$tiggers" != "" ] && {
-		tiggerConfigPath="./rules/tiggers.json"
+	triggers=$(get_args triggers "$@")
+	[ "$triggers" != "" ] && {
+		triggerConfigPath="./rules/triggers.json"
 
 		[ "$GRAVITY_SYNCHRONIZER_RULES_TIGGERCONFIG" != "" ] && {
-			tiggerConfigPath=$GRAVITY_SYNCHRONIZER_RULES_TIGGERCONFIG
+			triggerConfigPath=$GRAVITY_SYNCHRONIZER_RULES_TRIGGERCONFIG
 		} 
 
-		echo $tiggers > $tiggerConfigPath
+		echo $triggers > $triggerConfigPath
 	}
 
 	db=$(get_args db "$@")
