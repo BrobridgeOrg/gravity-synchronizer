@@ -12,6 +12,7 @@ require (
 	github.com/lib/pq v1.3.0
 	github.com/mattn/go-oci8 v0.0.8
 	github.com/nats-io/nats-streaming-server v0.17.0 // indirect
+	github.com/nats-io/nats.go v1.9.1
 	github.com/nats-io/stan.go v0.6.0
 	github.com/prometheus/common v0.7.0
 	github.com/sirupsen/logrus v1.4.2

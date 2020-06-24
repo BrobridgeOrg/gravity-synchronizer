@@ -1,8 +1,10 @@
 package eventbus
 
 import (
+	nats "github.com/nats-io/nats.go"
 	stan "github.com/nats-io/stan.go"
 	log "github.com/sirupsen/logrus"
+	"time"
 )
 
 type EventBus struct {
@@ -32,7 +34,20 @@ func (eb *EventBus) Connect() error {
 	}).Info("Connecting to event server")
 
 	// Connect to queue server
-	sc, err := stan.Connect(eb.clusterID, eb.clientName, stan.NatsURL(eb.host))
+	nc, err := nats.Connect(eb.host,
+		nats.MaxReconnects(-1),
+		nats.PingInterval(10*time.Second),
+		nats.MaxPingsOutstanding(3),
+	)
+	if err != nil {
+		return err
+	}
+
+	nc.SetReconnectHandler(func(rcb *nats.Conn) {
+		log.Info("Reconnecting to eventbus server ...")
+	})
+
+	sc, err := stan.Connect(eb.clusterID, eb.clientName, stan.NatsConn(nc))
 	if err != nil {
 		return err
 	}
