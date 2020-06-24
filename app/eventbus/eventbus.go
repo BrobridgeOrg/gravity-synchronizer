@@ -1,26 +1,33 @@
 package eventbus
 
 import (
+	"time"
+
 	nats "github.com/nats-io/nats.go"
 	stan "github.com/nats-io/stan.go"
 	log "github.com/sirupsen/logrus"
-	"time"
 )
 
 type EventBus struct {
-	host        string
-	clusterID   string
-	clientName  string
-	durableName string
-	client      stan.Conn
+	host              string
+	clusterID         string
+	clientName        string
+	durableName       string
+	client            stan.Conn
+	natsConn          *nats.Conn
+	reconnectHandler  func(natsConn *nats.Conn)
+	disconnectHandler func(natsConn *nats.Conn)
 }
 
-func CreateConnector(host string, clusterID string, clientName string, durableName string) *EventBus {
+func CreateConnector(host string, clusterID string, clientName string, durableName string, reconnectHandler func(natsConn *nats.Conn), disconnectHandler func(natsConn *nats.Conn)) *EventBus {
 	return &EventBus{
-		host:        host,
-		clusterID:   clusterID,
-		clientName:  clientName,
-		durableName: durableName,
+		host:              host,
+		clusterID:         clusterID,
+		clientName:        clientName,
+		durableName:       durableName,
+		natsConn:          nil,
+		reconnectHandler:  reconnectHandler,
+		disconnectHandler: disconnectHandler,
 	}
 }
 
@@ -33,21 +40,28 @@ func (eb *EventBus) Connect() error {
 		"durableName": eb.durableName,
 	}).Info("Connecting to event server")
 
-	// Connect to queue server
-	nc, err := nats.Connect(eb.host,
-		nats.MaxReconnects(-1),
-		nats.PingInterval(10*time.Second),
-		nats.MaxPingsOutstanding(3),
-	)
-	if err != nil {
-		return err
+	if eb.natsConn == nil {
+		// Create NATS connection
+		nc, err := nats.Connect(eb.host,
+			nats.PingInterval(10*time.Second),
+			nats.MaxPingsOutstanding(3),
+			nats.MaxReconnects(-1),
+			nats.ReconnectHandler(eb.reconnectHandler),
+			nats.DisconnectHandler(eb.disconnectHandler),
+		)
+		if err != nil {
+			return err
+		}
+
+		eb.natsConn = nc
 	}
 
-	nc.SetReconnectHandler(func(rcb *nats.Conn) {
-		log.Info("Reconnecting to eventbus server ...")
-	})
-
-	sc, err := stan.Connect(eb.clusterID, eb.clientName, stan.NatsConn(nc))
+	// Connect to queue server
+	sc, err := stan.Connect(
+		eb.clusterID,
+		eb.clientName,
+		stan.NatsConn(eb.natsConn),
+	)
 	if err != nil {
 		return err
 	}

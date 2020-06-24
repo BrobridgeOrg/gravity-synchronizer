@@ -4,7 +4,9 @@ import (
 	"gravity-synchronizer/app/eventbus"
 	app "gravity-synchronizer/app/interface"
 	"strconv"
+	"time"
 
+	"github.com/nats-io/nats.go"
 	log "github.com/sirupsen/logrus"
 	"github.com/sony/sonyflake"
 	"github.com/spf13/viper"
@@ -13,6 +15,7 @@ import (
 type App struct {
 	clientID string
 	eventbus *eventbus.EventBus
+	isReady  bool
 }
 
 func CreateApp() *App {
@@ -30,15 +33,40 @@ func CreateApp() *App {
 		clientID = strconv.FormatUint(id, 16)
 	}
 
-	return &App{
+	a := &App{
 		clientID: clientID,
-		eventbus: eventbus.CreateConnector(
-			viper.GetString("event_store.host"),
-			viper.GetString("event_store.cluster_id"),
-			clientID,
-			viper.GetString("event_store.durable_name"),
-		),
 	}
+
+	a.eventbus = eventbus.CreateConnector(
+		viper.GetString("event_store.host"),
+		viper.GetString("event_store.cluster_id"),
+		clientID,
+		viper.GetString("event_store.durable_name"),
+		func(natsConn *nats.Conn) {
+
+			for {
+				log.Warn("re-connect to event server")
+
+				// Connect to NATS Streaming
+				err := a.eventbus.Connect()
+				if err != nil {
+					log.Error("Failed to connect to event server")
+					time.Sleep(time.Duration(1) * time.Second)
+					continue
+				}
+
+				a.isReady = true
+
+				break
+			}
+		},
+		func(natsConn *nats.Conn) {
+			a.isReady = false
+			log.Error("event server was disconnected")
+		},
+	)
+
+	return a
 }
 
 func (a *App) Init() error {
@@ -68,6 +96,10 @@ func (a *App) Run() error {
 	}
 
 	return nil
+}
+
+func (a *App) IsReady() bool {
+	return a.isReady
 }
 
 func (a *App) GetClientID() string {
