@@ -104,13 +104,26 @@ func (eh *EventHandler) Initialize() error {
 		return err
 	}
 
+	// Register recovery handler for event bus
+	eb := eh.app.GetEventBus()
+	eb.RegisterRecoveryHandler(func() {
+		log.Info("Recovering event bus...")
+		eh.initEventBus()
+	})
+
+	// Initialize event bus
+	return eh.initEventBus()
+}
+
+func (eh *EventHandler) initEventBus() error {
+
 	// Listen to event store
 	log.WithFields(log.Fields{
 		"channel": "gravity.store.eventStored",
 		"startAt": eh.sequence,
 	}).Info("Subscribe to event bus")
 	eb := eh.app.GetEventBus()
-	err = eb.On("gravity.store.eventStored", func(msg *stan.Msg) {
+	err := eb.On("gravity.store.eventStored", func(msg *stan.Msg) {
 
 		// Parse event
 		var pj projection.Projection
@@ -305,7 +318,10 @@ func (eh *EventHandler) ApplyStore(store *Store, sequence uint64, pj *projection
 	err = store.State.Sync()
 	if err != nil {
 		log.Error(err)
+		return err
 	}
+
+	eh.sequence = sequence
 
 	return nil
 }

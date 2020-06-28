@@ -17,6 +17,10 @@ type EventBus struct {
 	natsConn          *nats.Conn
 	reconnectHandler  func(natsConn *nats.Conn)
 	disconnectHandler func(natsConn *nats.Conn)
+
+	// Recovery handler
+	recoveryIdx      int
+	recoveryHandlers map[int]func()
 }
 
 func CreateConnector(host string, clusterID string, clientName string, durableName string, reconnectHandler func(natsConn *nats.Conn), disconnectHandler func(natsConn *nats.Conn)) *EventBus {
@@ -28,6 +32,9 @@ func CreateConnector(host string, clusterID string, clientName string, durableNa
 		natsConn:          nil,
 		reconnectHandler:  reconnectHandler,
 		disconnectHandler: disconnectHandler,
+
+		recoveryIdx:      0,
+		recoveryHandlers: make(map[int]func()),
 	}
 }
 
@@ -46,7 +53,10 @@ func (eb *EventBus) Connect() error {
 			nats.PingInterval(10*time.Second),
 			nats.MaxPingsOutstanding(3),
 			nats.MaxReconnects(-1),
-			nats.ReconnectHandler(eb.reconnectHandler),
+			nats.ReconnectHandler(func(natsConn *nats.Conn) {
+				eb.reconnectHandler(natsConn)
+				eb.Recover()
+			}),
 			nats.DisconnectHandler(eb.disconnectHandler),
 		)
 		if err != nil {
@@ -99,4 +109,24 @@ func (eb *EventBus) On(eventName string, fn func(*stan.Msg), seq uint64) error {
 	}
 
 	return nil
+}
+
+func (eb *EventBus) Recover() {
+
+	for _, fn := range eb.recoveryHandlers {
+		fn()
+	}
+}
+
+func (eb *EventBus) RegisterRecoveryHandler(fn func()) int {
+
+	id := eb.recoveryIdx
+	eb.recoveryHandlers[eb.recoveryIdx] = fn
+	eb.recoveryIdx++
+
+	return id
+}
+
+func (eb *EventBus) UnregisterRecoveryHandler(id int) {
+	delete(eb.recoveryHandlers, id)
 }
