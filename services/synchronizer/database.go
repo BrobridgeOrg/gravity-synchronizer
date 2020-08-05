@@ -253,8 +253,8 @@ func (database *Database) insert(table string, recordDef *RecordDef) error {
 
 func (database *Database) Import(table string, data map[string]interface{}) error {
 
-	colNames := make([]string, 0)
-	valNames := make([]string, 0)
+	colNames := make([]string, 0, len(data))
+	valNames := make([]string, 0, len(data))
 	// Preparing columns and bindings
 	if database.dbType == DatabaseTypeMySQL {
 		for colName, _ := range data {
