@@ -23,6 +23,13 @@ const (
 	DatabaseTypeOracle
 )
 
+type RecordDef struct {
+	HasPrimary    bool
+	PrimaryColumn string
+	Values        map[string]interface{}
+	ColumnDefs    []*ColumnDef
+}
+
 type ColumnDef struct {
 	ColumnName  string
 	BindingName string
@@ -103,79 +110,109 @@ func (database *Database) ProcessData(table string, sequence uint64, pj *project
 	return database.UpdateRecord(table, sequence, pj)
 }
 
-func (database *Database) UpdateRecord(table string, sequence uint64, pj *projection.Projection) error {
+func (database *Database) GetDefinition(pj *projection.Projection) *RecordDef {
 
-	// Preparing SQL string
-	var columnDefs []*ColumnDef
-	var primaryColumn string
-	hasPrimary := false
-	values := make(map[string]interface{})
+	recordDef := &RecordDef{
+		HasPrimary: false,
+		Values:     make(map[string]interface{}),
+		ColumnDefs: make([]*ColumnDef, 0, len(pj.Fields)),
+	}
+
+	// Scanning fields
 	for n, field := range pj.Fields {
 
 		// Primary key
 		if field.Primary == true {
-
-			values["primary_val"] = field.Value
-
-			hasPrimary = true
-			primaryColumn = field.Name
-
+			recordDef.Values["primary_val"] = field.Value
+			recordDef.HasPrimary = true
+			recordDef.PrimaryColumn = field.Name
 			continue
 		}
 
-		idxStr := strconv.Itoa(n)
+		// Generate binding name
+		bindingName := fmt.Sprintf("val_%s", strconv.Itoa(n))
+		recordDef.Values[bindingName] = field.Value
 
-		valName := "val_" + idxStr
-		values[valName] = field.Value
-
-		columnDefs = append(columnDefs, &ColumnDef{
+		// Store definition
+		recordDef.ColumnDefs = append(recordDef.ColumnDefs, &ColumnDef{
 			ColumnName:  field.Name,
 			Value:       field.Name,
-			BindingName: "val_" + idxStr,
+			BindingName: bindingName,
 		})
 	}
 
+	return recordDef
+}
+
+func (database *Database) UpdateRecord(table string, sequence uint64, pj *projection.Projection) error {
+
+	recordDef := database.GetDefinition(pj)
+
 	// Ignore if no primary key
-	if hasPrimary == false {
+	if recordDef.HasPrimary == false {
 		return nil
 	}
+
+	// TODO: performance issue because do twice for each record
+
+	// Update
+	updated, err := database.update(table, recordDef)
+	if err != nil {
+		return err
+	}
+
+	// Not exists
+	if !updated {
+		// Insert
+		return database.insert(table, recordDef)
+	}
+
+	return nil
+}
+
+func (database *Database) update(table string, recordDef *RecordDef) (bool, error) {
 
 	// Preparing SQL string
 	var updates []string
 	var template string
 	if database.dbType == DatabaseTypeMySQL {
 		template = "UPDATE `%s` SET %s WHERE `%s` = :primary_val"
-		for _, def := range columnDefs {
+		for _, def := range recordDef.ColumnDefs {
 			updates = append(updates, "`"+def.ColumnName+"` = :"+def.BindingName)
 		}
 	} else {
 		template = `UPDATE "%s" SET %s WHERE "%s" = :primary_val`
-		for _, def := range columnDefs {
+		for _, def := range recordDef.ColumnDefs {
 			updates = append(updates, `"`+def.ColumnName+`" = :`+def.BindingName)
 		}
 	}
 
 	updateStr := strings.Join(updates, ",")
-	sqlStr := fmt.Sprintf(template, table, updateStr, primaryColumn)
+	sqlStr := fmt.Sprintf(template, table, updateStr, recordDef.PrimaryColumn)
 
 	// Trying to update database
-	result, err := database.db.NamedExec(sqlStr, values)
+	result, err := database.db.NamedExec(sqlStr, recordDef.Values)
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	rows, err := result.RowsAffected()
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	if rows > 0 {
-		return nil
+		return true, nil
 	}
+
+	return false, nil
+}
+
+func (database *Database) insert(table string, recordDef *RecordDef) error {
 
 	// Insert a new record
 	colNames := []string{
-		primaryColumn,
+		recordDef.PrimaryColumn,
 	}
 	valNames := []string{
 		":primary_val",
@@ -183,27 +220,30 @@ func (database *Database) UpdateRecord(table string, sequence uint64, pj *projec
 
 	// Preparing columns and bindings
 	if database.dbType == DatabaseTypeMySQL {
-		for _, def := range columnDefs {
+		for _, def := range recordDef.ColumnDefs {
 			colNames = append(colNames, "`"+def.ColumnName+"`")
 			valNames = append(valNames, `:`+def.BindingName)
 		}
 	} else {
-		for _, def := range columnDefs {
+		for _, def := range recordDef.ColumnDefs {
 			colNames = append(colNames, `"`+def.ColumnName+`"`)
 			valNames = append(valNames, `:`+def.BindingName)
 		}
 	}
 
-	colsStr := strings.Join(colNames, ",")
-	valsStr := strings.Join(valNames, ",")
-
+	var template string
 	if database.dbType == DatabaseTypeMySQL {
 		template = "INSERT INTO `%s` (%s) VALUES (%s)"
 	} else {
 		template = `INSERT INTO "%s" (%s) VALUES (%s)`
 	}
+
+	// Preparing SQL string to insert
+	colsStr := strings.Join(colNames, ",")
+	valsStr := strings.Join(valNames, ",")
 	insertStr := fmt.Sprintf(template, table, colsStr, valsStr)
-	_, err = database.db.NamedExec(insertStr, values)
+
+	_, err := database.db.NamedExec(insertStr, recordDef.Values)
 	if err != nil {
 		return err
 	}
