@@ -15,6 +15,9 @@ type Connector struct {
 	clientName string
 	queue      string
 	client     stan.Conn
+
+	// channels
+	output chan *projection.Projection
 }
 
 func CreateConnector(host string, params map[string]interface{}) *Connector {
@@ -43,6 +46,7 @@ func CreateConnector(host string, params map[string]interface{}) *Connector {
 		clusterID:  clusterID.(string),
 		clientName: idStr,
 		queue:      queue.(string),
+		output:     make(chan *projection.Projection, 1024),
 	}
 }
 
@@ -62,6 +66,16 @@ func (connector *Connector) Connect() error {
 
 	connector.client = sc
 
+	go func() {
+
+		for {
+			select {
+			case pj := <-connector.output:
+				connector.send(pj)
+			}
+		}
+	}()
+
 	return nil
 }
 
@@ -72,6 +86,8 @@ func (connector *Connector) Close() {
 func (connector *Connector) Emit(eventName string, data []byte) error {
 
 	if err := connector.client.Publish(eventName, data); err != nil {
+		// TODO: it sould publish again
+		log.Error(err)
 		return err
 	}
 
@@ -79,6 +95,11 @@ func (connector *Connector) Emit(eventName string, data []byte) error {
 }
 
 func (connector *Connector) Send(sequence uint64, pj *projection.Projection) error {
+	connector.output <- pj
+	return nil
+}
+
+func (connector *Connector) send(pj *projection.Projection) error {
 
 	// Genereate JSON string
 	data, err := pj.ToJSON()
