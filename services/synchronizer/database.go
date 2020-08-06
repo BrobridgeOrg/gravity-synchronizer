@@ -116,13 +116,10 @@ func OpenDatabase(dbname string, info *DatabaseInfo) (*Database, error) {
 }
 
 func (database *Database) run() {
-	counter := 0
 	for {
 		select {
 		case cmd := <-database.commands:
 			database.db.NamedExec(cmd.QueryStr, cmd.Args)
-			counter++
-			log.Info(counter)
 		}
 	}
 }
@@ -222,16 +219,15 @@ func (database *Database) update(table string, recordDef *RecordDef) (bool, erro
 	}
 
 	updateStr := strings.Join(updates, ",")
-	//sqlStr := fmt.Sprintf(template, table, updateStr, recordDef.PrimaryColumn)
-	_ = fmt.Sprintf(template, table, updateStr, recordDef.PrimaryColumn)
+	sqlStr := fmt.Sprintf(template, table, updateStr, recordDef.PrimaryColumn)
+	//_ = fmt.Sprintf(template, table, updateStr, recordDef.PrimaryColumn)
 
 	//	database.db.NamedExec(sqlStr, recordDef.Values)
-	/*
-		database.commands <- &DBCommand{
-			QueryStr: sqlStr,
-			Args:     recordDef.Values,
-		}
-	*/
+
+	database.commands <- &DBCommand{
+		QueryStr: sqlStr,
+		Args:     recordDef.Values,
+	}
 	/*
 		result, err := database.db.NamedExec(sqlStr, recordDef.Values)
 		if err != nil {
@@ -284,16 +280,14 @@ func (database *Database) insert(table string, recordDef *RecordDef) error {
 	// Preparing SQL string to insert
 	colsStr := strings.Join(colNames, ",")
 	valsStr := strings.Join(valNames, ",")
-	//insertStr := fmt.Sprintf(template, table, colsStr, valsStr)
-	_ = fmt.Sprintf(template, table, colsStr, valsStr)
+	insertStr := fmt.Sprintf(template, table, colsStr, valsStr)
+	//_ = fmt.Sprintf(template, table, colsStr, valsStr)
 
 	//	database.db.NamedExec(insertStr, recordDef.Values)
-	/*
-		database.commands <- &DBCommand{
-			QueryStr: insertStr,
-			Args:     recordDef.Values,
-		}
-	*/
+	database.commands <- &DBCommand{
+		QueryStr: insertStr,
+		Args:     recordDef.Values,
+	}
 	/*
 		_, err := database.db.NamedExec(insertStr, recordDef.Values)
 		if err != nil {
