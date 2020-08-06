@@ -54,6 +54,21 @@ func (sm *StoreManager) Initialize() error {
 	// Store settings
 	for _, store := range config.Stores {
 
+		s := NewStore()
+		s.DbInstance = sm.EventHandler.dbMgr.GetDatabase(store.Database)
+		s.Collection = store.Collection
+		s.Database = store.Database
+		s.Table = store.Table
+
+		if s.DbInstance == nil {
+			log.WithFields(log.Fields{
+				"store":    store.Collection,
+				"database": store.Database,
+				"table":    s.Table,
+			}).Error("store selected non-existing database configuration, so ignore.")
+			continue
+		}
+
 		// state file
 		fileName := fmt.Sprintf(
 			"%s.%s.%s.%s.state.seq",
@@ -64,11 +79,6 @@ func (sm *StoreManager) Initialize() error {
 		)
 
 		stateFilePath := filepath.Join(statePath, fileName)
-
-		s := CreateStore()
-		s.Collection = store.Collection
-		s.Database = store.Database
-		s.Table = store.Table
 		s.State = CreateStateStore(stateFilePath)
 
 		// Initializing and recoverying state for this store

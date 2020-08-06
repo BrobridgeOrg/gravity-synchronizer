@@ -8,12 +8,13 @@ type StoreConfig struct {
 
 type Store struct {
 	State      *StateStore
+	DbInstance *Database
 	Collection string `json:"collection"`
 	Database   string `json:"database"`
 	Table      string `json:"table"`
 }
 
-func CreateStore() *Store {
+func NewStore() *Store {
 	return &Store{}
 }
 

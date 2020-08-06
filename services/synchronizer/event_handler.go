@@ -2,7 +2,6 @@ package synchronizer
 
 import (
 	"encoding/json"
-	"errors"
 	app "gravity-synchronizer/app/interface"
 	"gravity-synchronizer/internal/projection"
 
@@ -283,18 +282,12 @@ func (eh *EventHandler) RecoveryStore(store *Store) error {
 		return nil
 	}
 
-	// Get dataase handle
-	db := eh.dbMgr.GetDatabase(store.Database)
-	if db == nil {
-		return errors.New("Not found database \"" + store.Database + "\"")
-	}
-
 	// truncate table
 	log.WithFields(log.Fields{
 		"table": store.Table,
 	}).Warn("Truncate table...")
 
-	err = db.Truncate(store.Table)
+	err = store.DbInstance.Truncate(store.Table)
 	if err != nil {
 		return err
 	}
@@ -307,7 +300,7 @@ func (eh *EventHandler) RecoveryStore(store *Store) error {
 	}).Warn("Recovering store...")
 
 	newSeq, err := eh.cacheStore.FetchSnapshot(store.Collection, func(data map[string]interface{}) error {
-		err := db.Import(store.Table, data)
+		err := store.DbInstance.Import(store.Table, data)
 		if err != nil {
 			log.Error(err)
 			return err
@@ -336,14 +329,8 @@ func (eh *EventHandler) RecoveryStore(store *Store) error {
 
 func (eh *EventHandler) ApplyStore(store *Store, sequence uint64, pj *projection.Projection) error {
 
-	// Get dataase handle
-	db := eh.dbMgr.GetDatabase(store.Database)
-	if db == nil {
-		return errors.New("Not found database \"" + store.Database + "\"")
-	}
-
 	// store data
-	err := db.ProcessData(store.Table, sequence, pj)
+	err := store.DbInstance.ProcessData(store.Table, sequence, pj)
 	if err != nil {
 		return err
 	}
