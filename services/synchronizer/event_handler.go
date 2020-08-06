@@ -161,8 +161,15 @@ func (eh *EventHandler) initEventBus() error {
 		"channel": "gravity.store.eventStored",
 		"startAt": eh.sequence,
 	}).Info("Subscribe to event bus")
+
+	startAt := eh.sequence
 	eb := eh.app.GetEventBus()
 	err := eb.On("gravity.store.eventStored", func(msg *stan.Msg) {
+
+		// Ignore the first message we have already
+		if startAt == msg.Sequence {
+			return
+		}
 
 		event := Event{
 			Sequence: msg.Sequence,
@@ -175,29 +182,7 @@ func (eh *EventHandler) initEventBus() error {
 		}
 
 		eh.incoming <- &event
-		/*
-			// Parse event
-			var pj projection.Projection
-			err := json.Unmarshal(msg.Data, &pj)
-			if err != nil {
-				return
-			}
-
-			log.WithFields(log.Fields{
-				"seq":        msg.Sequence,
-				"event":      pj.EventName,
-				"collection": pj.Collection,
-				"method":     pj.Method,
-			}).Info("Received event")
-
-			// Process
-			err = eh.ProcessEvent(msg.Sequence, &pj)
-			if err != nil {
-				log.Error(err)
-				return
-			}
-		*/
-	}, eh.sequence)
+	}, startAt)
 
 	if err != nil {
 		return err
