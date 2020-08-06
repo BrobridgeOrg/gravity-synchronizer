@@ -36,10 +36,16 @@ type ColumnDef struct {
 	Value       interface{}
 }
 
+type DBCommand struct {
+	QueryStr string
+	Args     map[string]interface{}
+}
+
 type Database struct {
-	name   string
-	dbType int
-	db     *sqlx.DB
+	name     string
+	dbType   int
+	db       *sqlx.DB
+	commands chan *DBCommand
 }
 
 func OpenDatabase(dbname string, info *DatabaseInfo) (*Database, error) {
@@ -94,11 +100,31 @@ func OpenDatabase(dbname string, info *DatabaseInfo) (*Database, error) {
 		return nil, err
 	}
 
-	return &Database{
-		name:   dbname,
-		dbType: dbType,
-		db:     db,
-	}, nil
+	db.SetMaxOpenConns(10)
+	db.SetMaxIdleConns(10)
+
+	database := &Database{
+		name:     dbname,
+		dbType:   dbType,
+		db:       db,
+		commands: make(chan *DBCommand, 2048),
+	}
+
+	go database.run()
+
+	return database, nil
+}
+
+func (database *Database) run() {
+	counter := 0
+	for {
+		select {
+		case cmd := <-database.commands:
+			database.db.NamedExec(cmd.QueryStr, cmd.Args)
+			counter++
+			log.Info(counter)
+		}
+	}
 }
 
 func (database *Database) ProcessData(table string, sequence uint64, pj *projection.Projection) error {
@@ -154,19 +180,27 @@ func (database *Database) UpdateRecord(table string, sequence uint64, pj *projec
 	}
 
 	// TODO: performance issue because do twice for each record
-
-	// Update
-	updated, err := database.update(table, recordDef)
+	err := database.insert(table, recordDef)
 	if err != nil {
 		return err
 	}
-
-	// Not exists
-	if !updated {
-		// Insert
-		return database.insert(table, recordDef)
+	_, err = database.update(table, recordDef)
+	if err != nil {
+		return err
 	}
+	/*
+		// Update
+		updated, err := database.update(table, recordDef)
+		if err != nil {
+			return err
+		}
 
+		// Not exists
+		if !updated {
+			// Insert
+			return database.insert(table, recordDef)
+		}
+	*/
 	return nil
 }
 
@@ -188,22 +222,31 @@ func (database *Database) update(table string, recordDef *RecordDef) (bool, erro
 	}
 
 	updateStr := strings.Join(updates, ",")
-	sqlStr := fmt.Sprintf(template, table, updateStr, recordDef.PrimaryColumn)
+	//sqlStr := fmt.Sprintf(template, table, updateStr, recordDef.PrimaryColumn)
+	_ = fmt.Sprintf(template, table, updateStr, recordDef.PrimaryColumn)
 
-	// Trying to update database
-	result, err := database.db.NamedExec(sqlStr, recordDef.Values)
-	if err != nil {
-		return false, err
-	}
+	//	database.db.NamedExec(sqlStr, recordDef.Values)
+	/*
+		database.commands <- &DBCommand{
+			QueryStr: sqlStr,
+			Args:     recordDef.Values,
+		}
+	*/
+	/*
+		result, err := database.db.NamedExec(sqlStr, recordDef.Values)
+		if err != nil {
+			return false, err
+		}
 
-	rows, err := result.RowsAffected()
-	if err != nil {
-		return false, err
-	}
+		rows, err := result.RowsAffected()
+		if err != nil {
+			return false, err
+		}
 
-	if rows > 0 {
-		return true, nil
-	}
+		if rows > 0 {
+			return true, nil
+		}
+	*/
 
 	return false, nil
 }
@@ -241,13 +284,22 @@ func (database *Database) insert(table string, recordDef *RecordDef) error {
 	// Preparing SQL string to insert
 	colsStr := strings.Join(colNames, ",")
 	valsStr := strings.Join(valNames, ",")
-	insertStr := fmt.Sprintf(template, table, colsStr, valsStr)
+	//insertStr := fmt.Sprintf(template, table, colsStr, valsStr)
+	_ = fmt.Sprintf(template, table, colsStr, valsStr)
 
-	_, err := database.db.NamedExec(insertStr, recordDef.Values)
-	if err != nil {
-		return err
-	}
-
+	//	database.db.NamedExec(insertStr, recordDef.Values)
+	/*
+		database.commands <- &DBCommand{
+			QueryStr: insertStr,
+			Args:     recordDef.Values,
+		}
+	*/
+	/*
+		_, err := database.db.NamedExec(insertStr, recordDef.Values)
+		if err != nil {
+			return err
+		}
+	*/
 	return nil
 }
 

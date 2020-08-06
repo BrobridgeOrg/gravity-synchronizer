@@ -1,13 +1,4 @@
 {
 	"trigger": [
-		{
-			"condition": {
-				"event": "userCreated"
-			},
-			"action": {
-				"type": "exporter",
-				"exporter": "myqueue"
-			}
-		}
 	]
 }

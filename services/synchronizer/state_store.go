@@ -5,6 +5,17 @@ import (
 	"os"
 )
 
+func Uint64ToBytes(n uint64) []byte {
+	b := make([]byte, 8)
+	binary.LittleEndian.PutUint64(b, uint64(n))
+
+	return b
+}
+
+func BytesToUint64(data []byte) uint64 {
+	return uint64(binary.LittleEndian.Uint64(data))
+}
+
 type StateStore struct {
 	StatePath string
 	File      *os.File
@@ -46,14 +57,11 @@ func (ss *StateStore) Load() error {
 
 func (ss *StateStore) Sync() error {
 
-	ss.File.Seek(0, os.SEEK_SET)
-
-	err := binary.Write(ss.File, binary.LittleEndian, ss.Sequence)
+	data := Uint64ToBytes(ss.Sequence)
+	_, err := ss.File.WriteAt(data, 0)
 	if err != nil {
 		return err
 	}
-
-	ss.File.Sync()
 
 	return nil
 }

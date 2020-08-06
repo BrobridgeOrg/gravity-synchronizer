@@ -10,6 +10,11 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+type Event struct {
+	Sequence   uint64
+	Projection projection.Projection
+}
+
 type EventHandler struct {
 	app        app.AppImpl
 	sequence   uint64
@@ -18,13 +23,16 @@ type EventHandler struct {
 	exMgr      *ExporterManager
 	storeMgr   *StoreManager
 	triggerMgr *TriggerManager
+
+	incoming chan *Event
 }
 
-func CreateEventHandler(a app.AppImpl) *EventHandler {
+func NewEventHandler(a app.AppImpl) *EventHandler {
 
 	eventHandler := &EventHandler{
 		app:      a,
 		sequence: 0,
+		incoming: make(chan *Event, 1024),
 	}
 
 	// Cache
@@ -86,7 +94,14 @@ func (eh *EventHandler) Initialize() error {
 	err = eh.storeMgr.Initialize()
 	if err != nil {
 		log.Error(err)
-		return nil
+		return err
+	}
+
+	// Initializing cache store
+	err = eh.cacheStore.Init()
+	if err != nil {
+		log.Error(err)
+		return err
 	}
 
 	// Try to receovery
@@ -115,7 +130,31 @@ func (eh *EventHandler) Initialize() error {
 	return eh.initEventBus()
 }
 
+func (eh *EventHandler) initEventEngine() {
+	for {
+		select {
+		case event := <-eh.incoming:
+
+			log.WithFields(log.Fields{
+				"seq":        event.Sequence,
+				"event":      event.Projection.EventName,
+				"collection": event.Projection.Collection,
+				"method":     event.Projection.Method,
+			}).Info("Received event")
+
+			// Process
+			err := eh.ProcessEvent(event.Sequence, &event.Projection)
+			if err != nil {
+				log.Error(err)
+			}
+
+		}
+	}
+}
+
 func (eh *EventHandler) initEventBus() error {
+
+	go eh.initEventEngine()
 
 	// Listen to event store
 	log.WithFields(log.Fields{
@@ -125,29 +164,39 @@ func (eh *EventHandler) initEventBus() error {
 	eb := eh.app.GetEventBus()
 	err := eb.On("gravity.store.eventStored", func(msg *stan.Msg) {
 
+		event := Event{
+			Sequence: msg.Sequence,
+		}
+
 		// Parse event
-		var pj projection.Projection
-		err := json.Unmarshal(msg.Data, &pj)
+		err := json.Unmarshal(msg.Data, &event.Projection)
 		if err != nil {
-			msg.Ack()
 			return
 		}
 
-		log.WithFields(log.Fields{
-			"seq":        msg.Sequence,
-			"event":      pj.EventName,
-			"collection": pj.Collection,
-			"method":     pj.Method,
-		}).Info("Received event")
+		eh.incoming <- &event
+		/*
+			// Parse event
+			var pj projection.Projection
+			err := json.Unmarshal(msg.Data, &pj)
+			if err != nil {
+				return
+			}
 
-		// Process
-		err = eh.ProcessEvent(msg.Sequence, &pj)
-		if err != nil {
-			log.Error(err)
-			return
-		}
+			log.WithFields(log.Fields{
+				"seq":        msg.Sequence,
+				"event":      pj.EventName,
+				"collection": pj.Collection,
+				"method":     pj.Method,
+			}).Info("Received event")
 
-		msg.Ack()
+			// Process
+			err = eh.ProcessEvent(msg.Sequence, &pj)
+			if err != nil {
+				log.Error(err)
+				return
+			}
+		*/
 	}, eh.sequence)
 
 	if err != nil {
@@ -189,6 +238,7 @@ func (eh *EventHandler) ProcessEvent(sequence uint64, pj *projection.Projection)
 			continue
 		}
 	}
+
 	return nil
 }
 

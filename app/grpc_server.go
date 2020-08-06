@@ -1,6 +1,7 @@
 package app
 
 import (
+	"errors"
 	"net"
 
 	log "github.com/sirupsen/logrus"
@@ -30,6 +31,10 @@ func (a *App) InitGRPCServer(host string) error {
 
 	// Register data source adapter service
 	synchronizerService := synchronizer.CreateService(app.AppImpl(a))
+	if synchronizerService == nil {
+		return errors.New("Failed to initialize service")
+	}
+
 	pb.RegisterSynchronizerServer(s, synchronizerService)
 	reflection.Register(s)
 

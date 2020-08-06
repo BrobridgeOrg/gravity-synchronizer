@@ -14,7 +14,8 @@ import (
 )
 
 type CacheStore struct {
-	app app.AppImpl
+	app    app.AppImpl
+	client *grpc.ClientConn
 }
 
 func CreateCacheStore(a app.AppImpl) *CacheStore {
@@ -23,26 +24,41 @@ func CreateCacheStore(a app.AppImpl) *CacheStore {
 	}
 }
 
-func (ccs *CacheStore) GetSnapshotState(collection string) (uint64, error) {
+func (ccs *CacheStore) Init() error {
+
+	address := viper.GetString("cache_store.host")
+
+	log.WithFields(log.Fields{
+		"address": address,
+	}).Info("Connecting to cache server...")
 
 	// Set up a connection to supervisor.
-	address := viper.GetString("cache_store.host")
-	conn, err := grpc.Dial(address, grpc.WithInsecure(), grpc.WithBlock())
+	conn, err := grpc.Dial(address, grpc.WithInsecure(), grpc.FailOnNonTempDialError(true), grpc.WithBlock())
 	if err != nil {
-		return 0, err
+		return err
 	}
-	defer conn.Close()
+
+	ccs.client = conn
+
+	return nil
+}
+
+func (ccs *CacheStore) GetSnapshotState(collection string) (uint64, error) {
+
+	log.WithFields(log.Fields{
+		"collection": collection,
+	}).Info("Getting snapshot state...")
 
 	request := &pb.GetSnapshotStateRequest{
 		Collection: collection,
 	}
 
 	// Preparing context
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 
 	// Publish
-	resp, err := pb.NewDataSnapshotClient(conn).GetSnapshotState(ctx, request)
+	resp, err := pb.NewDataSnapshotClient(ccs.client).GetSnapshotState(ctx, request)
 	if err != nil {
 		return 0, err
 	}

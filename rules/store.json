@@ -4,11 +4,6 @@
 			"collection": "users",
 			"database": "my_postgres",
 			"table": "users"
-		},
-		{
-			"collection": "users",
-			"database": "my_mysql",
-			"table": "users"
 		}
 	]
 }

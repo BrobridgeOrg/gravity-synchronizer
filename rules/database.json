@@ -3,18 +3,9 @@
 		"my_postgres": {
 			"type": "postgres",
 			"host": "0.0.0.0",
-			"port": 32805,
+			"port": 32768,
 			"secure": false,
 			"username": "postgres",
-			"password": "1qazXSW@",
-			"dbName": "gravity"
-		},
-		"my_mysql": {
-			"type": "mysql",
-			"host": "0.0.0.0",
-			"port": 32773,
-			"secure": false,
-			"username": "fred",
 			"password": "1qazXSW@",
 			"dbName": "gravity"
 		}

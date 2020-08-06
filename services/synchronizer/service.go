@@ -13,7 +13,7 @@ type Service struct {
 
 func CreateService(a app.AppImpl) *Service {
 
-	eventHandler := CreateEventHandler(a)
+	eventHandler := NewEventHandler(a)
 	if eventHandler == nil {
 		return nil
 	}
