@@ -185,19 +185,7 @@ func (database *Database) UpdateRecord(table string, sequence uint64, pj *projec
 	if err != nil {
 		return err
 	}
-	/*
-		// Update
-		updated, err := database.update(table, recordDef)
-		if err != nil {
-			return err
-		}
 
-		// Not exists
-		if !updated {
-			// Insert
-			return database.insert(table, recordDef)
-		}
-	*/
 	return nil
 }
 
@@ -220,29 +208,11 @@ func (database *Database) update(table string, recordDef *RecordDef) (bool, erro
 
 	updateStr := strings.Join(updates, ",")
 	sqlStr := fmt.Sprintf(template, table, updateStr, recordDef.PrimaryColumn)
-	//_ = fmt.Sprintf(template, table, updateStr, recordDef.PrimaryColumn)
-
-	//	database.db.NamedExec(sqlStr, recordDef.Values)
 
 	database.commands <- &DBCommand{
 		QueryStr: sqlStr,
 		Args:     recordDef.Values,
 	}
-	/*
-		result, err := database.db.NamedExec(sqlStr, recordDef.Values)
-		if err != nil {
-			return false, err
-		}
-
-		rows, err := result.RowsAffected()
-		if err != nil {
-			return false, err
-		}
-
-		if rows > 0 {
-			return true, nil
-		}
-	*/
 
 	return false, nil
 }
@@ -281,19 +251,42 @@ func (database *Database) insert(table string, recordDef *RecordDef) error {
 	colsStr := strings.Join(colNames, ",")
 	valsStr := strings.Join(valNames, ",")
 	insertStr := fmt.Sprintf(template, table, colsStr, valsStr)
-	//_ = fmt.Sprintf(template, table, colsStr, valsStr)
 
 	//	database.db.NamedExec(insertStr, recordDef.Values)
 	database.commands <- &DBCommand{
 		QueryStr: insertStr,
 		Args:     recordDef.Values,
 	}
-	/*
-		_, err := database.db.NamedExec(insertStr, recordDef.Values)
-		if err != nil {
-			return err
+
+	return nil
+}
+
+func (database *Database) DeleteRecord(table string, sequence uint64, pj *projection.Projection) error {
+
+	var template string
+	if database.dbType == DatabaseTypeMySQL {
+		template = "DELETE FROM `%s` WHERE `%s` = :primary_val"
+	} else {
+		template = `DELETE FROM "%s" WHERE "%s" = :primary_val`
+	}
+
+	for _, field := range pj.Fields {
+
+		// Primary key
+		if field.Primary == true {
+
+			sqlStr := fmt.Sprintf(template, table, field.Name)
+			database.commands <- &DBCommand{
+				QueryStr: sqlStr,
+				Args: map[string]interface{}{
+					"primary_val": field.Value,
+				},
+			}
+
+			break
 		}
-	*/
+	}
+
 	return nil
 }
 
@@ -328,35 +321,6 @@ func (database *Database) Import(table string, data map[string]interface{}) erro
 	_, err := database.db.NamedExec(insertStr, data)
 	if err != nil {
 		return err
-	}
-
-	return nil
-}
-
-func (database *Database) DeleteRecord(table string, sequence uint64, pj *projection.Projection) error {
-
-	var template string
-	if database.dbType == DatabaseTypeMySQL {
-		template = "DELETE FROM `%s` WHERE `%s` = :primary_val"
-	} else {
-		template = `DELETE FROM "%s" WHERE "%s" = :primary_val`
-	}
-
-	for _, field := range pj.Fields {
-
-		// Primary key
-		if field.Primary == true {
-
-			sqlStr := fmt.Sprintf(template, table, field.Name)
-			_, err := database.db.NamedExec(sqlStr, map[string]interface{}{
-				"primary_val": field.Value,
-			})
-			if err != nil {
-				return err
-			}
-
-			break
-		}
 	}
 
 	return nil
