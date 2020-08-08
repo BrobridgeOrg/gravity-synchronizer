@@ -1,8 +1,8 @@
 package exporter
 
 import (
-	"errors"
 	"fmt"
+	default_exporter "gravity-synchronizer/internal/exporter/default"
 	natssc "gravity-synchronizer/internal/exporter/nats-streaming"
 
 	"gravity-synchronizer/internal/projection"
@@ -40,14 +40,21 @@ func (exporter *Exporter) Connect(etype string, host string, port int, params ma
 	switch etype {
 	case "nats-streaming":
 		uri := fmt.Sprintf("%s:%d", host, port)
-		connector := natssc.CreateConnector(uri, params)
+		connector := natssc.NewConnector(uri, params)
 		exporter.Connector = ConnectorImpl(connector)
-		err := connector.Connect()
+		err := connector.Init()
 		if err != nil {
 			return err
 		}
 	default:
-		return errors.New(fmt.Sprintf("No such type \"%s\" supported.", etype))
+		uri := fmt.Sprintf("%s:%d", host, port)
+		connector := default_exporter.NewConnector(uri, params)
+		exporter.Connector = ConnectorImpl(connector)
+		err := connector.Init()
+		if err != nil {
+			return err
+		}
+		//		return errors.New(fmt.Sprintf("No such type \"%s\" supported.", etype))
 	}
 
 	return nil

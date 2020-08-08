@@ -20,7 +20,7 @@ type Connector struct {
 	output chan *projection.Projection
 }
 
-func CreateConnector(host string, params map[string]interface{}) *Connector {
+func NewConnector(host string, params map[string]interface{}) *Connector {
 
 	clusterID, ok := params["cluster_id"]
 	if !ok {
@@ -50,7 +50,7 @@ func CreateConnector(host string, params map[string]interface{}) *Connector {
 	}
 }
 
-func (connector *Connector) Connect() error {
+func (connector *Connector) Init() error {
 
 	log.WithFields(log.Fields{
 		"host":       connector.host,

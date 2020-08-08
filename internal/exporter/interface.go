@@ -3,7 +3,7 @@ package exporter
 import "gravity-synchronizer/internal/projection"
 
 type ConnectorImpl interface {
-	Connect() error
+	Init() error
 	Close()
 	Send(uint64, *projection.Projection) error
 }
