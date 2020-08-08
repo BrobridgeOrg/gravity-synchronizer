@@ -46,7 +46,7 @@ func (connector *Connector) Init() error {
 
 	options := &pool.Options{
 		InitCap:     8,
-		MaxCap:      128,
+		MaxCap:      16,
 		DialTimeout: time.Second * 20,
 		IdleTimeout: time.Second * 60,
 	}
@@ -54,11 +54,11 @@ func (connector *Connector) Init() error {
 	// Initialize connection pool
 	p, err := pool.NewGRPCPool(connector.host, options, grpc.WithInsecure())
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	if p == nil {
-		log.Fatal("Failed to create pool")
+		return err
 	}
 
 	connector.pool = p
@@ -87,6 +87,7 @@ func (connector *Connector) Emit(eventName string, data []byte) error {
 	}
 
 	client := exporter.NewExporterClient(conn)
+	connector.pool.Put(conn)
 
 	_, err = client.SendEvent(context.Background(), &exporter.SendEventRequest{
 		Channel: eventName,

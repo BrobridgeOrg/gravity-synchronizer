@@ -1,12 +1,10 @@
 {
 	"exporters": {
 		"myqueue": {
-			"type": "nats-streaming",
 			"host": "0.0.0.0",
-			"port": 32803,
+			"port": 44144,
 			"params": {
-				"cluster_id": "test-cluster",
-				"queue": "example.userSynced"
+				"channel": "example.userSynced"
 			}
 		}
 	}
