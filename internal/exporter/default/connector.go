@@ -89,13 +89,20 @@ func (connector *Connector) Emit(eventName string, data []byte) error {
 	client := exporter.NewExporterClient(conn)
 	connector.pool.Put(conn)
 
-	_, err = client.SendEvent(context.Background(), &exporter.SendEventRequest{
+	reply, err := client.SendEvent(context.Background(), &exporter.SendEventRequest{
 		Channel: eventName,
 		Payload: data,
 	})
 
 	if err != nil {
+		log.Error(err)
 		return err
+	}
+
+	if !reply.Success {
+		log.WithFields(log.Fields{
+			"reason": reply.Reason,
+		}).Error("Exporter error")
 	}
 
 	return nil
