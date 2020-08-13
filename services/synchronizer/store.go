@@ -1,17 +1,21 @@
 package synchronizer
 
-import "gravity-synchronizer/internal/projection"
+import (
+	"gravity-synchronizer/internal/projection"
+	"gravity-synchronizer/internal/transmitter"
+)
 
 type StoreConfig struct {
 	Stores []Store `json:"store"`
 }
 
 type Store struct {
-	State      *StateStore
-	DbInstance *Database
-	Collection string `json:"collection"`
-	Database   string `json:"database"`
-	Table      string `json:"table"`
+	State       *StateStore
+	Transmitter *transmitter.Transmitter
+	DbInstance  *Database
+	Collection  string `json:"collection"`
+	Database    string `json:"database"`
+	Table       string `json:"table"`
 }
 
 func NewStore() *Store {

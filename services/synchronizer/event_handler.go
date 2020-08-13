@@ -15,13 +15,14 @@ type Event struct {
 }
 
 type EventHandler struct {
-	app        app.AppImpl
-	sequence   uint64
-	cacheStore *CacheStore
-	dbMgr      *DatabaseManager
-	exMgr      *ExporterManager
-	storeMgr   *StoreManager
-	triggerMgr *TriggerManager
+	app            app.AppImpl
+	sequence       uint64
+	cacheStore     *CacheStore
+	dbMgr          *DatabaseManager
+	exMgr          *ExporterManager
+	storeMgr       *StoreManager
+	triggerMgr     *TriggerManager
+	transmitterMgr *TransmitterManager
 
 	incoming chan *Event
 }
@@ -42,6 +43,15 @@ func NewEventHandler(a app.AppImpl) *EventHandler {
 	}
 
 	eventHandler.cacheStore = cacheStore
+
+	// Transmitter manager
+	tm := NewTransmitterManager()
+	if tm == nil {
+		log.Error("Failed to create transmitter manager")
+		return nil
+	}
+
+	eventHandler.transmitterMgr = tm
 
 	// Database manager
 	dm := CreateDatabaseManager()
@@ -75,8 +85,15 @@ func NewEventHandler(a app.AppImpl) *EventHandler {
 
 func (eh *EventHandler) Initialize() error {
 
+	// Load transmitter configs and initialize
+	err := eh.transmitterMgr.Initialize()
+	if err != nil {
+		log.Error(err)
+		return err
+	}
+
 	// Load Database configs and establish connection
-	err := eh.dbMgr.Initialize()
+	err = eh.dbMgr.Initialize()
 	if err != nil {
 		log.Error(err)
 		return err
@@ -330,7 +347,8 @@ func (eh *EventHandler) RecoveryStore(store *Store) error {
 func (eh *EventHandler) ApplyStore(store *Store, sequence uint64, pj *projection.Projection) error {
 
 	// store data
-	err := store.DbInstance.ProcessData(store.Table, sequence, pj)
+	//err := store.DbInstance.ProcessData(store.Table, sequence, pj)
+	err := store.Transmitter.ProcessData(store.Table, sequence, pj)
 	if err != nil {
 		return err
 	}

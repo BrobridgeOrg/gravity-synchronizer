@@ -55,6 +55,7 @@ func (sm *StoreManager) Initialize() error {
 	for _, store := range config.Stores {
 
 		s := NewStore()
+		s.Transmitter = sm.EventHandler.transmitterMgr.GetTransmitter(store.Database)
 		s.DbInstance = sm.EventHandler.dbMgr.GetDatabase(store.Database)
 		s.Collection = store.Collection
 		s.Database = store.Database
