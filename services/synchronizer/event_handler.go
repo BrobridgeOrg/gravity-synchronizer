@@ -18,7 +18,6 @@ type EventHandler struct {
 	app            app.AppImpl
 	sequence       uint64
 	cacheStore     *CacheStore
-	dbMgr          *DatabaseManager
 	exMgr          *ExporterManager
 	storeMgr       *StoreManager
 	triggerMgr     *TriggerManager
@@ -53,18 +52,9 @@ func NewEventHandler(a app.AppImpl) *EventHandler {
 
 	eventHandler.transmitterMgr = tm
 
-	// Database manager
-	dm := CreateDatabaseManager()
-	if dm == nil {
-		log.Error("Failed to create database manager")
-		return nil
-	}
-
-	eventHandler.dbMgr = dm
-
 	// Exporter manager
 	em := CreateExporterManager()
-	if dm == nil {
+	if em == nil {
 		log.Error("Failed to create exporter manager")
 		return nil
 	}
@@ -87,13 +77,6 @@ func (eh *EventHandler) Initialize() error {
 
 	// Load transmitter configs and initialize
 	err := eh.transmitterMgr.Initialize()
-	if err != nil {
-		log.Error(err)
-		return err
-	}
-
-	// Load Database configs and establish connection
-	err = eh.dbMgr.Initialize()
 	if err != nil {
 		log.Error(err)
 		return err
@@ -304,7 +287,7 @@ func (eh *EventHandler) RecoveryStore(store *Store) error {
 		"table": store.Table,
 	}).Warn("Truncate table...")
 
-	err = store.DbInstance.Truncate(store.Table)
+	err = store.Transmitter.Truncate(store.Table)
 	if err != nil {
 		return err
 	}
@@ -317,7 +300,7 @@ func (eh *EventHandler) RecoveryStore(store *Store) error {
 	}).Warn("Recovering store...")
 
 	newSeq, err := eh.cacheStore.FetchSnapshot(store.Collection, func(data map[string]interface{}) error {
-		err := store.DbInstance.Import(store.Table, data)
+		err := store.Transmitter.Insert(store.Table, data)
 		if err != nil {
 			log.Error(err)
 			return err
@@ -347,7 +330,6 @@ func (eh *EventHandler) RecoveryStore(store *Store) error {
 func (eh *EventHandler) ApplyStore(store *Store, sequence uint64, pj *projection.Projection) error {
 
 	// store data
-	//err := store.DbInstance.ProcessData(store.Table, sequence, pj)
 	err := store.Transmitter.ProcessData(store.Table, sequence, pj)
 	if err != nil {
 		return err

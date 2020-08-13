@@ -12,10 +12,10 @@ type StoreConfig struct {
 type Store struct {
 	State       *StateStore
 	Transmitter *transmitter.Transmitter
-	DbInstance  *Database
-	Collection  string `json:"collection"`
-	Database    string `json:"database"`
-	Table       string `json:"table"`
+	//	DbInstance  *Database
+	Collection string `json:"collection"`
+	Database   string `json:"database"`
+	Table      string `json:"table"`
 }
 
 func NewStore() *Store {

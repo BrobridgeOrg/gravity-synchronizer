@@ -84,13 +84,73 @@ func (t *Transmitter) Init() error {
 	return nil
 }
 
+func (t *Transmitter) Insert(table string, data map[string]interface{}) error {
+
+	record := &transmitter.Record{
+		Table:  table,
+		Method: transmitter.Method_INSERT,
+		Fields: make([]*transmitter.Field, 0, len(data)),
+	}
+
+	for key, value := range data {
+
+		// Convert value to protobuf format
+		v, err := t.getValue(value)
+		if err != nil {
+			log.Error(err)
+			continue
+		}
+
+		record.Fields = append(record.Fields, &transmitter.Field{
+			Name:  key,
+			Value: v,
+		})
+	}
+
+	t.write <- record
+
+	return nil
+}
+
+func (t *Transmitter) Truncate(table string) error {
+
+	conn, err := t.pool.Get()
+	if err != nil {
+		return err
+	}
+
+	client := transmitter.NewTransmitterClient(conn)
+	t.pool.Put(conn)
+
+	reply, err := client.Truncate(context.Background(), &transmitter.TruncateRequest{
+		Table: table,
+	})
+	if err != nil {
+		log.Error(err)
+		return err
+	}
+
+	if !reply.Success {
+		log.WithFields(log.Fields{
+			"reason": reply.Reason,
+		}).Error("Failed to truncate")
+	}
+
+	return nil
+}
+
 func (t *Transmitter) ProcessData(table string, sequence uint64, pj *projection.Projection) error {
 
 	record := &transmitter.Record{
 		EventName: pj.EventName,
 		Table:     table,
-		Method:    pj.Method,
 		Fields:    make([]*transmitter.Field, 0, len(pj.Fields)),
+	}
+
+	if pj.Method == "delete" {
+		record.Method = transmitter.Method_DELETE
+	} else {
+		record.Method = transmitter.Method_UPDATE
 	}
 
 	for _, field := range pj.Fields {
