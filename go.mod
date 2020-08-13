@@ -3,7 +3,7 @@ module gravity-synchronizer
 go 1.13
 
 require (
-	github.com/BrobridgeOrg/gravity-api v0.0.0-20200808191818-646e409ed0b8
+	github.com/BrobridgeOrg/gravity-api v0.0.0-20200813150216-4f3ba18b8084
 	github.com/denisenkom/go-mssqldb v0.0.0-20200206145737-bbfc9a55622e
 	github.com/flyaways/pool v1.0.1 // indirect
 	github.com/go-sql-driver/mysql v1.5.0
