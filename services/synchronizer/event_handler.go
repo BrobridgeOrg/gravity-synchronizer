@@ -10,6 +10,7 @@ import (
 )
 
 type Event struct {
+	msg        *stan.Msg
 	Sequence   uint64
 	Projection projection.Projection
 }
@@ -31,7 +32,7 @@ func NewEventHandler(a app.AppImpl) *EventHandler {
 	eventHandler := &EventHandler{
 		app:      a,
 		sequence: 0,
-		incoming: make(chan *Event, 1024),
+		incoming: make(chan *Event),
 	}
 
 	// Cache
@@ -142,7 +143,7 @@ func (eh *EventHandler) initEventEngine() {
 			}).Info("Received event")
 
 			// Process
-			err := eh.ProcessEvent(event.Sequence, &event.Projection)
+			err := eh.ProcessEvent(event)
 			if err != nil {
 				log.Error(err)
 			}
@@ -167,16 +168,19 @@ func (eh *EventHandler) initEventBus() error {
 
 		// Ignore the first message we have already
 		if startAt == msg.Sequence {
+			msg.Ack()
 			return
 		}
 
 		event := Event{
+			msg:      msg,
 			Sequence: msg.Sequence,
 		}
 
 		// Parse event
 		err := json.Unmarshal(msg.Data, &event.Projection)
 		if err != nil {
+			msg.Ack()
 			return
 		}
 
@@ -194,16 +198,16 @@ func (eh *EventHandler) GetApp() app.AppImpl {
 	return eh.app
 }
 
-func (eh *EventHandler) ProcessEvent(sequence uint64, pj *projection.Projection) error {
+func (eh *EventHandler) ProcessEvent(event *Event) error {
 
 	// Data store
 	for _, store := range eh.storeMgr.Stores {
-		if store.IsMatch(pj) == false {
+		if store.IsMatch(&event.Projection) == false {
 			continue
 		}
 
 		// Apply action for this store
-		err := eh.ApplyStore(store, sequence, pj)
+		err := eh.ApplyStore(store, event)
 		if err != nil {
 			log.Error(err)
 			continue
@@ -212,11 +216,11 @@ func (eh *EventHandler) ProcessEvent(sequence uint64, pj *projection.Projection)
 
 	// Trigger
 	for _, trigger := range eh.triggerMgr.Triggers {
-		if trigger.IsMatch(pj) == false {
+		if trigger.IsMatch(&event.Projection) == false {
 			continue
 		}
 
-		err := eh.ApplyTrigger(trigger, sequence, pj)
+		err := eh.ApplyTrigger(trigger, event.Sequence, &event.Projection)
 		if err != nil {
 			log.Error(err)
 			continue
@@ -300,7 +304,14 @@ func (eh *EventHandler) RecoveryStore(store *Store) error {
 	}).Warn("Recovering store...")
 
 	newSeq, err := eh.cacheStore.FetchSnapshot(store.Collection, func(data map[string]interface{}) error {
-		err := store.Transmitter.Insert(store.Table, data)
+
+		err := store.Transmitter.Insert(store.Table, data, func(err error) {
+			if err != nil {
+				log.Error(err)
+				return
+			}
+		})
+
 		if err != nil {
 			log.Error(err)
 			return err
@@ -327,23 +338,23 @@ func (eh *EventHandler) RecoveryStore(store *Store) error {
 	return nil
 }
 
-func (eh *EventHandler) ApplyStore(store *Store, sequence uint64, pj *projection.Projection) error {
+func (eh *EventHandler) ApplyStore(store *Store, event *Event) error {
 
 	// store data
-	err := store.Transmitter.ProcessData(store.Table, sequence, pj)
+	err := store.Transmitter.ProcessData(store.Table, event.Sequence, &event.Projection)
 	if err != nil {
 		return err
 	}
 
 	// Update state
-	store.State.Sequence = sequence
+	store.State.Sequence = event.Sequence
 	err = store.State.Sync()
 	if err != nil {
 		log.Error(err)
 		return err
 	}
 
-	eh.sequence = sequence
+	eh.sequence = event.Sequence
 
 	return nil
 }

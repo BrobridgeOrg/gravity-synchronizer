@@ -22,6 +22,8 @@ var (
 	NotUnsignedIntegerErr = errors.New("Not unisgned integer")
 	NotIntegerErr         = errors.New("Not integer")
 	NotFloatErr           = errors.New("Not float")
+
+	TransmitterErr = errors.New("Transmitter error")
 )
 
 type Transmitter struct {
@@ -30,16 +32,13 @@ type Transmitter struct {
 	port    int
 	channel string
 	pool    *pool.GRPCPool
-
-	write chan *transmitter.Record
 }
 
 func NewTransmitter(name string, host string, port int) *Transmitter {
 	return &Transmitter{
-		name:  name,
-		host:  host,
-		port:  port,
-		write: make(chan *transmitter.Record, 2048),
+		name: name,
+		host: host,
+		port: port,
 	}
 }
 
@@ -71,20 +70,10 @@ func (t *Transmitter) Init() error {
 
 	t.pool = p
 
-	go func() {
-
-		for {
-			select {
-			case record := <-t.write:
-				go t.handle(record)
-			}
-		}
-	}()
-
 	return nil
 }
 
-func (t *Transmitter) Insert(table string, data map[string]interface{}) error {
+func (t *Transmitter) Insert(table string, data map[string]interface{}, callback func(error)) error {
 
 	record := &transmitter.Record{
 		Table:  table,
@@ -107,9 +96,7 @@ func (t *Transmitter) Insert(table string, data map[string]interface{}) error {
 		})
 	}
 
-	t.write <- record
-
-	return nil
+	return t.handle(record)
 }
 
 func (t *Transmitter) Truncate(table string) error {
@@ -134,6 +121,7 @@ func (t *Transmitter) Truncate(table string) error {
 		log.WithFields(log.Fields{
 			"reason": reply.Reason,
 		}).Error("Failed to truncate")
+		return TransmitterErr
 	}
 
 	return nil
@@ -169,9 +157,7 @@ func (t *Transmitter) ProcessData(table string, sequence uint64, pj *projection.
 		})
 	}
 
-	t.write <- record
-
-	return nil
+	return t.handle(record)
 }
 
 func (t *Transmitter) handle(record *transmitter.Record) error {
@@ -194,6 +180,7 @@ func (t *Transmitter) handle(record *transmitter.Record) error {
 		log.WithFields(log.Fields{
 			"reason": reply.Reason,
 		}).Error("Transmitter error")
+		return TransmitterErr
 	}
 
 	return nil
