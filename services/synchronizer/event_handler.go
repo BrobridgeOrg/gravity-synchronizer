@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	app "gravity-synchronizer/app/interface"
 	"gravity-synchronizer/internal/projection"
+	"sync"
 
 	"github.com/nats-io/stan.go"
 	log "github.com/sirupsen/logrus"
@@ -23,8 +24,6 @@ type EventHandler struct {
 	storeMgr       *StoreManager
 	triggerMgr     *TriggerManager
 	transmitterMgr *TransmitterManager
-
-	incoming chan *Event
 }
 
 func NewEventHandler(a app.AppImpl) *EventHandler {
@@ -32,7 +31,6 @@ func NewEventHandler(a app.AppImpl) *EventHandler {
 	eventHandler := &EventHandler{
 		app:      a,
 		sequence: 0,
-		incoming: make(chan *Event),
 	}
 
 	// Cache
@@ -130,31 +128,7 @@ func (eh *EventHandler) Initialize() error {
 	return eh.initEventBus()
 }
 
-func (eh *EventHandler) initEventEngine() {
-	for {
-		select {
-		case event := <-eh.incoming:
-
-			log.WithFields(log.Fields{
-				"seq":        event.Sequence,
-				"event":      event.Projection.EventName,
-				"collection": event.Projection.Collection,
-				"method":     event.Projection.Method,
-			}).Info("Received event")
-
-			// Process
-			err := eh.ProcessEvent(event)
-			if err != nil {
-				log.Error(err)
-			}
-
-		}
-	}
-}
-
 func (eh *EventHandler) initEventBus() error {
-
-	go eh.initEventEngine()
 
 	// Listen to event store
 	log.WithFields(log.Fields{
@@ -184,7 +158,19 @@ func (eh *EventHandler) initEventBus() error {
 			return
 		}
 
-		eh.incoming <- &event
+		log.WithFields(log.Fields{
+			"seq":        event.Sequence,
+			"event":      event.Projection.EventName,
+			"collection": event.Projection.Collection,
+			"method":     event.Projection.Method,
+		}).Info("Received event")
+
+		// Process
+		err = eh.ProcessEvent(&event)
+		if err != nil {
+			log.Error(err)
+		}
+
 	}, startAt)
 
 	if err != nil {
@@ -200,19 +186,31 @@ func (eh *EventHandler) GetApp() app.AppImpl {
 
 func (eh *EventHandler) ProcessEvent(event *Event) error {
 
+	var wg sync.WaitGroup
+
 	// Data store
 	for _, store := range eh.storeMgr.Stores {
 		if store.IsMatch(&event.Projection) == false {
 			continue
 		}
 
-		// Apply action for this store
-		err := eh.ApplyStore(store, event)
-		if err != nil {
-			log.Error(err)
-			continue
-		}
+		wg.Add(1)
+
+		go func(store *Store) {
+
+			defer wg.Done()
+
+			err := store.Handle(event)
+			if err != nil {
+				log.Error(err)
+				return
+			}
+		}(store)
 	}
+
+	wg.Wait()
+
+	eh.sequence = event.Sequence
 
 	// Trigger
 	for _, trigger := range eh.triggerMgr.Triggers {
@@ -334,27 +332,6 @@ func (eh *EventHandler) RecoveryStore(store *Store) error {
 	if store.State.Sequence > eh.sequence {
 		eh.sequence = store.State.Sequence
 	}
-
-	return nil
-}
-
-func (eh *EventHandler) ApplyStore(store *Store, event *Event) error {
-
-	// store data
-	err := store.Transmitter.ProcessData(store.Table, event.Sequence, &event.Projection)
-	if err != nil {
-		return err
-	}
-
-	// Update state
-	store.State.Sequence = event.Sequence
-	err = store.State.Sync()
-	if err != nil {
-		log.Error(err)
-		return err
-	}
-
-	eh.sequence = event.Sequence
 
 	return nil
 }

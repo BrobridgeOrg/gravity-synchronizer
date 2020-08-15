@@ -30,6 +30,24 @@ func (store *Store) IsMatch(pj *projection.Projection) bool {
 	return true
 }
 
+func (store *Store) Handle(event *Event) error {
+
+	// store data
+	err := store.Transmitter.ProcessData(store.Table, event.Sequence, &event.Projection)
+	if err != nil {
+		return err
+	}
+
+	// Update state
+	store.State.Sequence = event.Sequence
+	err = store.State.Sync()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (store *Store) Recovery() error {
 
 	return nil
