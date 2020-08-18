@@ -169,6 +169,8 @@ func (eh *EventHandler) initEventBus() error {
 		err = eh.ProcessEvent(&event)
 		if err != nil {
 			log.Error(err)
+		} else {
+			msg.Ack()
 		}
 
 	}, startAt)
@@ -322,11 +324,7 @@ func (eh *EventHandler) RecoveryStore(store *Store) error {
 	}
 
 	// Update state
-	store.State.Sequence = newSeq
-	err = store.State.Sync()
-	if err != nil {
-		log.Error(err)
-	}
+	store.UpdateSequence(newSeq)
 
 	// Update global sequence
 	if store.State.Sequence > eh.sequence {

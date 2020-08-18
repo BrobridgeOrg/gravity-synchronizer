@@ -39,13 +39,14 @@ func (store *Store) Handle(event *Event) error {
 	}
 
 	// Update state
-	store.State.Sequence = event.Sequence
-	err = store.State.Sync()
-	if err != nil {
-		return err
-	}
+	return store.UpdateSequence(event.Sequence)
+}
 
-	return nil
+func (store *Store) UpdateSequence(seq uint64) error {
+
+	store.State.Sequence = seq
+
+	return store.State.Sync()
 }
 
 func (store *Store) Recovery() error {

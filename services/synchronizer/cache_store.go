@@ -99,7 +99,6 @@ func (ccs *CacheStore) FetchSnapshot(collection string, fn func(map[string]inter
 		}
 		if err != nil {
 			log.Error(err)
-
 		}
 
 		seq = packet.Sequence
