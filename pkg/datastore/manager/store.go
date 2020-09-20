@@ -169,13 +169,10 @@ func (store *Store) Write(data []byte) (uint64, error) {
 	store.counter.Increase(1)
 
 	// Preparing key-value
-	batch := gorocksdb.NewWriteBatch()
-	defer batch.Destroy()
 	key := Uint64ToBytes(seq)
-	batch.PutCF(cfHandle, key, data)
 
 	// Write
-	err = store.db.Write(store.wo, batch)
+	err = store.db.PutCF(store.wo, cfHandle, key, data)
 	if err != nil {
 		return 0, err
 	}

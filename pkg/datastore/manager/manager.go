@@ -28,7 +28,9 @@ func NewManager(a app.App) *Manager {
 func (manager *Manager) Init() error {
 
 	// Preparing database path
-	manager.dbPath = viper.GetString("datastore.path")
+	if len(manager.dbPath) == 0 {
+		manager.dbPath = viper.GetString("datastore.path")
+	}
 
 	log.WithFields(log.Fields{
 		"path": manager.dbPath,
@@ -45,7 +47,7 @@ func (manager *Manager) Init() error {
 	options.SetEnablePipelinedWrite(true)
 	options.SetAllowConcurrentMemtableWrites(true)
 	options.SetOptimizeFiltersForHits(true)
-	options.SetPrefixExtractor(gorocksdb.NewFixedPrefixTransform(2))
+	options.SetNumLevels(4)
 
 	blockBasedTableOptions := gorocksdb.NewDefaultBlockBasedTableOptions()
 	blockBasedTableOptions.SetBlockSizeDeviation(5)
