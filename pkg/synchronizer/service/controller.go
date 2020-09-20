@@ -71,3 +71,25 @@ func (synchronizer *Synchronizer) RegisterClient() error {
 
 	return nil
 }
+
+func (synchronizer *Synchronizer) GetPipelines() ([]uint64, error) {
+
+	// register synchronizer
+	grpcConn, err := synchronizer.controllerConns.Get()
+	if err != nil {
+		return nil, err
+	}
+
+	client := controller.NewControllerClient(grpcConn)
+
+	request := &controller.GetPipelinesRequest{
+		ClientID: synchronizer.clientID,
+	}
+
+	reply, err := client.GetPipelines(context.Background(), request)
+	if err != nil {
+		return nil, err
+	}
+
+	return reply.Pipelines, nil
+}

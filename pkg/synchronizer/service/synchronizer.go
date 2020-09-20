@@ -64,10 +64,37 @@ func (synchronizer *Synchronizer) Init() error {
 		return err
 	}
 
+	// Recovery subscriptions
+	err = synchronizer.recoverySubscriptions()
+	if err != nil {
+		return err
+	}
+
 	// register synchronizer
 	err = synchronizer.RegisterClient()
 	if err != nil {
 		return err
+	}
+
+	// TODO: health checks
+
+	return nil
+}
+
+func (synchronizer *Synchronizer) recoverySubscriptions() error {
+
+	log.Info("Attempt to recovery pipeline subscriptions")
+
+	pipelines, err := synchronizer.GetPipelines()
+	if err != nil {
+		return err
+	}
+
+	for _, pipelineID := range pipelines {
+		err := synchronizer.AssignPipeline(pipelineID)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
