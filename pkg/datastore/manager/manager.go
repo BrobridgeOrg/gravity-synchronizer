@@ -3,7 +3,6 @@ package datastore
 import (
 	"os"
 
-	"github.com/BrobridgeOrg/gravity-synchronizer/pkg/app"
 	"github.com/BrobridgeOrg/gravity-synchronizer/pkg/datastore"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
@@ -11,16 +10,14 @@ import (
 )
 
 type Manager struct {
-	app    app.App
 	dbPath string
 	stores map[string]*Store
 
 	options *gorocksdb.Options
 }
 
-func NewManager(a app.App) *Manager {
+func NewManager() *Manager {
 	return &Manager{
-		app:    a,
 		stores: make(map[string]*Store),
 	}
 }

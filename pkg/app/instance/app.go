@@ -25,7 +25,7 @@ func NewAppInstance() *AppInstance {
 	a.synchronizer = synchronizer_service.NewSynchronizer(a)
 	a.muxManager = mux_manager.NewMuxManager(a)
 	a.grpcServer = grpc_server.NewServer(a)
-	a.storeManager = store_manager.NewManager(a)
+	a.storeManager = store_manager.NewManager()
 
 	return a
 }

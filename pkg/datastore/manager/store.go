@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sync"
 
+	"github.com/BrobridgeOrg/gravity-synchronizer/pkg/datastore"
 	log "github.com/sirupsen/logrus"
 	"github.com/tecbot/gorocksdb"
 )
@@ -18,6 +20,9 @@ type Store struct {
 	ro        *gorocksdb.ReadOptions
 	wo        *gorocksdb.WriteOptions
 	counter   Counter
+
+	subscriptions sync.Map
+	//	mutex         sync.RWMutex
 }
 
 func NewStore(manager *Manager, storeName string) (*Store, error) {
@@ -29,7 +34,7 @@ func NewStore(manager *Manager, storeName string) (*Store, error) {
 	// Initializing options
 	ro := gorocksdb.NewDefaultReadOptions()
 	ro.SetFillCache(false)
-	ro.SetTailing(true)
+	//	ro.SetTailing(true)
 	wo := gorocksdb.NewDefaultWriteOptions()
 
 	store := &Store{
@@ -38,6 +43,7 @@ func NewStore(manager *Manager, storeName string) (*Store, error) {
 		cfHandles: make(map[string]*gorocksdb.ColumnFamilyHandle),
 		ro:        ro,
 		wo:        wo,
+		//		subscriptions: make(map[*Subscription]*Subscription),
 	}
 
 	err := store.openDatabase()
@@ -95,15 +101,53 @@ func (store *Store) openDatabase() error {
 	return nil
 }
 
-func (store *Store) initializeColumnFamily() error {
+func (store *Store) Close() {
 
-	if _, ok := store.cfHandles["events"]; !ok {
-		handle, err := store.db.CreateColumnFamily(store.manager.options, "events")
+	/*
+		store.mutex.Lock()
+		defer store.mutex.Unlock()
+		for _, sub := range store.subscriptions {
+			sub.Close()
+		}
+	*/
+	store.subscriptions.Range(func(k, v interface{}) bool {
+		sub := v.(*Subscription)
+		sub.Close()
+		return true
+	})
+
+	store.db.Close()
+}
+
+func (store *Store) assertColumnFamily(name string) (*gorocksdb.ColumnFamilyHandle, error) {
+
+	handle, ok := store.cfHandles[name]
+	if !ok {
+		handle, err := store.db.CreateColumnFamily(store.manager.options, name)
 		if err != nil {
-			return err
+			return nil, err
 		}
 
-		store.cfHandles["events"] = handle
+		store.cfHandles[name] = handle
+
+		return handle, nil
+	}
+
+	return handle, nil
+}
+
+func (store *Store) initializeColumnFamily() error {
+
+	// Assert events
+	_, err := store.assertColumnFamily("events")
+	if err != nil {
+		return err
+	}
+
+	// Assert states
+	_, err = store.assertColumnFamily("states")
+	if err != nil {
+		return err
 	}
 
 	return nil
@@ -177,5 +221,123 @@ func (store *Store) Write(data []byte) (uint64, error) {
 		return 0, err
 	}
 
+	// Publish event to all of subscription which is waiting for
+	store.subscriptions.Range(func(k, v interface{}) bool {
+		sub := v.(*Subscription)
+
+		if sub.tailing {
+			sub.Publish(seq, data)
+		}
+
+		return true
+	})
+
 	return seq, nil
+}
+
+func (store *Store) GetLastSequence() uint64 {
+	return store.counter.Count() - 1
+}
+
+func (store *Store) GetDurableState(durableName string) (uint64, error) {
+
+	cfHandle, err := store.GetColumnFamailyHandle("states")
+	if err != nil {
+		return 0, errors.New("Not found \"states\" column family")
+	}
+
+	// Write
+	value, err := store.db.GetCF(store.ro, cfHandle, []byte(durableName))
+	if err != nil {
+		return 0, err
+	}
+
+	defer value.Free()
+
+	if !value.Exists() {
+		return 0, nil
+	}
+
+	lastSeq := BytesToUint64(value.Data())
+
+	return lastSeq, nil
+}
+
+func (store *Store) UpdateDurableState(durableName string, lastSeq uint64) error {
+
+	cfHandle, err := store.GetColumnFamailyHandle("states")
+	if err != nil {
+		return errors.New("Not found \"states\" column family")
+	}
+
+	value := Uint64ToBytes(lastSeq)
+
+	// Write
+	err = store.db.PutCF(store.wo, cfHandle, []byte(durableName), value)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (store *Store) registerSubscription(sub *Subscription) error {
+	/*
+		store.mutex.Lock()
+		store.subscriptions[sub] = sub
+		store.mutex.Unlock()
+	*/
+	store.subscriptions.Store(sub, sub)
+
+	return nil
+}
+
+func (store *Store) unregisterSubscription(sub *Subscription) error {
+
+	store.subscriptions.Delete(sub)
+	/*
+		store.mutex.Lock()
+		delete(store.subscriptions, sub)
+		store.mutex.Unlock()
+	*/
+	return nil
+}
+
+func (store *Store) Subscribe(startAt uint64, fn datastore.StoreHandler) (datastore.Subscription, error) {
+
+	cfHandle, err := store.GetColumnFamailyHandle("events")
+	if err != nil {
+		return nil, errors.New("Not found \"events\" column family")
+	}
+
+	// Create a new subscription entry
+	sub := NewSubscription()
+
+	// Initializing iterator
+	ro := gorocksdb.NewDefaultReadOptions()
+	ro.SetFillCache(false)
+	ro.SetTailing(true)
+	iter := store.db.NewIteratorCF(ro, cfHandle)
+	if iter.Err() != nil {
+		return nil, iter.Err()
+	}
+
+	// Register subscription
+	store.registerSubscription(sub)
+
+	go func() {
+		defer func() {
+			iter.Close()
+			store.unregisterSubscription(sub)
+		}()
+
+		// Seek
+		key := Uint64ToBytes(startAt)
+		iter.Seek(key)
+
+		// Start watching
+		sub.Watch(iter, fn)
+	}()
+
+	return datastore.Subscription(sub), nil
 }

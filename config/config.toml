@@ -14,6 +14,7 @@ durable_name = "synchronizeri-1"
 host = "0.0.0.0:44446"
 
 [rules]
+database = "./rules/database.json"
 transmitter = "./rules/transmitter.json"
 dbconfig = "./rules/database.json"
 exporterconfig = "./rules/exporter.json"

@@ -32,7 +32,7 @@ func NewPipeline(synchronizer *Synchronizer, id uint64) *Pipeline {
 	return &Pipeline{
 		synchronizer: synchronizer,
 		id:           id,
-		eventStore:   NewEventStore(synchronizer, fmt.Sprintf("%d", id)),
+		eventStore:   NewEventStore(synchronizer, id),
 	}
 }
 
@@ -64,11 +64,14 @@ func (pipeline *Pipeline) Init() error {
 
 func (pipeline *Pipeline) Uninit() error {
 
-	// Stop receiving data from pipeline
+	// Stop receiving data and process events left from pipeline
 	err := pipeline.subscription.Drain()
 	if err != nil {
 		return err
 	}
+
+	// Close data store
+	pipeline.eventStore.Close()
 
 	// Release pipeline
 	err = pipeline.release()
@@ -112,21 +115,12 @@ func (pipeline *Pipeline) release() error {
 func (pipeline *Pipeline) handleMessage(m *nats.Msg) {
 
 	// Event sourcing
-	seq, err := pipeline.eventStore.store.Write(m.Data)
+	err := pipeline.eventStore.Write(m.Data)
 	if err != nil {
 		log.Error(err)
 		m.Respond(FailureReply)
 		return
 	}
-
-	log.WithFields(log.Fields{
-		"pipeline": pipeline.id,
-		"seq":      seq,
-	}).Info("Stored event")
-
-	// TODO: Snapshot
-	// TODO: Transmitter
-	// TODO: Exporter
 
 	m.Respond(SuccessReply)
 }

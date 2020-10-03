@@ -16,15 +16,21 @@ type Synchronizer struct {
 	controllerConns *grpc_connection_pool.GRPCPool
 	clientID        string
 	pipelines       map[uint64]*Pipeline
+
+	// component manager
+	storeMgr       *StoreManager
+	transmitterMgr *TransmitterManager
 }
 
 func NewSynchronizer(a app.App) *Synchronizer {
 	synchronizer := &Synchronizer{
-		app:       a,
-		pipelines: make(map[uint64]*Pipeline, 0),
+		app:            a,
+		pipelines:      make(map[uint64]*Pipeline, 0),
+		transmitterMgr: NewTransmitterManager(),
 	}
 
 	synchronizer.eventBus = NewEventBus(synchronizer)
+	synchronizer.storeMgr = NewStoreManager(synchronizer)
 
 	return synchronizer
 }
@@ -60,6 +66,18 @@ func (synchronizer *Synchronizer) Init() error {
 
 	// Initializing controller connection pool
 	err = synchronizer.initControllerConnection()
+	if err != nil {
+		return err
+	}
+
+	// Initializing transmitter
+	err = synchronizer.transmitterMgr.Initialize()
+	if err != nil {
+		return err
+	}
+
+	// Initializing stores
+	err = synchronizer.storeMgr.Init()
 	if err != nil {
 		return err
 	}

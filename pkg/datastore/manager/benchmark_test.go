@@ -11,7 +11,7 @@ var store datastore.Store
 
 func init() {
 
-	manager = NewManager(nil)
+	manager = NewManager()
 	manager.dbPath = "./bench"
 	err := manager.Init()
 	if err != nil {

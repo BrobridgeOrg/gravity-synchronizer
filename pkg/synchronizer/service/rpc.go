@@ -14,6 +14,7 @@ func (synchronizer *Synchronizer) initRPC() error {
 	connection := synchronizer.eventBus.bus.GetConnection()
 
 	assignPipelineCh := fmt.Sprintf("gravity.eventstore.%s.AssignPipeline", synchronizer.clientID)
+
 	log.WithFields(log.Fields{
 		"channel": assignPipelineCh,
 	}).Info("Subscribing to RPC channel: AssignPipeline")
@@ -54,6 +55,7 @@ func (synchronizer *Synchronizer) initRPC() error {
 	}
 
 	revokePipelineCh := fmt.Sprintf("gravity.eventstore.%s.RevokePipeline", synchronizer.clientID)
+
 	log.WithFields(log.Fields{
 		"channel": revokePipelineCh,
 	}).Info("Subscribing to RPC channel: RevokePipeline")
