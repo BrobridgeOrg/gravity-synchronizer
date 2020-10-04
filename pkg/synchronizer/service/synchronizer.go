@@ -20,6 +20,8 @@ type Synchronizer struct {
 	// component manager
 	storeMgr       *StoreManager
 	transmitterMgr *TransmitterManager
+	triggerMgr     *TriggerManager
+	exporterMgr    *ExporterManager
 }
 
 func NewSynchronizer(a app.App) *Synchronizer {
@@ -27,10 +29,12 @@ func NewSynchronizer(a app.App) *Synchronizer {
 		app:            a,
 		pipelines:      make(map[uint64]*Pipeline, 0),
 		transmitterMgr: NewTransmitterManager(),
+		exporterMgr:    NewExporterManager(),
 	}
 
 	synchronizer.eventBus = NewEventBus(synchronizer)
 	synchronizer.storeMgr = NewStoreManager(synchronizer)
+	synchronizer.triggerMgr = NewTriggerManager(synchronizer)
 
 	return synchronizer
 }
@@ -82,8 +86,20 @@ func (synchronizer *Synchronizer) Init() error {
 		return err
 	}
 
+	// Initializing exporter
+	err = synchronizer.exporterMgr.Initialize()
+	if err != nil {
+		return err
+	}
+
+	// Initializing trigger
+	err = synchronizer.triggerMgr.Initialize()
+	if err != nil {
+		return err
+	}
+
 	// Recovery subscriptions
-	err = synchronizer.recoverySubscriptions()
+	err = synchronizer.recoveryPipelines()
 	if err != nil {
 		return err
 	}
@@ -99,7 +115,7 @@ func (synchronizer *Synchronizer) Init() error {
 	return nil
 }
 
-func (synchronizer *Synchronizer) recoverySubscriptions() error {
+func (synchronizer *Synchronizer) recoveryPipelines() error {
 
 	log.Info("Attempt to recovery pipeline subscriptions")
 

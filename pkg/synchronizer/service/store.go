@@ -11,11 +11,12 @@ import (
 )
 
 type Store struct {
-	Name        string
-	Collection  string `json:"collection"`
-	Database    string `json:"database"`
-	Table       string `json:"table"`
-	Transmitter *transmitter.Transmitter
+	Name           string
+	Collection     string `json:"collection"`
+	Database       string `json:"database"`
+	Table          string `json:"table"`
+	Transmitter    *transmitter.Transmitter
+	TriggerManager *TriggerManager
 
 	SourceSubs   sync.Map
 	SourceStates sync.Map
@@ -27,18 +28,7 @@ func NewStore() *Store {
 }
 
 func (store *Store) Init() error {
-	/*
-		go func() {
-			for {
-				select {}
-			}
-		}()
-	*/
-
-	// TODO: Getting all pipeline to subscribe to event stores
-
 	store.IsReady = true
-
 	return nil
 }
 
@@ -106,6 +96,16 @@ func (store *Store) AddEventSource(eventStore *EventStore) error {
 		}
 
 		err = eventStore.UpdateDurableState(store.Name, seq)
+
+		// Trigger
+		err = store.TriggerManager.Handle(store.Name, &pj)
+		if err != nil {
+			log.WithFields(log.Fields{
+				"source": eventStore.id,
+				"seq":    seq,
+				"store":  store.Name,
+			}).Error(err)
+		}
 
 		return true
 	})

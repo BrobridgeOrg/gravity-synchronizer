@@ -3,9 +3,7 @@
 		"myqueue": {
 			"host": "0.0.0.0",
 			"port": 44144,
-			"params": {
-				"channel": "example.userSynced"
-			}
+			"channel": "example.userSynced"
 		}
 	}
 }

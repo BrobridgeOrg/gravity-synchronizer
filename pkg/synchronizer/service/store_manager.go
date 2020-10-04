@@ -90,11 +90,12 @@ func (sm *StoreManager) LoadConfigFile(filename string) (*StoreConfig, error) {
 func (sm *StoreManager) LoadStore(name string, entry *StoreEntry) (*Store, error) {
 
 	s := &Store{
-		Name:        name,
-		Collection:  entry.Collection,
-		Database:    entry.Database,
-		Table:       entry.Table,
-		Transmitter: sm.synchronizer.transmitterMgr.GetTransmitter(entry.Database),
+		Name:           name,
+		Collection:     entry.Collection,
+		Database:       entry.Database,
+		Table:          entry.Table,
+		Transmitter:    sm.synchronizer.transmitterMgr.GetTransmitter(entry.Database),
+		TriggerManager: sm.synchronizer.triggerMgr,
 	}
 
 	s.Init()

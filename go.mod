@@ -9,7 +9,7 @@ require (
 	github.com/cfsghost/grpc-connection-pool v0.0.0-20200903182758-f64b83c701d7
 	github.com/golang/protobuf v1.4.2
 	github.com/nats-io/nats.go v1.10.0
-	github.com/nats-io/stan.go v0.6.0
+	github.com/nats-io/stan.go v0.7.0
 	github.com/prometheus/common v0.7.0
 	github.com/sirupsen/logrus v1.6.0
 	github.com/soheilhy/cmux v0.1.4
