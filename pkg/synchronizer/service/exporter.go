@@ -98,7 +98,11 @@ func (ex *Exporter) Emit(eventName string, data []byte) error {
 
 	client := exporter.NewExporterClient(conn)
 
-	reply, err := client.SendEvent(context.Background(), &exporter.SendEventRequest{
+	// Preparing context and timeout settings
+	grpcCtx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	reply, err := client.SendEvent(grpcCtx, &exporter.SendEventRequest{
 		Channel: eventName,
 		Payload: data,
 	})

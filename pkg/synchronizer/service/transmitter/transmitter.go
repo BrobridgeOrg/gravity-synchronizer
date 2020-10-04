@@ -171,7 +171,11 @@ func (t *Transmitter) handle(record *transmitter.Record) error {
 
 	client := transmitter.NewTransmitterClient(conn)
 
-	reply, err := client.Send(context.Background(), record)
+	// Preparing context and timeout settings
+	grpcCtx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	reply, err := client.Send(grpcCtx, record)
 	if err != nil {
 		log.Error(err)
 		return err

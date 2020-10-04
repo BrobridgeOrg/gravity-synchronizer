@@ -51,12 +51,12 @@ func (store *Store) AddEventSource(eventStore *EventStore) error {
 		return err
 	}
 
+	store.LoadSourceState(eventStore.id, durableSeq)
+
 	log.WithFields(log.Fields{
 		"seq":   durableSeq,
 		"store": store.Name,
 	}).Info("  Initializing store")
-
-	store.LoadSourceState(eventStore.id, durableSeq)
 
 	// Subscribe to event source
 	sub, err := eventStore.Subscribe(durableSeq, func(seq uint64, data []byte) bool {
@@ -84,9 +84,10 @@ func (store *Store) AddEventSource(eventStore *EventStore) error {
 		}
 
 		log.WithFields(log.Fields{
-			"source": eventStore.id,
-			"seq":    seq,
-			"store":  store.Name,
+			"source":     eventStore.id,
+			"seq":        seq,
+			"store":      store.Name,
+			"collection": pj.Collection,
 		}).Info("Processing record")
 
 		err = store.Handle(eventStore.id, seq, &pj)
