@@ -87,7 +87,7 @@ func (store *Store) AddEventSource(eventStore *EventStore) error {
 			"source": eventStore.id,
 			"seq":    seq,
 			"store":  store.Name,
-		}).Info(" -> Process record")
+		}).Info("Processing record")
 
 		err = store.Handle(eventStore.id, seq, &pj)
 		if err != nil {
@@ -96,6 +96,9 @@ func (store *Store) AddEventSource(eventStore *EventStore) error {
 		}
 
 		err = eventStore.UpdateDurableState(store.Name, seq)
+		if err != nil {
+			log.Error(err)
+		}
 
 		// Trigger
 		err = store.TriggerManager.Handle(store.Name, &pj)

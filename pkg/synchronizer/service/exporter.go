@@ -90,14 +90,6 @@ func (ex *Exporter) send(pj *projection.Projection) error {
 
 func (ex *Exporter) Emit(eventName string, data []byte) error {
 
-	log.WithFields(log.Fields{
-		"name":    ex.name,
-		"host":    ex.host,
-		"port":    ex.port,
-		"channel": ex.channel,
-		"event":   eventName,
-	}).Info("Send Event")
-
 	conn, err := ex.pool.Get()
 	if err != nil {
 		log.Error(err)

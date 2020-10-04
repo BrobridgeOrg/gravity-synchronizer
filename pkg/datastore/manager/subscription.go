@@ -90,6 +90,7 @@ func (sub *Subscription) handle(seq uint64, data []byte, fn datastore.StoreHandl
 		case <-sub.close:
 			return true
 		default:
+
 			success := fn(seq, data)
 			if success {
 				return false

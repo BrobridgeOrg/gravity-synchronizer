@@ -178,7 +178,7 @@ func (store *Store) initializeCounter() error {
 		key := iter.Key()
 		lastSeq := BytesToUint64(key.Data())
 		key.Free()
-		counter.SetCount(lastSeq)
+		counter.SetCount(lastSeq + 1)
 	}
 
 	store.counter = counter
