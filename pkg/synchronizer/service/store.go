@@ -18,9 +18,8 @@ type Store struct {
 	Transmitter    *transmitter.Transmitter
 	TriggerManager *TriggerManager
 
-	SourceSubs   sync.Map
-	SourceStates sync.Map
-	IsReady      bool
+	SourceSubs sync.Map
+	IsReady    bool
 }
 
 func NewStore() *Store {
@@ -29,16 +28,6 @@ func NewStore() *Store {
 
 func (store *Store) Init() error {
 	store.IsReady = true
-	return nil
-}
-
-func (store *Store) LoadSourceState(sourceID uint64, lastSeq uint64) error {
-	store.SourceStates.Store(sourceID, lastSeq)
-	return nil
-}
-
-func (store *Store) DeleteSourceState(id uint64) error {
-	store.SourceStates.Delete(id)
 	return nil
 }
 
@@ -51,8 +40,6 @@ func (store *Store) AddEventSource(eventStore *EventStore) error {
 		return err
 	}
 
-	store.LoadSourceState(eventStore.id, durableSeq)
-
 	log.WithFields(log.Fields{
 		"seq":   durableSeq,
 		"store": store.Name,
@@ -61,57 +48,11 @@ func (store *Store) AddEventSource(eventStore *EventStore) error {
 	// Subscribe to event source
 	sub, err := eventStore.Subscribe(durableSeq, func(seq uint64, data []byte) bool {
 
-		if seq == durableSeq {
+		if seq <= durableSeq {
 			return true
 		}
 
-		// Parse event
-		var pj projection.Projection
-		err := json.Unmarshal(data, &pj)
-		if err != nil {
-			log.WithFields(log.Fields{
-				"source": eventStore.id,
-				"seq":    seq,
-				"store":  store.Name,
-			}).Error(err)
-			return true
-		}
-
-		// Ignore store which is not matched
-		if !store.IsMatch(&pj) {
-			err = eventStore.UpdateDurableState(store.Name, seq)
-			return true
-		}
-
-		log.WithFields(log.Fields{
-			"source":     eventStore.id,
-			"seq":        seq,
-			"store":      store.Name,
-			"collection": pj.Collection,
-		}).Info("Processing record")
-
-		err = store.Handle(eventStore.id, seq, &pj)
-		if err != nil {
-			log.Error(err)
-			return false
-		}
-
-		err = eventStore.UpdateDurableState(store.Name, seq)
-		if err != nil {
-			log.Error(err)
-		}
-
-		// Trigger
-		err = store.TriggerManager.Handle(store.Name, &pj)
-		if err != nil {
-			log.WithFields(log.Fields{
-				"source": eventStore.id,
-				"seq":    seq,
-				"store":  store.Name,
-			}).Error(err)
-		}
-
-		return true
+		return store.ProcessData(eventStore, seq, data)
 	})
 
 	store.SourceSubs.Store(eventStore.id, sub)
@@ -120,8 +61,6 @@ func (store *Store) AddEventSource(eventStore *EventStore) error {
 }
 
 func (store *Store) RemoveEventSource(sourceID uint64) error {
-
-	store.DeleteSourceState(sourceID)
 
 	obj, ok := store.SourceSubs.Load(sourceID)
 	if !ok {
@@ -145,28 +84,67 @@ func (store *Store) IsMatch(pj *projection.Projection) bool {
 	return true
 }
 
-func (store *Store) Handle(pipelineID uint64, seq uint64, pj *projection.Projection) error {
+func (store *Store) ProcessData(eventStore *EventStore, seq uint64, data []byte) bool {
 
-	// Ignore everythin if store is not ready yet
 	if !store.IsReady {
-		return nil
+		return false
 	}
 
-	state, ok := store.SourceStates.Load(pipelineID)
-	if !ok {
-		return nil
+	// Parse event
+	var pj projection.Projection
+	err := json.Unmarshal(data, &pj)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"source": eventStore.id,
+			"seq":    seq,
+			"store":  store.Name,
+		}).Error(err)
+		return true
 	}
 
-	if state.(uint64) >= seq {
-		return nil
+	// Ignore store which is not matched
+	if !store.IsMatch(&pj) {
+		eventStore.UpdateDurableState(store.Name, seq)
+		return true
 	}
+
+	log.WithFields(log.Fields{
+		"source":     eventStore.id,
+		"seq":        seq,
+		"store":      store.Name,
+		"collection": pj.Collection,
+	}).Info("Processing record")
+
+	err = store.Handle(eventStore.id, seq, &pj)
+	if err != nil {
+		log.Error(err)
+		return false
+	}
+
+	err = eventStore.UpdateDurableState(store.Name, seq)
+	if err != nil {
+		log.Error(err)
+	}
+
+	// Trigger
+	err = store.TriggerManager.Handle(store.Name, &pj)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"source": eventStore.id,
+			"seq":    seq,
+			"store":  store.Name,
+		}).Error(err)
+	}
+
+	return true
+}
+
+func (store *Store) Handle(pipelineID uint64, seq uint64, pj *projection.Projection) error {
 
 	err := store.Transmitter.ProcessData(store.Table, seq, pj)
 	if err != nil {
 		return err
 	}
-
-	store.SourceStates.Store(pipelineID, seq)
 
 	return nil
 }

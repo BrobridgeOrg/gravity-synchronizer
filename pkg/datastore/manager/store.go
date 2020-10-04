@@ -22,7 +22,6 @@ type Store struct {
 	counter   Counter
 
 	subscriptions sync.Map
-	//	mutex         sync.RWMutex
 }
 
 func NewStore(manager *Manager, storeName string) (*Store, error) {
@@ -43,7 +42,6 @@ func NewStore(manager *Manager, storeName string) (*Store, error) {
 		cfHandles: make(map[string]*gorocksdb.ColumnFamilyHandle),
 		ro:        ro,
 		wo:        wo,
-		//		subscriptions: make(map[*Subscription]*Subscription),
 	}
 
 	err := store.openDatabase()
@@ -103,13 +101,6 @@ func (store *Store) openDatabase() error {
 
 func (store *Store) Close() {
 
-	/*
-		store.mutex.Lock()
-		defer store.mutex.Unlock()
-		for _, sub := range store.subscriptions {
-			sub.Close()
-		}
-	*/
 	store.subscriptions.Range(func(k, v interface{}) bool {
 		sub := v.(*Subscription)
 		sub.Close()
@@ -282,24 +273,12 @@ func (store *Store) UpdateDurableState(durableName string, lastSeq uint64) error
 }
 
 func (store *Store) registerSubscription(sub *Subscription) error {
-	/*
-		store.mutex.Lock()
-		store.subscriptions[sub] = sub
-		store.mutex.Unlock()
-	*/
 	store.subscriptions.Store(sub, sub)
-
 	return nil
 }
 
 func (store *Store) unregisterSubscription(sub *Subscription) error {
-
 	store.subscriptions.Delete(sub)
-	/*
-		store.mutex.Lock()
-		delete(store.subscriptions, sub)
-		store.mutex.Unlock()
-	*/
 	return nil
 }
 
