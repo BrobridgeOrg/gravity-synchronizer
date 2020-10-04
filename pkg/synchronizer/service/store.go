@@ -130,6 +130,8 @@ func (store *Store) RemoveEventSource(sourceID uint64) error {
 	sub := obj.(datastore.Subscription)
 	sub.Close()
 
+	store.SourceSubs.Delete(sourceID)
+
 	return nil
 }
 

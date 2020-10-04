@@ -22,14 +22,12 @@ type StoreEntry struct {
 
 type StoreManager struct {
 	synchronizer *Synchronizer
-	eventSources []*EventStore
 	stores       []*Store
 }
 
 func NewStoreManager(synchronizer *Synchronizer) *StoreManager {
 	return &StoreManager{
 		synchronizer: synchronizer,
-		eventSources: make([]*EventStore, 0),
 		stores:       make([]*Store, 0),
 	}
 }
@@ -109,8 +107,6 @@ func (sm *StoreManager) AddEventSource(eventStore *EventStore) error {
 		"source": eventStore.id,
 	}).Info("Adding event source")
 
-	sm.eventSources = append(sm.eventSources, eventStore)
-
 	for _, s := range sm.stores {
 
 		err := s.AddEventSource(eventStore)
@@ -123,14 +119,6 @@ func (sm *StoreManager) AddEventSource(eventStore *EventStore) error {
 }
 
 func (sm *StoreManager) RemoveEventSource(id uint64) error {
-
-	for i, source := range sm.eventSources {
-		if source.id == id {
-			sm.eventSources = append(sm.eventSources[:i], sm.eventSources[i+1:]...)
-			break
-		}
-	}
-
 	return sm.DeleteSourceState(id)
 }
 
