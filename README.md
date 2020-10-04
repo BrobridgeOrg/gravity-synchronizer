@@ -1,14 +1,13 @@
 # Gravity Synchronizer
 
-Data Synchronizer for writing records to specific database
+Synchronizer is core component for event sourcing, event store and writing data to specific database.
 
-## Update proto definition
+## Build
 
-Rebuild to apply `proto` changes, just run commands below:
+build synchronizer with the simple command in the following:
 
 ```shell
-cd pb
-protoc --go_out=plugins=grpc:. *.proto
+go build ./cmd/gravity-synchronizer
 ```
 
 ## License
