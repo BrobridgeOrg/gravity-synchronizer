@@ -215,7 +215,10 @@ func (store *Store) Write(data []byte) (uint64, error) {
 	// Publish event to all of subscription which is waiting for
 	store.subscriptions.Range(func(k, v interface{}) bool {
 		sub := v.(*Subscription)
-
+		log.WithFields(log.Fields{
+			"seq":     seq,
+			"tailing": sub.tailing,
+		}).Info("Publish to all subscibers")
 		if sub.tailing {
 			sub.Publish(seq, data)
 		}

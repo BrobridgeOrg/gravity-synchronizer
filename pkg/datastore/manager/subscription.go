@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/BrobridgeOrg/gravity-synchronizer/pkg/datastore"
+	"github.com/prometheus/common/log"
 	"github.com/tecbot/gorocksdb"
 )
 
@@ -94,6 +95,8 @@ func (sub *Subscription) handle(seq uint64, data []byte, fn datastore.StoreHandl
 			if success {
 				return false
 			}
+
+			log.Warn("Failed to process. Trying to do again in second")
 
 			time.Sleep(time.Second)
 		}

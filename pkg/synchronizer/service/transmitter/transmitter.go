@@ -166,6 +166,7 @@ func (t *Transmitter) handle(record *transmitter.Record) error {
 
 	conn, err := t.pool.Get()
 	if err != nil {
+		log.Error(err)
 		return err
 	}
 

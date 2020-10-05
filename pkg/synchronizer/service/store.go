@@ -52,8 +52,20 @@ func (store *Store) AddEventSource(eventStore *EventStore) error {
 			return true
 		}
 
-		return store.ProcessData(eventStore, seq, data)
+		success := store.ProcessData(eventStore, seq, data)
+
+		if success {
+			err = eventStore.UpdateDurableState(store.Name, seq)
+			if err != nil {
+				log.Error(err)
+			}
+		}
+
+		return success
 	})
+	if err != nil {
+		return err
+	}
 
 	store.SourceSubs.Store(eventStore.id, sub)
 
@@ -101,10 +113,17 @@ func (store *Store) ProcessData(eventStore *EventStore, seq uint64, data []byte)
 		}).Error(err)
 		return true
 	}
-
+	/*
+		log.WithFields(log.Fields{
+			"source":     eventStore.id,
+			"seq":        seq,
+			"store":      store.Name,
+			"collection": pj.Collection,
+			"sc":         store.Collection,
+		}).Warn("Got")
+	*/
 	// Ignore store which is not matched
 	if !store.IsMatch(&pj) {
-		eventStore.UpdateDurableState(store.Name, seq)
 		return true
 	}
 
@@ -115,15 +134,10 @@ func (store *Store) ProcessData(eventStore *EventStore, seq uint64, data []byte)
 		"collection": pj.Collection,
 	}).Info("Processing record")
 
-	err = store.Handle(eventStore.id, seq, &pj)
+	err = store.Transmitter.ProcessData(store.Table, seq, &pj)
 	if err != nil {
 		log.Error(err)
 		return false
-	}
-
-	err = eventStore.UpdateDurableState(store.Name, seq)
-	if err != nil {
-		log.Error(err)
 	}
 
 	// Trigger
@@ -137,14 +151,4 @@ func (store *Store) ProcessData(eventStore *EventStore, seq uint64, data []byte)
 	}
 
 	return true
-}
-
-func (store *Store) Handle(pipelineID uint64, seq uint64, pj *projection.Projection) error {
-
-	err := store.Transmitter.ProcessData(store.Table, seq, pj)
-	if err != nil {
-		return err
-	}
-
-	return nil
 }

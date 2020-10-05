@@ -5,7 +5,6 @@ import (
 	"io/ioutil"
 	"os"
 
-	"github.com/BrobridgeOrg/gravity-synchronizer/pkg/synchronizer/service/projection"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
@@ -111,6 +110,7 @@ func (sm *StoreManager) AddEventSource(eventStore *EventStore) error {
 
 		err := s.AddEventSource(eventStore)
 		if err != nil {
+			log.Error(err)
 			return err
 		}
 	}
@@ -119,34 +119,9 @@ func (sm *StoreManager) AddEventSource(eventStore *EventStore) error {
 }
 
 func (sm *StoreManager) RemoveEventSource(id uint64) error {
-	return sm.DeleteSourceState(id)
-}
-
-func (sm *StoreManager) DeleteSourceState(id uint64) error {
 
 	for _, s := range sm.stores {
 		s.RemoveEventSource(id)
-	}
-
-	return nil
-}
-
-func (sm *StoreManager) Handle(eventStore *EventStore, seq uint64, pj *projection.Projection) error {
-
-	for _, s := range sm.stores {
-
-		// Ignore store which is not matched
-		if !s.IsMatch(pj) {
-			continue
-		}
-
-		err := s.Handle(eventStore.id, seq, pj)
-		if err != nil {
-			log.Error(err)
-			continue
-		}
-
-		eventStore.UpdateDurableState(s.Name, seq)
 	}
 
 	return nil
