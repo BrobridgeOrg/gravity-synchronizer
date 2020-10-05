@@ -1,8 +1,11 @@
 package datastore
 
-import "github.com/tecbot/gorocksdb"
+import (
+	"github.com/BrobridgeOrg/gravity-synchronizer/pkg/projection"
+	"github.com/tecbot/gorocksdb"
+)
 
-type StoreHandler func(uint64, []byte) bool
+type StoreHandler func(uint64, *projection.Projection) bool
 
 type Subscription interface {
 	Close()

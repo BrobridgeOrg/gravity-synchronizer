@@ -10,7 +10,7 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/BrobridgeOrg/gravity-synchronizer/pkg/synchronizer/service/projection"
+	"github.com/BrobridgeOrg/gravity-synchronizer/pkg/projection"
 
 	grpc_connection_pool "github.com/cfsghost/grpc-connection-pool"
 

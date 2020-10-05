@@ -8,6 +8,7 @@ import (
 	"sync"
 
 	"github.com/BrobridgeOrg/gravity-synchronizer/pkg/datastore"
+	"github.com/BrobridgeOrg/gravity-synchronizer/pkg/projection"
 	log "github.com/sirupsen/logrus"
 	"github.com/tecbot/gorocksdb"
 )
@@ -21,6 +22,7 @@ type Store struct {
 	wo        *gorocksdb.WriteOptions
 	counter   Counter
 
+	snapshot      *Snapshot
 	subscriptions sync.Map
 }
 
@@ -51,8 +53,19 @@ func NewStore(manager *Manager, storeName string) (*Store, error) {
 
 	err = store.initializeCounter()
 	if err != nil {
+		store.Close()
 		return nil, err
 	}
+
+	// Initializing snapshot
+	snapshot := NewSnapshot(store)
+	err = snapshot.Initialize()
+	if err != nil {
+		store.Close()
+		return nil, err
+	}
+
+	store.snapshot = snapshot
 
 	return store, nil
 }
@@ -212,21 +225,37 @@ func (store *Store) Write(data []byte) (uint64, error) {
 		return 0, err
 	}
 
+	// Parsing data
+	pj, err := projection.Unmarshal(data)
+	if err == nil {
+
+		// Update snapshot
+		store.snapshot.Write(seq, pj)
+
+		// Dispatch event to subscribers
+		store.DispatchEvent(seq, pj)
+	}
+
+	return seq, nil
+}
+
+func (store *Store) DispatchEvent(seq uint64, pj *projection.Projection) {
+
 	// Publish event to all of subscription which is waiting for
 	store.subscriptions.Range(func(k, v interface{}) bool {
 		sub := v.(*Subscription)
-		log.WithFields(log.Fields{
-			"seq":     seq,
-			"tailing": sub.tailing,
-		}).Info("Publish to all subscibers")
+		/*
+			log.WithFields(log.Fields{
+				"seq":     seq,
+				"tailing": sub.tailing,
+			}).Info("Publish to all subscibers")
+		*/
 		if sub.tailing {
-			sub.Publish(seq, data)
+			sub.Publish(seq, pj)
 		}
 
 		return true
 	})
-
-	return seq, nil
 }
 
 func (store *Store) GetLastSequence() uint64 {

@@ -7,7 +7,7 @@ import (
 	"time"
 
 	exporter "github.com/BrobridgeOrg/gravity-api/service/exporter"
-	"github.com/BrobridgeOrg/gravity-synchronizer/pkg/synchronizer/service/projection"
+	"github.com/BrobridgeOrg/gravity-synchronizer/pkg/projection"
 	grpc_connection_pool "github.com/cfsghost/grpc-connection-pool"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"

@@ -5,7 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 
-	"github.com/BrobridgeOrg/gravity-synchronizer/pkg/synchronizer/service/projection"
+	"github.com/BrobridgeOrg/gravity-synchronizer/pkg/projection"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )

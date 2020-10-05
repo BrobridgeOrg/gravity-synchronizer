@@ -1,6 +1,6 @@
 package synchronizer
 
-import "github.com/BrobridgeOrg/gravity-synchronizer/pkg/synchronizer/service/projection"
+import "github.com/BrobridgeOrg/gravity-synchronizer/pkg/projection"
 
 type Trigger struct {
 	Condition Condition `json:"condition"`

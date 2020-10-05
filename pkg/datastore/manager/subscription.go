@@ -4,15 +4,16 @@ import (
 	"time"
 
 	"github.com/BrobridgeOrg/gravity-synchronizer/pkg/datastore"
+	"github.com/BrobridgeOrg/gravity-synchronizer/pkg/projection"
 	"github.com/prometheus/common/log"
 	"github.com/tecbot/gorocksdb"
 )
 
-type StoreHandler func(uint64, []byte) bool
+type StoreHandler func(uint64, *projection.Projection) bool
 
 type Event struct {
 	Sequence uint64
-	Data     []byte
+	Data     *projection.Projection
 }
 
 type Subscription struct {
@@ -24,7 +25,7 @@ type Subscription struct {
 func NewSubscription() *Subscription {
 	return &Subscription{
 		close: make(chan struct{}),
-		queue: make(chan *Event, 1000),
+		queue: make(chan *Event, 1024),
 	}
 }
 
@@ -44,13 +45,18 @@ func (sub *Subscription) Watch(iter *gorocksdb.Iterator, fn datastore.StoreHandl
 			value := iter.Value()
 			seq := BytesToUint64(key.Data())
 
-			// Invoke data handler
-			quit := sub.handle(seq, value.Data(), fn)
+			// Parsing data
+			pj, err := projection.Unmarshal(value.Data())
+			if err != nil {
+				continue
+			}
 
 			// Release
 			key.Free()
 			value.Free()
 
+			// Invoke data handler
+			quit := sub.handle(seq, pj, fn)
 			if quit {
 				return
 			}
@@ -59,6 +65,7 @@ func (sub *Subscription) Watch(iter *gorocksdb.Iterator, fn datastore.StoreHandl
 
 	sub.tailing = true
 
+	// Receving real-time events
 	for {
 		select {
 		case <-sub.close:
@@ -73,7 +80,7 @@ func (sub *Subscription) Watch(iter *gorocksdb.Iterator, fn datastore.StoreHandl
 	}
 }
 
-func (sub *Subscription) Publish(seq uint64, data []byte) error {
+func (sub *Subscription) Publish(seq uint64, data *projection.Projection) error {
 
 	sub.queue <- &Event{
 		Sequence: seq,
@@ -83,7 +90,7 @@ func (sub *Subscription) Publish(seq uint64, data []byte) error {
 	return nil
 }
 
-func (sub *Subscription) handle(seq uint64, data []byte, fn datastore.StoreHandler) bool {
+func (sub *Subscription) handle(seq uint64, data *projection.Projection, fn datastore.StoreHandler) bool {
 
 	for {
 

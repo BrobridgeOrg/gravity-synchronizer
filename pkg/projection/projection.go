@@ -21,6 +21,17 @@ type JSONResult struct {
 	Payload    map[string]interface{} `json:"payload"`
 }
 
+func Unmarshal(data []byte) (*Projection, error) {
+
+	var pj Projection
+	err := json.Unmarshal(data, &pj)
+	if err != nil {
+		return nil, err
+	}
+
+	return &pj, nil
+}
+
 func (pj *Projection) ToJSON() ([]byte, error) {
 
 	result := JSONResult{

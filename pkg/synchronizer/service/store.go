@@ -1,11 +1,10 @@
 package synchronizer
 
 import (
-	"encoding/json"
 	"sync"
 
 	"github.com/BrobridgeOrg/gravity-synchronizer/pkg/datastore"
-	"github.com/BrobridgeOrg/gravity-synchronizer/pkg/synchronizer/service/projection"
+	"github.com/BrobridgeOrg/gravity-synchronizer/pkg/projection"
 	"github.com/BrobridgeOrg/gravity-synchronizer/pkg/synchronizer/service/transmitter"
 	log "github.com/sirupsen/logrus"
 )
@@ -46,7 +45,7 @@ func (store *Store) AddEventSource(eventStore *EventStore) error {
 	}).Info("  Initializing store")
 
 	// Subscribe to event source
-	sub, err := eventStore.Subscribe(durableSeq, func(seq uint64, data []byte) bool {
+	sub, err := eventStore.Subscribe(durableSeq, func(seq uint64, data *projection.Projection) bool {
 
 		if seq <= durableSeq {
 			return true
@@ -96,23 +95,25 @@ func (store *Store) IsMatch(pj *projection.Projection) bool {
 	return true
 }
 
-func (store *Store) ProcessData(eventStore *EventStore, seq uint64, data []byte) bool {
+func (store *Store) ProcessData(eventStore *EventStore, seq uint64, pj *projection.Projection) bool {
 
 	if !store.IsReady {
 		return false
 	}
 
 	// Parse event
-	var pj projection.Projection
-	err := json.Unmarshal(data, &pj)
-	if err != nil {
-		log.WithFields(log.Fields{
-			"source": eventStore.id,
-			"seq":    seq,
-			"store":  store.Name,
-		}).Error(err)
-		return true
-	}
+	/*
+		var pj projection.Projection
+		err := json.Unmarshal(data, &pj)
+		if err != nil {
+			log.WithFields(log.Fields{
+				"source": eventStore.id,
+				"seq":    seq,
+				"store":  store.Name,
+			}).Error(err)
+			return true
+		}
+	*/
 	/*
 		log.WithFields(log.Fields{
 			"source":     eventStore.id,
@@ -123,7 +124,7 @@ func (store *Store) ProcessData(eventStore *EventStore, seq uint64, data []byte)
 		}).Warn("Got")
 	*/
 	// Ignore store which is not matched
-	if !store.IsMatch(&pj) {
+	if !store.IsMatch(pj) {
 		return true
 	}
 
@@ -134,14 +135,14 @@ func (store *Store) ProcessData(eventStore *EventStore, seq uint64, data []byte)
 		"collection": pj.Collection,
 	}).Info("Processing record")
 
-	err = store.Transmitter.ProcessData(store.Table, seq, &pj)
+	err := store.Transmitter.ProcessData(store.Table, seq, pj)
 	if err != nil {
 		log.Error(err)
 		return false
 	}
 
 	// Trigger
-	err = store.TriggerManager.Handle(store.Name, &pj)
+	err = store.TriggerManager.Handle(store.Name, pj)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"source": eventStore.id,
