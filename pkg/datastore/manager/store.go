@@ -304,6 +304,10 @@ func (store *Store) UpdateDurableState(durableName string, lastSeq uint64) error
 	return nil
 }
 
+func (store *Store) GetLastSequenceOfSnapshot() uint64 {
+	return store.snapshot.lastSeq
+}
+
 func (store *Store) registerSubscription(sub *Subscription) error {
 	store.subscriptions.Store(sub, sub)
 	return nil

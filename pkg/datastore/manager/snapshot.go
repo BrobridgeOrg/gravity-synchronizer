@@ -10,15 +10,18 @@ import (
 	"github.com/tecbot/gorocksdb"
 )
 
+var LastSequenceKey = []byte("lastSeq")
+
 type Record struct {
 	Sequence uint64
 	Data     *projection.Projection
 }
 
 type Snapshot struct {
-	store *Store
-	close chan struct{}
-	queue chan *Record
+	store   *Store
+	lastSeq uint64
+	close   chan struct{}
+	queue   chan *Record
 }
 
 func NewSnapshot(store *Store) *Snapshot {
@@ -38,10 +41,21 @@ func (snapshot *Snapshot) Initialize() error {
 	}
 
 	// Assert snapshot states
-	_, err = snapshot.store.assertColumnFamily("snapshot_states")
+	stateHandle, err := snapshot.store.assertColumnFamily("snapshot_states")
 	if err != nil {
 		return err
 	}
+
+	// Getting last sequence number of snapshot
+	value, err := snapshot.store.db.GetCF(snapshot.store.ro, stateHandle, LastSequenceKey)
+	if err != nil {
+		return err
+	}
+
+	lastSeq := BytesToUint64(value.Data())
+	value.Free()
+
+	snapshot.lastSeq = lastSeq
 
 	go func() {
 		for {
@@ -150,10 +164,12 @@ func (snapshot *Snapshot) writeData(cfHandle *gorocksdb.ColumnFamilyHandle, seq 
 
 	// Update snapshot state
 	seqData := Uint64ToBytes(seq)
-	err = snapshot.store.db.PutCF(snapshot.store.wo, cfHandle, []byte("lastSeq"), seqData)
+	err = snapshot.store.db.PutCF(snapshot.store.wo, cfHandle, LastSequenceKey, seqData)
 	if err != nil {
 		log.Error(err)
 	}
+
+	snapshot.lastSeq = seq
 }
 
 func (snapshot *Snapshot) merge(origData *projection.Projection, updates *projection.Projection) []byte {
