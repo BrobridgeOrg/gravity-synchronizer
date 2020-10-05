@@ -16,7 +16,7 @@ require (
 	google.golang.org/grpc v1.31.1
 )
 
-replace github.com/BrobridgeOrg/gravity-api => ../gravity-api
+//replace github.com/BrobridgeOrg/gravity-api => ../gravity-api
 
 replace github.com/BrobridgeOrg/gravity-synchronizer => ./
 
