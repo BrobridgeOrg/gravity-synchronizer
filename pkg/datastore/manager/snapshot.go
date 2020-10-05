@@ -52,10 +52,11 @@ func (snapshot *Snapshot) Initialize() error {
 		return err
 	}
 
-	lastSeq := BytesToUint64(value.Data())
-	value.Free()
+	if value.Size() > 0 {
+		snapshot.lastSeq = BytesToUint64(value.Data())
+	}
 
-	snapshot.lastSeq = lastSeq
+	value.Free()
 
 	go func() {
 		for {
@@ -117,7 +118,13 @@ func (snapshot *Snapshot) handle(seq uint64, data *projection.Projection) {
 		return
 	}
 
-	value, err := snapshot.store.db.GetCF(snapshot.store.ro, cfHandle, primaryKey)
+	// collection name as prefix
+	key := bytes.Join([][]byte{
+		[]byte(data.Collection),
+		primaryKey,
+	}, []byte("-"))
+
+	value, err := snapshot.store.db.GetCF(snapshot.store.ro, cfHandle, key)
 	if err != nil {
 		log.Error(err)
 		return
@@ -134,7 +141,7 @@ func (snapshot *Snapshot) handle(seq uint64, data *projection.Projection) {
 			newData, _ := data.ToJSON()
 
 			// Write to database
-			snapshot.writeData(cfHandle, seq, primaryKey, newData)
+			snapshot.writeData(cfHandle, seq, key, newData)
 
 			return
 		}
@@ -142,7 +149,7 @@ func (snapshot *Snapshot) handle(seq uint64, data *projection.Projection) {
 		newData := snapshot.merge(orig, data)
 
 		// Write to database
-		snapshot.writeData(cfHandle, seq, primaryKey, newData)
+		snapshot.writeData(cfHandle, seq, key, newData)
 
 		return
 	}
@@ -151,7 +158,7 @@ func (snapshot *Snapshot) handle(seq uint64, data *projection.Projection) {
 	newData, _ := data.ToJSON()
 
 	// Write to database
-	snapshot.writeData(cfHandle, seq, primaryKey, newData)
+	snapshot.writeData(cfHandle, seq, key, newData)
 }
 
 func (snapshot *Snapshot) writeData(cfHandle *gorocksdb.ColumnFamilyHandle, seq uint64, key []byte, data []byte) {

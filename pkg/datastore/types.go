@@ -15,6 +15,7 @@ type Subscription interface {
 type Store interface {
 	Close()
 	Write([]byte) (uint64, error)
+	GetLastSequenceOfSnapshot() uint64
 	GetLastSequence() uint64
 	GetDurableState(string) (uint64, error)
 	UpdateDurableState(string, uint64) error

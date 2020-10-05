@@ -32,6 +32,9 @@ func (store *Store) Init() error {
 
 func (store *Store) AddEventSource(eventStore *EventStore) error {
 
+	// TODO: get last sequence then compare with it, to determine whether it does sync from snapshot first
+	//	lastSeq := eventStore.GetLastSequence()
+
 	// Getting durable state of store
 	durableSeq, err := eventStore.GetDurableState(store.Name)
 	if err != nil {
@@ -101,19 +104,6 @@ func (store *Store) ProcessData(eventStore *EventStore, seq uint64, pj *projecti
 		return false
 	}
 
-	// Parse event
-	/*
-		var pj projection.Projection
-		err := json.Unmarshal(data, &pj)
-		if err != nil {
-			log.WithFields(log.Fields{
-				"source": eventStore.id,
-				"seq":    seq,
-				"store":  store.Name,
-			}).Error(err)
-			return true
-		}
-	*/
 	/*
 		log.WithFields(log.Fields{
 			"source":     eventStore.id,

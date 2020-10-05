@@ -53,6 +53,10 @@ func (es *EventStore) Close() {
 	es.synchronizer.storeMgr.RemoveEventSource(es.id)
 }
 
+func (es *EventStore) GetLastSequenceOfSnapshot() uint64 {
+	return es.store.GetLastSequenceOfSnapshot()
+}
+
 func (es *EventStore) GetLastSequence() uint64 {
 	return es.store.GetLastSequence()
 }
