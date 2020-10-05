@@ -14,7 +14,7 @@ get_args() {
 
 		[ "$GRAVITY_SYNCHRONIZER_RULES_STORECONFIG" != "" ] && {
 			storeConfigPath=$GRAVITY_SYNCHRONIZER_RULES_STORECONFIG
-		} 
+		}
 
 		echo $stores > $storeConfigPath
 	}
@@ -23,23 +23,23 @@ get_args() {
 	[ "$triggers" != "" ] && {
 		triggerConfigPath="./rules/triggers.json"
 
-		[ "$GRAVITY_SYNCHRONIZER_RULES_TIGGERCONFIG" != "" ] && {
+		[ "$GRAVITY_SYNCHRONIZER_RULES_TRIGGERCONFIG" != "" ] && {
 			triggerConfigPath=$GRAVITY_SYNCHRONIZER_RULES_TRIGGERCONFIG
-		} 
+		}
 
 		echo $triggers > $triggerConfigPath
 	}
 
-	db=$(get_args db "$@")
-	[ "$db" != "" ] &&{
-		dbConfigPath="./rules/database.json"
-
-		[ "$GRAVITY_SYNCHRONIZER_RULES_DBCONFIG" != "" ] && {
-			dbConfigPath=$GRAVITY_SYNCHRONIZER_RULES_DBCONFIG
-		} 
-
-		echo $db > $dbConfigPath
-	}
+#	db=$(get_args db "$@")
+#	[ "$db" != "" ] &&{
+#		dbConfigPath="./rules/database.json"
+#
+#		[ "$GRAVITY_SYNCHRONIZER_RULES_DBCONFIG" != "" ] && {
+#			dbConfigPath=$GRAVITY_SYNCHRONIZER_RULES_DBCONFIG
+#		}
+#
+#		echo $db > $dbConfigPath
+#	}
 
 	exporter=$(get_args exporter "$@")
 	[ "$exporter" != "" ] &&{
@@ -47,9 +47,20 @@ get_args() {
 
 		[ "$GRAVITY_SYNCHRONIZER_RULES_EXPORTERCONFIG" != "" ] && {
 			exporterConfigPath=$GRAVITY_SYNCHRONIZER_RULES_EXPORTERCONFIG
-		} 
+		}
 
 		echo $exporter > $exporterConfigPath
+	}
+
+	transmitter=$(get_args transmitter "$@")
+	[ "$transmitter" != "" ] &&{
+		transmitterConfigPath="./rules/transmitter.json"
+
+		[ "$GRAVITY_SYNCHRONIZER_RULES_TRANSMITTER" != "" ] && {
+			transmitterConfigPath=$GRAVITY_SYNCHRONIZER_RULES_TRANSMITTER
+		}
+
+		echo $transmitter > $transmitterConfigPath
 	}
 }
 export GRAVITY_SYNCHRONIZER_EVENT_STORE_CLIENT_NAME=$(hostname)
