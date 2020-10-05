@@ -124,6 +124,11 @@ func (snapshot *Snapshot) handle(seq uint64, data *projection.Projection) {
 		primaryKey,
 	}, []byte("-"))
 
+	if data.Method == "delete" {
+		snapshot.store.db.DeleteCF(snapshot.store.wo, cfHandle, key)
+		return
+	}
+
 	value, err := snapshot.store.db.GetCF(snapshot.store.ro, cfHandle, key)
 	if err != nil {
 		log.Error(err)
