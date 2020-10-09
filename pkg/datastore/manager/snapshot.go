@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/gob"
 	"encoding/json"
+	"sync"
 
 	"github.com/BrobridgeOrg/gravity-synchronizer/pkg/projection"
 	log "github.com/sirupsen/logrus"
@@ -11,6 +12,12 @@ import (
 )
 
 var LastSequenceKey = []byte("lastSeq")
+
+var recordPool = &sync.Pool{
+	New: func() interface{} {
+		return &Record{}
+	},
+}
 
 type Record struct {
 	Sequence uint64
@@ -66,6 +73,9 @@ func (snapshot *Snapshot) Initialize() error {
 			case record := <-snapshot.queue:
 				// Invoke data handler
 				snapshot.handle(record.Sequence, record.Data)
+
+				// Release
+				recordPool.Put(record)
 			}
 		}
 	}()
@@ -78,10 +88,13 @@ func (snapshot *Snapshot) Close() {
 }
 
 func (snapshot *Snapshot) Write(seq uint64, data *projection.Projection) {
-	snapshot.queue <- &Record{
-		Sequence: seq,
-		Data:     data,
-	}
+
+	// Allocation
+	record := recordPool.Get().(*Record)
+	record.Sequence = seq
+	record.Data = data
+
+	snapshot.queue <- record
 }
 
 func (snapshot *Snapshot) getPrimaryKeyData(data *projection.Projection) ([]byte, error) {
