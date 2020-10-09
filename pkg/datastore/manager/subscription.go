@@ -1,6 +1,7 @@
 package datastore
 
 import (
+	"sync"
 	"time"
 
 	"github.com/BrobridgeOrg/gravity-synchronizer/pkg/datastore"
@@ -10,6 +11,12 @@ import (
 )
 
 type StoreHandler func(uint64, *projection.Projection) bool
+
+var eventPool = &sync.Pool{
+	New: func() interface{} {
+		return &Event{}
+	},
+}
 
 type Event struct {
 	Sequence uint64
@@ -76,16 +83,20 @@ func (sub *Subscription) Watch(iter *gorocksdb.Iterator, fn datastore.StoreHandl
 			if quit {
 				return
 			}
+
+			eventPool.Put(event)
 		}
 	}
 }
 
 func (sub *Subscription) Publish(seq uint64, data *projection.Projection) error {
 
-	sub.queue <- &Event{
-		Sequence: seq,
-		Data:     data,
-	}
+	// Allocate
+	event := eventPool.Get().(*Event)
+	event.Sequence = seq
+	event.Data = data
+
+	sub.queue <- event
 
 	return nil
 }
