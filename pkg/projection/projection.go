@@ -1,6 +1,9 @@
 package projection
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"sync"
+)
 
 type Field struct {
 	Name    string      `json:"name"`
@@ -21,6 +24,12 @@ type JSONResult struct {
 	Payload    map[string]interface{} `json:"payload"`
 }
 
+var pool = sync.Pool{
+	New: func() interface{} {
+		return &JSONResult{}
+	},
+}
+
 func Unmarshal(data []byte) (*Projection, error) {
 
 	var pj Projection
@@ -34,15 +43,19 @@ func Unmarshal(data []byte) (*Projection, error) {
 
 func (pj *Projection) ToJSON() ([]byte, error) {
 
-	result := JSONResult{
-		EventName:  pj.EventName,
-		Collection: pj.Collection,
-		Payload:    make(map[string]interface{}),
-	}
+	// Allocation
+	result := pool.Get().(*JSONResult)
+	result.EventName = pj.EventName
+	result.Collection = pj.Collection
+	result.Payload = make(map[string]interface{})
 
 	for _, field := range pj.Fields {
 		result.Payload[field.Name] = field.Value
 	}
 
-	return json.Marshal(result)
+	data, err := json.Marshal(result)
+
+	pool.Put(result)
+
+	return data, err
 }
