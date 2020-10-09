@@ -64,7 +64,7 @@ func (ex *Exporter) Initialize() error {
 		for {
 			select {
 			case pj := <-ex.output:
-				go ex.send(pj)
+				ex.send(pj)
 			}
 		}
 	}()
