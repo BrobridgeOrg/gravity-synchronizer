@@ -125,14 +125,16 @@ func (store *Store) ProcessData(eventStore *EventStore, seq uint64, pj *projecti
 		"collection": pj.Collection,
 	}).Info("Processing record")
 
-	err := store.Transmitter.ProcessData(store.Table, seq, pj)
-	if err != nil {
-		log.Error(err)
-		return false
+	if store.Transmitter != nil {
+		err := store.Transmitter.ProcessData(store.Table, seq, pj)
+		if err != nil {
+			log.Error(err)
+			return false
+		}
 	}
 
 	// Trigger
-	err = store.TriggerManager.Handle(store.Name, pj)
+	err := store.TriggerManager.Handle(store.Name, pj)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"source": eventStore.id,
