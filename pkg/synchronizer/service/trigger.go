@@ -21,8 +21,10 @@ type Action struct {
 
 func (trigger *Trigger) IsMatch(storeName string, pj *projection.Projection) bool {
 
-	if storeName != trigger.Condition.Store {
-		return false
+	if len(trigger.Condition.Store) > 0 {
+		if storeName != trigger.Condition.Store {
+			return false
+		}
 	}
 
 	if len(trigger.Condition.Collection) > 0 {

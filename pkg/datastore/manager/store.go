@@ -213,8 +213,7 @@ func (store *Store) Write(data []byte) (uint64, error) {
 	}
 
 	// Getting sequence
-	seq := store.counter.Count()
-	store.counter.Increase(1)
+	seq := store.counter.Increase(1)
 
 	// Preparing key-value
 	key := Uint64ToBytes(seq)
