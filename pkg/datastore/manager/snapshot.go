@@ -153,8 +153,6 @@ func (snapshot *Snapshot) handle(seq uint64, data *projection.Projection) {
 		return
 	}
 
-	defer value.Free()
-
 	// Not found
 	if value.Size() > 0 {
 		orig, err := projection.Unmarshal(value.Data())
@@ -174,6 +172,7 @@ func (snapshot *Snapshot) handle(seq uint64, data *projection.Projection) {
 		// Write to database
 		snapshot.writeData(cfHandle, stateHandle, seq, key, newData)
 
+		value.Free()
 		return
 	}
 
@@ -182,6 +181,8 @@ func (snapshot *Snapshot) handle(seq uint64, data *projection.Projection) {
 
 	// Write to database
 	snapshot.writeData(cfHandle, stateHandle, seq, key, newData)
+
+	value.Free()
 }
 
 func (snapshot *Snapshot) writeData(cfHandle *gorocksdb.ColumnFamilyHandle, stateHandle *gorocksdb.ColumnFamilyHandle, seq uint64, key []byte, data []byte) {
