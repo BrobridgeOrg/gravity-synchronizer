@@ -33,7 +33,7 @@ type Exporter struct {
 
 func (ex *Exporter) Initialize() error {
 
-	ex.output = make(chan *projection.Projection, 1024)
+	ex.output = make(chan *projection.Projection, 4096)
 
 	if len(ex.channel) == 0 {
 		ex.channel = DefaultChannel

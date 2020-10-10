@@ -91,6 +91,10 @@ func (sub *Subscription) Watch(iter *gorocksdb.Iterator, fn datastore.StoreHandl
 
 func (sub *Subscription) Publish(seq uint64, data *projection.Projection) error {
 
+	if !sub.tailing {
+		return nil
+	}
+
 	// Allocate
 	event := eventPool.Get().(*Event)
 	event.Sequence = seq
