@@ -59,7 +59,11 @@ func (store *Store) AddEventSource(eventStore *EventStore) error {
 		if success {
 			err = eventStore.UpdateDurableState(store.Name, seq)
 			if err != nil {
-				log.Error(err)
+				log.WithFields(log.Fields{
+					"component": "store",
+					"store":     store.Name,
+					"seq":       seq,
+				}).Error(err)
 			}
 		}
 
@@ -128,7 +132,9 @@ func (store *Store) ProcessData(eventStore *EventStore, seq uint64, pj *projecti
 	if store.Transmitter != nil {
 		err := store.Transmitter.ProcessData(store.Table, seq, pj)
 		if err != nil {
-			log.Error(err)
+			log.WithFields(log.Fields{
+				"component": "transmitter",
+			}).Error(err)
 			return false
 		}
 	}
@@ -137,9 +143,10 @@ func (store *Store) ProcessData(eventStore *EventStore, seq uint64, pj *projecti
 	err := store.TriggerManager.Handle(store.Name, pj)
 	if err != nil {
 		log.WithFields(log.Fields{
-			"source": eventStore.id,
-			"seq":    seq,
-			"store":  store.Name,
+			"component": "trigger",
+			"source":    eventStore.id,
+			"seq":       seq,
+			"store":     store.Name,
 		}).Error(err)
 	}
 
