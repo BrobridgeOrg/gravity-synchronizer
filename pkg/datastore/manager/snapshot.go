@@ -124,6 +124,11 @@ func (snapshot *Snapshot) handle(seq uint64, data *projection.Projection) {
 		log.Error("Not found \"snapshot\" column family")
 	}
 
+	stateHandle, err := snapshot.store.GetColumnFamailyHandle("snapshot_states")
+	if err != nil {
+		log.Error("Not found \"snapshot_states\" column family")
+	}
+
 	// Getting data of primary key
 	primaryKey, err := snapshot.getPrimaryKeyData(data)
 	if primaryKey == nil {
@@ -159,7 +164,7 @@ func (snapshot *Snapshot) handle(seq uint64, data *projection.Projection) {
 			newData, _ := data.ToJSON()
 
 			// Write to database
-			snapshot.writeData(cfHandle, seq, key, newData)
+			snapshot.writeData(cfHandle, stateHandle, seq, key, newData)
 
 			return
 		}
@@ -167,7 +172,7 @@ func (snapshot *Snapshot) handle(seq uint64, data *projection.Projection) {
 		newData := snapshot.merge(orig, data)
 
 		// Write to database
-		snapshot.writeData(cfHandle, seq, key, newData)
+		snapshot.writeData(cfHandle, stateHandle, seq, key, newData)
 
 		return
 	}
@@ -176,10 +181,10 @@ func (snapshot *Snapshot) handle(seq uint64, data *projection.Projection) {
 	newData, _ := data.ToJSON()
 
 	// Write to database
-	snapshot.writeData(cfHandle, seq, key, newData)
+	snapshot.writeData(cfHandle, stateHandle, seq, key, newData)
 }
 
-func (snapshot *Snapshot) writeData(cfHandle *gorocksdb.ColumnFamilyHandle, seq uint64, key []byte, data []byte) {
+func (snapshot *Snapshot) writeData(cfHandle *gorocksdb.ColumnFamilyHandle, stateHandle *gorocksdb.ColumnFamilyHandle, seq uint64, key []byte, data []byte) {
 
 	// Write to database
 	err := snapshot.store.db.PutCF(snapshot.store.wo, cfHandle, key, data)
@@ -189,7 +194,7 @@ func (snapshot *Snapshot) writeData(cfHandle *gorocksdb.ColumnFamilyHandle, seq 
 
 	// Update snapshot state
 	seqData := Uint64ToBytes(seq)
-	err = snapshot.store.db.PutCF(snapshot.store.wo, cfHandle, LastSequenceKey, seqData)
+	err = snapshot.store.db.PutCF(snapshot.store.wo, stateHandle, LastSequenceKey, seqData)
 	if err != nil {
 		log.Error(err)
 	}
