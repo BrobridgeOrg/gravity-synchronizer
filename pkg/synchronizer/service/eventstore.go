@@ -83,13 +83,19 @@ func (es *EventStore) Write(data []byte) error {
 	// Event sourcing
 	seq, err := es.store.Write(data)
 	if err != nil {
+
+		log.WithFields(log.Fields{
+			"pipeline": es.id,
+			"seq":      seq,
+		}).Error(err)
+
 		return err
 	}
-
-	log.WithFields(log.Fields{
-		"pipeline": es.id,
-		"seq":      seq,
-	}).Info("Stored event")
-
+	/*
+		log.WithFields(log.Fields{
+			"pipeline": es.id,
+			"seq":      seq,
+		}).Info("Stored event")
+	*/
 	return nil
 }

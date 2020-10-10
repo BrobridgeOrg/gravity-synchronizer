@@ -117,7 +117,6 @@ func (pipeline *Pipeline) handleMessage(m *nats.Msg) {
 	// Event sourcing
 	err := pipeline.eventStore.Write(m.Data)
 	if err != nil {
-		log.Error(err)
 		m.Respond(FailureReply)
 		return
 	}

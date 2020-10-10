@@ -38,7 +38,10 @@ func (store *Store) AddEventSource(eventStore *EventStore) error {
 	// Getting durable state of store
 	durableSeq, err := eventStore.GetDurableState(store.Name)
 	if err != nil {
-		log.Error(err)
+		log.WithFields(log.Fields{
+			"component": "store",
+			"store":     store.Name,
+		}).Error(err)
 		return err
 	}
 
@@ -121,14 +124,14 @@ func (store *Store) ProcessData(eventStore *EventStore, seq uint64, pj *projecti
 	if !store.IsMatch(pj) {
 		return true
 	}
-
-	log.WithFields(log.Fields{
-		"source":     eventStore.id,
-		"seq":        seq,
-		"store":      store.Name,
-		"collection": pj.Collection,
-	}).Info("Processing record")
-
+	/*
+		log.WithFields(log.Fields{
+			"source":     eventStore.id,
+			"seq":        seq,
+			"store":      store.Name,
+			"collection": pj.Collection,
+		}).Info("Processing record")
+	*/
 	if store.Transmitter != nil {
 		err := store.Transmitter.ProcessData(store.Table, seq, pj)
 		if err != nil {
