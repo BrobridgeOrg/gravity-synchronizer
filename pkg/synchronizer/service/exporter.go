@@ -66,22 +66,22 @@ func (ex *Exporter) Initialize() error {
 
 	ex.pool = p
 
+	return ex.InitWorkers()
+}
+
+func (ex *Exporter) InitWorkers() error {
+
 	// Multiplexing
-	go func() {
+	for i := 0; i < 4; i++ {
 
-		for {
-			pj := <-ex.output
-			ex.send(pj)
-		}
-	}()
+		go func() {
 
-	go func() {
-
-		for {
-			pj := <-ex.output
-			ex.send(pj)
-		}
-	}()
+			for {
+				pj := <-ex.output
+				ex.send(pj)
+			}
+		}()
+	}
 
 	return nil
 }
