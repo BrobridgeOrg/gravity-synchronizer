@@ -1,7 +1,6 @@
 package synchronizer
 
 import (
-	"encoding/json"
 	"io/ioutil"
 	"os"
 

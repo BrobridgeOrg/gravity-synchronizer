@@ -7,8 +7,11 @@ import (
 
 	"github.com/BrobridgeOrg/gravity-synchronizer/pkg/app"
 	grpc_connection_pool "github.com/cfsghost/grpc-connection-pool"
+	jsoniter "github.com/json-iterator/go"
 	log "github.com/sirupsen/logrus"
 )
+
+var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
 type Synchronizer struct {
 	app             app.App
