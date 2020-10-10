@@ -66,13 +66,20 @@ func (ex *Exporter) Initialize() error {
 
 	ex.pool = p
 
+	// Multiplexing
 	go func() {
 
 		for {
-			select {
-			case pj := <-ex.output:
-				ex.send(pj)
-			}
+			pj := <-ex.output
+			ex.send(pj)
+		}
+	}()
+
+	go func() {
+
+		for {
+			pj := <-ex.output
+			ex.send(pj)
 		}
 	}()
 

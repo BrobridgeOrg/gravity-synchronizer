@@ -83,18 +83,21 @@ func (t *Transmitter) Init() error {
 
 func (t *Transmitter) Insert(table string, data map[string]interface{}, callback func(error)) error {
 
-	record := &transmitter.Record{
-		Table:  table,
-		Method: transmitter.Method_INSERT,
-		Fields: make([]*transmitter.Field, 0, len(data)),
-	}
+	// Prepare record
+	record := recordPool.Get().(*transmitter.Record)
+	record.Table = table
+	record.Method = transmitter.Method_INSERT
+	record.Fields = make([]*transmitter.Field, 0, len(data))
 
 	for key, value := range data {
 
 		// Convert value to protobuf format
 		v, err := t.getValue(value)
 		if err != nil {
-			log.Error(err)
+			log.WithFields(log.Fields{
+				"component": "transmitter",
+				"action":    "insert",
+			}).Error(err)
 			continue
 		}
 
@@ -120,7 +123,10 @@ func (t *Transmitter) Truncate(table string) error {
 		Table: table,
 	})
 	if err != nil {
-		log.Error(err)
+		log.WithFields(log.Fields{
+			"component": "transmitter",
+			"action":    "truncate",
+		}).Error(err)
 		return err
 	}
 
@@ -160,7 +166,10 @@ func (t *Transmitter) ProcessData(table string, sequence uint64, pj *projection.
 		// Convert value to protobuf format
 		v, err := t.getValue(field.Value)
 		if err != nil {
-			log.Error(err)
+			log.WithFields(log.Fields{
+				"component": "transmitter",
+				"action":    "ProcessData",
+			}).Error(err)
 			continue
 		}
 
