@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"sync"
 	"time"
 
 	"github.com/BrobridgeOrg/gravity-synchronizer/pkg/projection"
@@ -27,6 +28,12 @@ var (
 
 	TransmitterErr = errors.New("Transmitter error")
 )
+
+var recordPool = sync.Pool{
+	New: func() interface{} {
+		return &transmitter.Record{}
+	},
+}
 
 type Transmitter struct {
 	name    string
@@ -129,12 +136,17 @@ func (t *Transmitter) Truncate(table string) error {
 
 func (t *Transmitter) ProcessData(table string, sequence uint64, pj *projection.Projection) error {
 
-	record := &transmitter.Record{
-		EventName: pj.EventName,
-		Table:     table,
-		Fields:    make([]*transmitter.Field, 0, len(pj.Fields)),
-	}
-
+	record := recordPool.Get().(*transmitter.Record)
+	record.EventName = pj.EventName
+	record.Table = table
+	record.Fields = make([]*transmitter.Field, 0, len(pj.Fields))
+	/*
+		record := &transmitter.Record{
+			EventName: pj.EventName,
+			Table:     table,
+			Fields:    make([]*transmitter.Field, 0, len(pj.Fields)),
+		}
+	*/
 	if pj.Method == "delete" {
 		record.Method = transmitter.Method_DELETE
 	} else if pj.Method == "update" {
@@ -176,11 +188,17 @@ func (t *Transmitter) handle(record *transmitter.Record) error {
 	grpcCtx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
+	// Send record
 	reply, err := client.Send(grpcCtx, record)
 	if err != nil {
+		// Release
+		recordPool.Put(record)
 		log.Error(err)
 		return err
 	}
+
+	// Release
+	recordPool.Put(record)
 
 	if !reply.Success {
 		log.WithFields(log.Fields{

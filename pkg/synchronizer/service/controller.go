@@ -21,7 +21,7 @@ func (synchronizer *Synchronizer) initControllerConnection() error {
 
 	log.WithFields(log.Fields{
 		"address": address,
-	}).Info("Initializing controller connection")
+	}).Info("Connecting to controller ...")
 
 	options := &grpc_connection_pool.Options{
 		InitCap:     8,
@@ -40,6 +40,8 @@ func (synchronizer *Synchronizer) initControllerConnection() error {
 	}
 
 	synchronizer.controllerConns = p
+
+	log.Info("Connected to controller ...")
 
 	return nil
 }
