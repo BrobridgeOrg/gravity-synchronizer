@@ -14,6 +14,7 @@ require (
 	github.com/soheilhy/cmux v0.1.4
 	github.com/spf13/viper v1.7.1
 	github.com/tecbot/gorocksdb v0.0.0-20191217155057-f0fad39f321c
+	go.uber.org/automaxprocs v1.3.0
 	google.golang.org/grpc v1.31.1
 )
 

@@ -57,6 +57,9 @@ func (pipeline *Pipeline) Init() error {
 		return err
 	}
 
+	sub.SetPendingLimits(-1, -1)
+	connection.Flush()
+
 	pipeline.subscription = sub
 
 	return nil

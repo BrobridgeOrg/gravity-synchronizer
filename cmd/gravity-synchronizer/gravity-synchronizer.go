@@ -5,6 +5,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
+	_ "go.uber.org/automaxprocs"
 
 	app "github.com/BrobridgeOrg/gravity-synchronizer/pkg/app/instance"
 )
