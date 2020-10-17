@@ -1,8 +1,9 @@
 package projection
 
 import (
-	"encoding/json"
 	"sync"
+
+	jsoniter "github.com/json-iterator/go"
 )
 
 type Field struct {
@@ -23,6 +24,8 @@ type JSONResult struct {
 	Collection string                 `json:"table"`
 	Payload    map[string]interface{} `json:"payload"`
 }
+
+var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
 var pool = sync.Pool{
 	New: func() interface{} {
