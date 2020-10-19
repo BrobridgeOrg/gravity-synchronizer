@@ -3,9 +3,9 @@ module gravity-synchronizer
 go 1.13
 
 require (
-	github.com/BrobridgeOrg/gravity-api v0.0.0-20201005083130-0c244aa1bdae
+	github.com/BrobridgeOrg/gravity-api v0.2.2
 	github.com/BrobridgeOrg/gravity-synchronizer v0.0.0-00010101000000-000000000000
-	github.com/cfsghost/grpc-connection-pool v0.2.0
+	github.com/cfsghost/grpc-connection-pool v0.4.0
 	github.com/golang/protobuf v1.4.2
 	github.com/json-iterator/go v1.1.6
 	github.com/nats-io/nats.go v1.10.0

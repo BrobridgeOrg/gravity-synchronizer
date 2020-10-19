@@ -12,6 +12,8 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+var counter uint64
+
 var SuccessReply, _ = proto.Marshal(&pipeline_pb.PipelineReply{
 	Success: true,
 })
@@ -116,7 +118,12 @@ func (pipeline *Pipeline) release() error {
 }
 
 func (pipeline *Pipeline) handleMessage(m *nats.Msg) {
-
+	/*
+		id := atomic.AddUint64((*uint64)(&counter), 1)
+		if id%1000 == 0 {
+			log.Info(id)
+		}
+	*/
 	// Event sourcing
 	err := pipeline.eventStore.Write(m.Data)
 	if err != nil {

@@ -64,6 +64,12 @@ func (ex *Exporter) Initialize() error {
 		return err
 	}
 
+	// Register initializer for stream
+	p.SetStreamInitializer("sendEvent", func(conn *grpc.ClientConn) (interface{}, error) {
+		client := exporter.NewExporterClient(conn)
+		return client.SendEventStream(context.Background())
+	})
+
 	ex.pool = p
 
 	return ex.InitWorkers()
@@ -104,17 +110,12 @@ func (ex *Exporter) send(pj *projection.Projection) error {
 
 func (ex *Exporter) Emit(eventName string, data []byte) error {
 
-	conn, err := ex.pool.Get()
+	// Getting stream from pool
+	s, err := ex.pool.GetStream("sendEvent")
 	if err != nil {
-		log.Error(err)
-		return err
+		log.Error("Failed to get connection: %v", err)
+		return errors.New("Cannot connect to exporter")
 	}
-
-	client := exporter.NewExporterClient(conn)
-
-	// Preparing context and timeout settings
-	grpcCtx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	defer cancel()
 
 	// Preparing request
 	request := sendEventRequestPool.Get().(*exporter.SendEventRequest)
@@ -122,24 +123,49 @@ func (ex *Exporter) Emit(eventName string, data []byte) error {
 	request.Payload = data
 
 	// Send request
-	reply, err := client.SendEvent(grpcCtx, request)
+	err = s.(exporter.Exporter_SendEventStreamClient).Send(request)
+	sendEventRequestPool.Put(request)
 	if err != nil {
-
-		// Release
-		sendEventRequestPool.Put(request)
 		log.Error(err)
 		return err
 	}
+	/*
+		conn, err := ex.pool.Get()
+		if err != nil {
+			log.Error(err)
+			return err
+		}
 
-	// Release
-	sendEventRequestPool.Put(request)
+		client := exporter.NewExporterClient(conn)
 
-	if !reply.Success {
-		log.WithFields(log.Fields{
-			"reason": reply.Reason,
-		}).Error("Exporter error")
-		return errors.New(reply.Reason)
-	}
+		// Preparing context and timeout settings
+		grpcCtx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		defer cancel()
 
+		// Preparing request
+		request := sendEventRequestPool.Get().(*exporter.SendEventRequest)
+		request.Channel = eventName
+		request.Payload = data
+
+		// Send request
+		reply, err := client.SendEvent(grpcCtx, request)
+		if err != nil {
+
+			// Release
+			sendEventRequestPool.Put(request)
+			log.Error(err)
+			return err
+		}
+
+		// Release
+		sendEventRequestPool.Put(request)
+
+		if !reply.Success {
+			log.WithFields(log.Fields{
+				"reason": reply.Reason,
+			}).Error("Exporter error")
+			return errors.New(reply.Reason)
+		}
+	*/
 	return nil
 }
