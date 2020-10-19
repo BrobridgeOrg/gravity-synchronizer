@@ -118,12 +118,7 @@ func (ex *Exporter) Emit(eventName string, data []byte) error {
 	// Getting stream from pool
 	err := ex.pool.GetStream("sendEvent", func(s interface{}) error {
 		// Send request
-		err := s.(exporter.Exporter_SendEventStreamClient).Send(request)
-		if err != nil {
-			log.Error(err)
-		}
-
-		return err
+		return s.(exporter.Exporter_SendEventStreamClient).Send(request)
 	})
 	sendEventRequestPool.Put(request)
 	if err != nil {
