@@ -3,13 +3,15 @@ package datastore
 import (
 	"bytes"
 	"encoding/gob"
-	"encoding/json"
 	"sync"
 
 	"github.com/BrobridgeOrg/gravity-synchronizer/pkg/projection"
+	jsoniter "github.com/json-iterator/go"
 	log "github.com/sirupsen/logrus"
 	"github.com/tecbot/gorocksdb"
 )
+
+var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
 var LastSequenceKey = []byte("lastSeq")
 

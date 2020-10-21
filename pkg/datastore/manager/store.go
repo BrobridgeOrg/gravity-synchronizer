@@ -274,13 +274,12 @@ func (store *Store) GetDurableState(durableName string) (uint64, error) {
 		return 0, err
 	}
 
-	defer value.Free()
-
 	if !value.Exists() {
 		return 0, nil
 	}
 
 	lastSeq := BytesToUint64(value.Data())
+	value.Free()
 
 	return lastSeq, nil
 }

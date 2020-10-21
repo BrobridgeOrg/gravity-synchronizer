@@ -32,7 +32,7 @@ type Subscription struct {
 func NewSubscription() *Subscription {
 	return &Subscription{
 		close: make(chan struct{}),
-		queue: make(chan *Event, 1024),
+		queue: make(chan *Event, 102400),
 	}
 }
 
@@ -80,11 +80,10 @@ func (sub *Subscription) Watch(iter *gorocksdb.Iterator, fn datastore.StoreHandl
 		case event := <-sub.queue:
 			// Invoke data handler
 			quit := sub.handle(event.Sequence, event.Data, fn)
+			eventPool.Put(event)
 			if quit {
 				return
 			}
-
-			eventPool.Put(event)
 		}
 	}
 }
