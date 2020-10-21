@@ -8,11 +8,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-type Event struct {
-	Seq  uint64
-	Data []byte
-}
-
 type EventStore struct {
 	synchronizer  *Synchronizer
 	id            uint64
