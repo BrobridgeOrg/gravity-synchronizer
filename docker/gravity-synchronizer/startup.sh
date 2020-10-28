@@ -12,8 +12,8 @@ get_args() {
 	[ "$stores" != "" ] && {
 		storeConfigPath="./rules/stores.json"
 
-		[ "$GRAVITY_SYNCHRONIZER_RULES_STORECONFIG" != "" ] && {
-			storeConfigPath=$GRAVITY_SYNCHRONIZER_RULES_STORECONFIG
+		[ "$GRAVITY_SYNCHRONIZER_RULES_STORE" != "" ] && {
+			storeConfigPath=$GRAVITY_SYNCHRONIZER_RULES_STORE
 		} 
 
 		echo $stores > $storeConfigPath
@@ -21,36 +21,36 @@ get_args() {
 
 	triggers=$(get_args triggers "$@")
 	[ "$triggers" != "" ] && {
-		triggerConfigPath="./rules/triggers.json"
+		triggerConfigPath="./rules/trigger.json"
 
-		[ "$GRAVITY_SYNCHRONIZER_RULES_TIGGERCONFIG" != "" ] && {
-			triggerConfigPath=$GRAVITY_SYNCHRONIZER_RULES_TRIGGERCONFIG
+		[ "$GRAVITY_SYNCHRONIZER_RULES_TRIGGER" != "" ] && {
+			triggerConfigPath=$GRAVITY_SYNCHRONIZER_RULES_TRIGGER
 		} 
 
 		echo $triggers > $triggerConfigPath
 	}
 
-	db=$(get_args db "$@")
-	[ "$db" != "" ] &&{
-		dbConfigPath="./rules/database.json"
+	transmitter=$(get_args transmitter "$@")
+	[ "$transmitter" != "" ] &&{
+		transmitterConfigPath="./rules/transmitter.json"
 
-		[ "$GRAVITY_SYNCHRONIZER_RULES_DBCONFIG" != "" ] && {
-			dbConfigPath=$GRAVITY_SYNCHRONIZER_RULES_DBCONFIG
+		[ "$GRAVITY_SYNCHRONIZER_RULES_TRANSMITTER" != "" ] && {
+			transmitterConfigPath=$GRAVITY_SYNCHRONIZER_RULES_TRANSMITTER
 		} 
 
-		echo $db > $dbConfigPath
+		echo $transmitter > $transmitterConfigPath
 	}
 
 	exporter=$(get_args exporter "$@")
 	[ "$exporter" != "" ] &&{
 		exporterConfigPath="./rules/exporter.json"
 
-		[ "$GRAVITY_SYNCHRONIZER_RULES_EXPORTERCONFIG" != "" ] && {
-			exporterConfigPath=$GRAVITY_SYNCHRONIZER_RULES_EXPORTERCONFIG
+		[ "$GRAVITY_SYNCHRONIZER_RULES_EXPORTER" != "" ] && {
+			exporterConfigPath=$GRAVITY_SYNCHRONIZER_RULES_EXPORTER
 		} 
 
 		echo $exporter > $exporterConfigPath
 	}
 }
 export GRAVITY_SYNCHRONIZER_EVENT_STORE_CLIENT_NAME=$(hostname)
-/gravity-synchronizer
+exec /gravity-synchronizer
