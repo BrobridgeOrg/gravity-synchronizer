@@ -1,14 +1,14 @@
 {
-	"store": [
-		{
+	"stores": {
+		"postgres_users": {
 			"collection": "users",
 			"database": "my_postgres",
 			"table": "users"
 		},
-		{
+		"postgres_accounts": {
 			"collection": "accounts",
-			"database": "my_postgres",
+			"database": "my_postgres111",
 			"table": "accounts"
 		}
-	]
+	}
 }
