@@ -1,0 +1,22 @@
+[service]
+port = 44448
+
+[eventbus]
+host = "0.0.0.0"
+port = 32803
+pingInterval = 10
+maxPingsOutstanding = 3
+maxReconnects = -1
+
+[controller]
+host = "0.0.0.0"
+port = 40000
+
+[datastore]
+path = "./datastore"
+
+[rules]
+store = "./rules/store.json"
+transmitter = "./rules/transmitter.json"
+exporter = "./rules/exporter.json"
+trigger = "./rules/trigger.json"
