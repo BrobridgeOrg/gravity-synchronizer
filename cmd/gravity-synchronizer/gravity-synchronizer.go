@@ -1,11 +1,11 @@
 package main
 
 import (
+	"runtime"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
-	_ "go.uber.org/automaxprocs"
 
 	app "github.com/BrobridgeOrg/gravity-synchronizer/pkg/app/instance"
 )
@@ -25,6 +25,7 @@ func init() {
 	if err := viper.ReadInConfig(); err != nil {
 		log.Warn("No configuration file was loaded")
 	}
+	runtime.GOMAXPROCS(8)
 }
 
 func main() {
