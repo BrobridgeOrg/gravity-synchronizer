@@ -28,6 +28,8 @@ type Pipeline struct {
 	id           uint64
 	subscription *nats.Subscription
 	eventStore   *EventStore
+	incoming     chan *nats.Msg
+	closed       chan struct{}
 }
 
 func NewPipeline(synchronizer *Synchronizer, id uint64) *Pipeline {
@@ -35,10 +37,16 @@ func NewPipeline(synchronizer *Synchronizer, id uint64) *Pipeline {
 		synchronizer: synchronizer,
 		id:           id,
 		eventStore:   NewEventStore(synchronizer, id),
+		incoming:     make(chan *nats.Msg, 1024),
+		closed:       make(chan struct{}),
 	}
 }
 
 func (pipeline *Pipeline) Init() error {
+
+	// Initializing message receiver
+	// TODO: close when pipeline was releaseed
+	go pipeline.messageReceiver()
 
 	// Initializing event store
 	err := pipeline.eventStore.Init()
@@ -54,7 +62,10 @@ func (pipeline *Pipeline) Init() error {
 	log.WithFields(log.Fields{
 		"channel": channel,
 	}).Info("Subscribing to pipeline channel")
-	sub, err := connection.Subscribe(channel, pipeline.handleMessage)
+	//sub, err := connection.Subscribe(channel, pipeline.handleMessage)
+	sub, err := connection.Subscribe(channel, func(m *nats.Msg) {
+		pipeline.incoming <- m
+	})
 	if err != nil {
 		return err
 	}
@@ -83,6 +94,9 @@ func (pipeline *Pipeline) Uninit() error {
 	if err != nil {
 		return err
 	}
+
+	// close channels
+	pipeline.closed <- struct{}{}
 
 	return nil
 }
@@ -115,6 +129,22 @@ func (pipeline *Pipeline) release() error {
 	}
 
 	return nil
+}
+
+func (pipeline *Pipeline) messageReceiver() {
+
+ForLoop:
+	for {
+		select {
+		case m := <-pipeline.incoming:
+			pipeline.handleMessage(m)
+		case <-pipeline.closed:
+			break ForLoop
+		}
+	}
+
+	close(pipeline.incoming)
+	close(pipeline.closed)
 }
 
 func (pipeline *Pipeline) handleMessage(m *nats.Msg) {
