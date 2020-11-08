@@ -37,7 +37,7 @@ func NewSnapshot(store *Store) *Snapshot {
 	return &Snapshot{
 		store: store,
 		close: make(chan struct{}),
-		queue: make(chan *Record, 1024),
+		queue: make(chan *Record, 10240),
 	}
 }
 
@@ -67,22 +67,24 @@ func (snapshot *Snapshot) Initialize() error {
 
 	value.Free()
 
-	go func() {
-		for {
-			select {
-			case <-snapshot.close:
-				return
-			case record := <-snapshot.queue:
-				// Invoke data handler
-				snapshot.handle(record.Sequence, record.Data)
-
-				// Release
-				recordPool.Put(record)
-			}
-		}
-	}()
+	go snapshot.DataReceiver()
 
 	return nil
+}
+
+func (snapshot *Snapshot) DataReceiver() {
+	for {
+		select {
+		case record := <-snapshot.queue:
+			// Invoke data handler
+			snapshot.handle(record.Sequence, record.Data)
+
+			// Release
+			recordPool.Put(record)
+		case <-snapshot.close:
+			return
+		}
+	}
 }
 
 func (snapshot *Snapshot) Close() {
