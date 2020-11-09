@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/BrobridgeOrg/gravity-synchronizer/pkg/app"
+	gosharding "github.com/cfsghost/gosharding"
 	grpc_connection_pool "github.com/cfsghost/grpc-connection-pool"
 	jsoniter "github.com/json-iterator/go"
 	log "github.com/sirupsen/logrus"
@@ -17,6 +18,7 @@ type Synchronizer struct {
 	app             app.App
 	eventBus        *EventBus
 	controllerConns *grpc_connection_pool.GRPCPool
+	shard           *gosharding.Shard
 	clientID        string
 	pipelines       map[uint64]*Pipeline
 
@@ -58,6 +60,12 @@ func (synchronizer *Synchronizer) Init() error {
 	log.WithFields(log.Fields{
 		"clientID": synchronizer.clientID,
 	}).Info("Initializing synchronizer")
+
+	// Initializing shard
+	err = synchronizer.initializeShard()
+	if err != nil {
+		return err
+	}
 
 	// Initializing eventbus
 	err = synchronizer.eventBus.Initialize()
@@ -114,6 +122,23 @@ func (synchronizer *Synchronizer) Init() error {
 	}
 
 	// TODO: health checks
+
+	return nil
+}
+
+func (synchronizer *Synchronizer) initializeShard() error {
+
+	// Initializing shard
+	options := gosharding.NewOptions()
+	options.PipelineCount = 128
+	options.BufferSize = 102400
+	options.Handler = func(id int32, data interface{}) {
+		event := data.(*PipelineEvent)
+		event.Pipeline.push(event)
+	}
+
+	// Create shard with options
+	synchronizer.shard = gosharding.NewShard(options)
 
 	return nil
 }

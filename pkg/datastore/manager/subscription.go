@@ -24,9 +24,10 @@ type Event struct {
 }
 
 type Subscription struct {
-	close   chan struct{}
-	queue   chan *Event
-	tailing bool
+	lastSequence uint64
+	close        chan struct{}
+	queue        chan *Event
+	tailing      bool
 }
 
 func NewSubscription() *Subscription {
@@ -38,54 +39,77 @@ func NewSubscription() *Subscription {
 
 func (sub *Subscription) Close() {
 	sub.close <- struct{}{}
+	close(sub.close)
+	close(sub.queue)
 }
 
 func (sub *Subscription) Watch(iter *gorocksdb.Iterator, fn datastore.StoreHandler) {
 
-	for ; iter.Valid(); iter.Next() {
+	for {
 
-		select {
-		case <-sub.close:
-			return
-		default:
-			key := iter.Key()
-			value := iter.Value()
-			seq := BytesToUint64(key.Data())
+		for ; iter.Valid(); iter.Next() {
 
-			// Parsing data
-			pj, err := projection.Unmarshal(value.Data())
-			if err != nil {
+			select {
+			case <-sub.close:
+				return
+			default:
+				key := iter.Key()
+				value := iter.Value()
+				seq := BytesToUint64(key.Data())
+
+				sub.lastSequence = seq
+
+				// Parsing data
+				pj, err := projection.Unmarshal(value.Data())
+				if err != nil {
+					key.Free()
+					value.Free()
+					continue
+				}
+
+				// Release
 				key.Free()
 				value.Free()
-				continue
+
+				// Invoke data handler
+				quit := sub.handle(seq, pj, fn)
+				if quit {
+					return
+				}
+			}
+		}
+
+		sub.tailing = true
+
+		// Trying to get data from store again to make sure it is tailing
+		if sub.lastSequence != 0 {
+			iter.Seek(Uint64ToBytes(sub.lastSequence))
+			if !iter.Valid() {
+				// Weird. It seems that message was deleted already somehow
+				break
 			}
 
-			// Release
-			key.Free()
-			value.Free()
-
-			// Invoke data handler
-			quit := sub.handle(seq, pj, fn)
-			if quit {
-				return
+			iter.Next()
+			if !iter.Valid() {
+				// No data anymore
+				break
 			}
 		}
 	}
 
-	sub.tailing = true
-
 	// Receving real-time events
-	for {
-		select {
-		case <-sub.close:
+	for event := range sub.queue {
+
+		// Ignore old messages
+		if event.Sequence <= sub.lastSequence {
+			continue
+		}
+
+		// Invoke data handler
+		quit := sub.handle(event.Sequence, event.Data, fn)
+		eventPool.Put(event)
+		if quit {
 			return
-		case event := <-sub.queue:
-			// Invoke data handler
-			quit := sub.handle(event.Sequence, event.Data, fn)
-			eventPool.Put(event)
-			if quit {
-				return
-			}
 		}
 	}
 }
@@ -93,6 +117,10 @@ func (sub *Subscription) Watch(iter *gorocksdb.Iterator, fn datastore.StoreHandl
 func (sub *Subscription) Publish(seq uint64, data *projection.Projection) error {
 
 	if !sub.tailing {
+		return nil
+	}
+
+	if seq <= sub.lastSequence {
 		return nil
 	}
 
