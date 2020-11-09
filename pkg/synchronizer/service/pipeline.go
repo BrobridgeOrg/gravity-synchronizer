@@ -37,7 +37,7 @@ func NewPipeline(synchronizer *Synchronizer, id uint64) *Pipeline {
 		synchronizer: synchronizer,
 		id:           id,
 		eventStore:   NewEventStore(synchronizer, id),
-		incoming:     make(chan *nats.Msg, 1024),
+		incoming:     make(chan *nats.Msg, 4096),
 		closed:       make(chan struct{}),
 	}
 }

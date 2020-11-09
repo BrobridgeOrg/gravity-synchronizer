@@ -18,7 +18,6 @@ type Store struct {
 	TriggerManager *TriggerManager
 
 	SourceSubs sync.Map
-	IsReady    bool
 }
 
 func NewStore() *Store {
@@ -26,7 +25,6 @@ func NewStore() *Store {
 }
 
 func (store *Store) Init() error {
-	store.IsReady = true
 	return nil
 }
 
@@ -106,10 +104,6 @@ func (store *Store) IsMatch(pj *projection.Projection) bool {
 }
 
 func (store *Store) ProcessData(eventStore *EventStore, seq uint64, pj *projection.Projection) bool {
-
-	if !store.IsReady {
-		return false
-	}
 
 	/*
 		log.WithFields(log.Fields{

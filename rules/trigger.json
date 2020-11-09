@@ -9,6 +9,16 @@
 				"type": "exporter",
 				"exporter": "myqueue"
 			}
+		},
+		{
+			"condition": {
+				"store": "postgres_accounts",
+				"event": "accountCreated"
+			},
+			"action": {
+				"type": "exporter",
+				"exporter": "myqueue"
+			}
 		}
 	]
 }

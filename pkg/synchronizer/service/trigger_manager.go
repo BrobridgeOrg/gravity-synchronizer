@@ -87,7 +87,6 @@ func (tm *TriggerManager) LoadTriggerFile(filename string) (*TriggerConfig, erro
 func (tm *TriggerManager) Handle(storeName string, pj *projection.Projection) error {
 
 	for _, trigger := range tm.Triggers {
-
 		if !trigger.IsMatch(storeName, pj) {
 			continue
 		}

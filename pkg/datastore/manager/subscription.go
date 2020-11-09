@@ -55,6 +55,8 @@ func (sub *Subscription) Watch(iter *gorocksdb.Iterator, fn datastore.StoreHandl
 			// Parsing data
 			pj, err := projection.Unmarshal(value.Data())
 			if err != nil {
+				key.Free()
+				value.Free()
 				continue
 			}
 
