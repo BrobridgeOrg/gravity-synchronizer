@@ -39,11 +39,12 @@ func NewSubscription() *Subscription {
 
 func (sub *Subscription) Close() {
 	sub.close <- struct{}{}
-	close(sub.close)
 	close(sub.queue)
 }
 
 func (sub *Subscription) Watch(iter *gorocksdb.Iterator, fn datastore.StoreHandler) {
+
+	defer close(sub.close)
 
 	for {
 
@@ -82,18 +83,16 @@ func (sub *Subscription) Watch(iter *gorocksdb.Iterator, fn datastore.StoreHandl
 		sub.tailing = true
 
 		// Trying to get data from store again to make sure it is tailing
-		if sub.lastSequence != 0 {
-			iter.Seek(Uint64ToBytes(sub.lastSequence))
-			if !iter.Valid() {
-				// Weird. It seems that message was deleted already somehow
-				break
-			}
+		iter.Seek(Uint64ToBytes(sub.lastSequence))
+		if !iter.Valid() {
+			// Weird. It seems that message was deleted already somehow
+			break
+		}
 
-			iter.Next()
-			if !iter.Valid() {
-				// No data anymore
-				break
-			}
+		iter.Next()
+		if !iter.Valid() {
+			// No data anymore
+			break
 		}
 	}
 
@@ -104,6 +103,8 @@ func (sub *Subscription) Watch(iter *gorocksdb.Iterator, fn datastore.StoreHandl
 		if event.Sequence <= sub.lastSequence {
 			continue
 		}
+
+		sub.lastSequence = event.Sequence
 
 		// Invoke data handler
 		quit := sub.handle(event.Sequence, event.Data, fn)

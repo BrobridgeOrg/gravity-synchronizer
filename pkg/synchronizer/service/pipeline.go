@@ -40,8 +40,6 @@ type Pipeline struct {
 	id           uint64
 	subscription *nats.Subscription
 	eventStore   *EventStore
-	incoming     chan *nats.Msg
-	closed       chan struct{}
 }
 
 func NewPipeline(synchronizer *Synchronizer, id uint64) *Pipeline {
@@ -49,8 +47,6 @@ func NewPipeline(synchronizer *Synchronizer, id uint64) *Pipeline {
 		synchronizer: synchronizer,
 		id:           id,
 		eventStore:   NewEventStore(synchronizer, id),
-		incoming:     make(chan *nats.Msg, 4096),
-		closed:       make(chan struct{}),
 	}
 }
 
@@ -81,8 +77,6 @@ func (pipeline *Pipeline) Init() error {
 		event.Pipeline = pipeline
 		event.Payload = m
 		pipeline.synchronizer.shard.Push(pipeline.id, event)
-
-		//		pipeline.incoming <- m
 	})
 	if err != nil {
 		return err
@@ -112,9 +106,6 @@ func (pipeline *Pipeline) Uninit() error {
 	if err != nil {
 		return err
 	}
-
-	// close channels
-	pipeline.closed <- struct{}{}
 
 	return nil
 }
@@ -149,23 +140,6 @@ func (pipeline *Pipeline) release() error {
 	return nil
 }
 
-/*
-func (pipeline *Pipeline) messageReceiver() {
-
-ForLoop:
-	for {
-		select {
-		case m := <-pipeline.incoming:
-			pipeline.handleMessage(m)
-		case <-pipeline.closed:
-			break ForLoop
-		}
-	}
-
-	close(pipeline.incoming)
-	close(pipeline.closed)
-}
-*/
 func (pipeline *Pipeline) push(event *PipelineEvent) {
 	event.Pipeline.handleMessage(event.Payload.(*nats.Msg))
 	pipelineEventPool.Put(event)
