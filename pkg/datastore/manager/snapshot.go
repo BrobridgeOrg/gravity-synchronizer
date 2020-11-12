@@ -3,7 +3,6 @@ package datastore
 import (
 	"bytes"
 	"encoding/gob"
-	"sync"
 
 	"github.com/BrobridgeOrg/gravity-synchronizer/pkg/projection"
 	jsoniter "github.com/json-iterator/go"
@@ -15,6 +14,7 @@ var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
 var LastSequenceKey = []byte("lastSeq")
 
+/*
 var recordPool = &sync.Pool{
 	New: func() interface{} {
 		return &Record{}
@@ -25,19 +25,19 @@ type Record struct {
 	Sequence uint64
 	Data     *projection.Projection
 }
-
+*/
 type Snapshot struct {
 	store   *Store
 	lastSeq uint64
-	close   chan struct{}
-	queue   chan *Record
+	//	close   chan struct{}
+	//	queue   chan *Record
 }
 
 func NewSnapshot(store *Store) *Snapshot {
 	return &Snapshot{
 		store: store,
-		close: make(chan struct{}),
-		queue: make(chan *Record, 10240),
+		//		close: make(chan struct{}),
+		//		queue: make(chan *Record, 10240),
 	}
 }
 
@@ -67,11 +67,12 @@ func (snapshot *Snapshot) Initialize() error {
 
 	value.Free()
 
-	go snapshot.DataReceiver()
+	//	go snapshot.DataReceiver()
 
 	return nil
 }
 
+/*
 func (snapshot *Snapshot) DataReceiver() {
 	for {
 		select {
@@ -83,10 +84,11 @@ func (snapshot *Snapshot) DataReceiver() {
 			recordPool.Put(record)
 		case <-snapshot.close:
 			return
+			//		case <-time.After(time.Millisecond * 30):
+			//			runtime.Gosched()
 		}
 	}
 }
-
 func (snapshot *Snapshot) Close() {
 	snapshot.close <- struct{}{}
 }
@@ -100,7 +102,7 @@ func (snapshot *Snapshot) Write(seq uint64, data *projection.Projection) {
 
 	snapshot.queue <- record
 }
-
+*/
 func (snapshot *Snapshot) getPrimaryKeyData(data *projection.Projection) ([]byte, error) {
 
 	for _, field := range data.Fields {
