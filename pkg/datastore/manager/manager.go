@@ -10,15 +10,16 @@ import (
 )
 
 type Manager struct {
-	dbPath string
-	stores map[string]*Store
-
-	options *gorocksdb.Options
+	dbPath            string
+	stores            map[string]*Store
+	options           *gorocksdb.Options
+	snapshotScheduler *SnapshotScheduler
 }
 
 func NewManager() *Manager {
 	return &Manager{
-		stores: make(map[string]*Store),
+		stores:            make(map[string]*Store),
+		snapshotScheduler: NewSnapshotScheduler(),
 	}
 }
 

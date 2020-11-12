@@ -229,7 +229,8 @@ func (store *Store) Write(data []byte) (uint64, error) {
 	if err == nil {
 
 		// Update snapshot
-		store.snapshot.Write(seq, pj)
+		//		store.snapshot.Write(seq, pj)
+		store.manager.snapshotScheduler.Request(store, seq, pj)
 
 		// Dispatch event to subscribers
 		store.DispatchEvent(seq, pj)
