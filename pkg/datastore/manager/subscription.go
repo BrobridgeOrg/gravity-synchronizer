@@ -28,7 +28,6 @@ type Subscription struct {
 	newTriggered chan struct{}
 	close        chan struct{}
 	queue        chan *Event
-	tailing      bool
 	watchFn      datastore.StoreHandler
 }
 
