@@ -316,7 +316,7 @@ func (store *Store) Subscribe(startAt uint64, fn datastore.StoreHandler) (datast
 	}
 
 	// Create a new subscription entry
-	sub := NewSubscription()
+	sub := NewSubscription(startAt, fn)
 
 	// Initializing iterator
 	ro := gorocksdb.NewDefaultReadOptions()
@@ -331,22 +331,27 @@ func (store *Store) Subscribe(startAt uint64, fn datastore.StoreHandler) (datast
 	store.registerSubscription(sub)
 
 	// Start watching
-	go store.watch(sub, iter, startAt, fn)
+	go store.watch(sub, iter, startAt)
 
 	return datastore.Subscription(sub), nil
 }
 
-func (store *Store) watch(sub *Subscription, iter *gorocksdb.Iterator, startAt uint64, fn datastore.StoreHandler) {
+func (store *Store) watch(sub *Subscription, iter *gorocksdb.Iterator, startAt uint64) {
 
 	defer func() {
 		iter.Close()
-		store.unregisterSubscription(sub)
+		//		store.unregisterSubscription(sub)
 	}()
+	/*
+		// Seek
+		key := Uint64ToBytes(startAt)
+		iter.Seek(key)
+		if !iter.Valid() {
+			return
+		}
 
-	// Seek
-	key := Uint64ToBytes(startAt)
-	iter.Seek(key)
-
+		iter.Next()
+	*/
 	// Start watching
-	sub.Watch(iter, fn)
+	sub.Watch(iter)
 }
