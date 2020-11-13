@@ -1,7 +1,6 @@
 package datastore
 
 import (
-	"sync"
 	"time"
 
 	"github.com/BrobridgeOrg/gravity-synchronizer/pkg/datastore"
@@ -12,22 +11,10 @@ import (
 
 type StoreHandler func(uint64, *projection.Projection) bool
 
-var eventPool = &sync.Pool{
-	New: func() interface{} {
-		return &Event{}
-	},
-}
-
-type Event struct {
-	Sequence uint64
-	Data     *projection.Projection
-}
-
 type Subscription struct {
 	lastSequence uint64
 	newTriggered chan struct{}
 	close        chan struct{}
-	queue        chan *Event
 	watchFn      datastore.StoreHandler
 }
 
@@ -36,14 +23,12 @@ func NewSubscription(startAt uint64, fn datastore.StoreHandler) *Subscription {
 		lastSequence: startAt,
 		newTriggered: make(chan struct{}),
 		close:        make(chan struct{}),
-		queue:        make(chan *Event, 102400),
 		watchFn:      fn,
 	}
 }
 
 func (sub *Subscription) Close() {
 	sub.close <- struct{}{}
-	close(sub.queue)
 }
 
 func (sub *Subscription) Watch(iter *gorocksdb.Iterator) {
