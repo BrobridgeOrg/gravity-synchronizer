@@ -124,82 +124,17 @@ func (sub *Subscription) Watch(iter *gorocksdb.Iterator) {
 				}
 			}
 		}
-		/*
-			// Trying to get data from store again to make sure it is tailing
-			iter.Seek(Uint64ToBytes(sub.lastSequence))
-			if !iter.Valid() {
-				// Weird. It seems that message was deleted already somehow
-				log.WithFields(log.Fields{
-					"seq": sub.lastSequence,
-				}).Error("message was missing somehow")
-				break
-			}
-
-			iter.Next()
-			if !iter.Valid() {
-				// No data anymore
-				//			break
-				continue
-			}
-		*/
 	}
-	/*
-		// Receving real-time events
-		for event := range sub.queue {
-
-			// Ignore old messages
-			if event.Sequence <= sub.lastSequence {
-				continue
-			}
-
-			sub.lastSequence = event.Sequence
-
-			// Invoke data handler
-			quit := sub.handle(event.Sequence, event.Data)
-			eventPool.Put(event)
-			if quit {
-				return
-			}
-		}
-	*/
 }
 
-func (sub *Subscription) Publish(seq uint64, data *projection.Projection) error {
-	/*
-			if !sub.tailing {
-				return nil
-			}
-		if seq <= sub.lastSequence {
-			return nil
-		}
-	*/
+func (sub *Subscription) Trigger() error {
 
 	select {
 	case sub.newTriggered <- struct{}{}:
 	default:
 		return nil
 	}
-	/*
-		lastSeq := atomic.LoadUint64((*uint64)(&sub.lastSequence))
-		log.Info(seq, lastSeq)
-		if seq != lastSeq+1 {
-			return nil
-		}
 
-		sub.tailing = true
-		atomic.StoreUint64((*uint64)(&sub.lastSequence), seq)
-		//	sub.lastSequence = seq
-
-		sub.handle(seq, data)
-	*/
-	/*
-		// Allocate
-		event := eventPool.Get().(*Event)
-		event.Sequence = seq
-		event.Data = data
-
-		sub.queue <- event
-	*/
 	return nil
 }
 

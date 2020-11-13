@@ -244,7 +244,7 @@ func (store *Store) DispatchEvent(seq uint64, pj *projection.Projection) {
 	// Publish event to all of subscription which is waiting for
 	store.subscriptions.Range(func(k, v interface{}) bool {
 		sub := v.(*Subscription)
-		sub.Publish(seq, pj)
+		sub.Trigger()
 		return true
 	})
 }
@@ -315,9 +315,6 @@ func (store *Store) Subscribe(startAt uint64, fn datastore.StoreHandler) (datast
 		return nil, errors.New("Not found \"events\" column family")
 	}
 
-	// Create a new subscription entry
-	sub := NewSubscription(startAt, fn)
-
 	// Initializing iterator
 	ro := gorocksdb.NewDefaultReadOptions()
 	ro.SetFillCache(false)
@@ -327,31 +324,24 @@ func (store *Store) Subscribe(startAt uint64, fn datastore.StoreHandler) (datast
 		return nil, iter.Err()
 	}
 
+	// Create a new subscription entry
+	sub := NewSubscription(startAt, fn)
+
 	// Register subscription
 	store.registerSubscription(sub)
 
 	// Start watching
-	go store.watch(sub, iter, startAt)
+	go store.watch(sub, iter)
 
 	return datastore.Subscription(sub), nil
 }
 
-func (store *Store) watch(sub *Subscription, iter *gorocksdb.Iterator, startAt uint64) {
+func (store *Store) watch(sub *Subscription, iter *gorocksdb.Iterator) {
 
 	defer func() {
 		iter.Close()
-		//		store.unregisterSubscription(sub)
+		store.unregisterSubscription(sub)
 	}()
-	/*
-		// Seek
-		key := Uint64ToBytes(startAt)
-		iter.Seek(key)
-		if !iter.Valid() {
-			return
-		}
 
-		iter.Next()
-	*/
-	// Start watching
 	sub.Watch(iter)
 }
