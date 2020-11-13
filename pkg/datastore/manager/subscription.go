@@ -2,7 +2,6 @@ package datastore
 
 import (
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/BrobridgeOrg/gravity-synchronizer/pkg/datastore"
@@ -54,8 +53,7 @@ func (sub *Subscription) Watch(iter *gorocksdb.Iterator) {
 
 	for _ = range sub.newTriggered {
 
-		lastSeq := atomic.LoadUint64((*uint64)(&sub.lastSequence))
-		iter.Seek(Uint64ToBytes(lastSeq))
+		iter.Seek(Uint64ToBytes(sub.lastSequence))
 		if !iter.Valid() {
 			//			break
 			continue
@@ -65,7 +63,7 @@ func (sub *Subscription) Watch(iter *gorocksdb.Iterator) {
 		key := iter.Key()
 		seq := BytesToUint64(key.Data())
 		key.Free()
-		if seq == lastSeq {
+		if seq == sub.lastSequence {
 			iter.Next()
 		}
 
@@ -82,40 +80,18 @@ func (sub *Subscription) Watch(iter *gorocksdb.Iterator) {
 				return
 			default:
 				key := iter.Key()
-				value := iter.Value()
 				seq := BytesToUint64(key.Data())
+				key.Free()
 
-				/*
-					// Find next
-					lastSeq := atomic.LoadUint64((*uint64)(&sub.lastSequence))
-					if seq == lastSeq {
-						// Release
-						key.Free()
-						value.Free()
-						continue
-					}
-						// Not need to get data from database
-						if seq < lastSeq {
-							// Release
-							key.Free()
-							value.Free()
-							return
-						}
-				*/
 				sub.lastSequence = seq
-				//atomic.StoreUint64((*uint64)(&sub.lastSequence), seq)
 
 				// Parsing data
+				value := iter.Value()
 				pj, err := projection.Unmarshal(value.Data())
+				value.Free()
 				if err != nil {
-					key.Free()
-					value.Free()
 					continue
 				}
-
-				// Release
-				key.Free()
-				value.Free()
 
 				// Invoke data handler
 				quit := sub.handle(seq, pj)
