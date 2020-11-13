@@ -9,7 +9,7 @@ type StoreHandler func(uint64, *projection.Projection) bool
 
 type Subscription interface {
 	Close()
-	Watch(*gorocksdb.Iterator, StoreHandler)
+	Watch(*gorocksdb.Iterator)
 }
 
 type Store interface {
