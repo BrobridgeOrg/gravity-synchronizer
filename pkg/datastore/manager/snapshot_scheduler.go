@@ -54,6 +54,7 @@ func (ss *SnapshotScheduler) Request(store *Store, seq uint64, data []byte) erro
 	pj := projectionPool.Get().(*projection.Projection)
 	err := projection.Unmarshal(data, pj)
 	if err != nil {
+		projectionPool.Put(pj)
 		return err
 	}
 
