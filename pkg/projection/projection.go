@@ -33,15 +33,14 @@ var pool = sync.Pool{
 	},
 }
 
-func Unmarshal(data []byte) (*Projection, error) {
+func Unmarshal(data []byte, pj *Projection) error {
 
-	var pj Projection
-	err := json.Unmarshal(data, &pj)
+	err := json.Unmarshal(data, pj)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return &pj, nil
+	return nil
 }
 
 func (pj *Projection) ToJSON() ([]byte, error) {

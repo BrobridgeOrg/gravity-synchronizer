@@ -71,7 +71,8 @@ func (sub *Subscription) Watch(iter *gorocksdb.Iterator) {
 
 				// Parsing data
 				value := iter.Value()
-				pj, err := projection.Unmarshal(value.Data())
+				pj := projectionPool.Get().(*projection.Projection)
+				err := projection.Unmarshal(value.Data(), pj)
 				value.Free()
 				if err != nil {
 					continue
@@ -79,6 +80,7 @@ func (sub *Subscription) Watch(iter *gorocksdb.Iterator) {
 
 				// Invoke data handler
 				quit := sub.handle(seq, pj)
+				projectionPool.Put(pj)
 				if quit {
 					return
 				}

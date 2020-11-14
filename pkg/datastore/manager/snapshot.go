@@ -161,7 +161,10 @@ func (snapshot *Snapshot) handle(seq uint64, data *projection.Projection) {
 
 	// Not found
 	if value.Size() > 0 {
-		orig, err := projection.Unmarshal(value.Data())
+
+		// Parsing original data which from database
+		orig := projectionPool.Get().(*projection.Projection)
+		err := projection.Unmarshal(value.Data(), orig)
 		if err != nil {
 
 			// Original data is unrecognized, so using new data instead
@@ -174,6 +177,9 @@ func (snapshot *Snapshot) handle(seq uint64, data *projection.Projection) {
 		}
 
 		newData := snapshot.merge(orig, data)
+
+		// Release projection data
+		projectionPool.Put(orig)
 
 		// Write to database
 		snapshot.writeData(cfHandle, stateHandle, seq, key, newData)
