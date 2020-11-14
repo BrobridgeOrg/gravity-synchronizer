@@ -35,7 +35,7 @@ func NewAppInstance() *AppInstance {
 func (a *AppInstance) Init() error {
 
 	log.WithFields(log.Fields{
-		"max_procs": runtime.GOMAXPROCS(0),
+		"max_procs": runtime.GOMAXPROCS(32),
 	}).Info("Starting application")
 
 	// Initializing datastore
