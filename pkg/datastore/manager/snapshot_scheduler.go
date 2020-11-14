@@ -34,10 +34,11 @@ func (ss *SnapshotScheduler) initialize() error {
 	// Initializing shard
 	options := gosharding.NewOptions()
 	options.PipelineCount = 32
-	options.BufferSize = 102400
+	options.BufferSize = 10240
 	options.Handler = func(id int32, data interface{}) {
 		req := data.(*SnapshotRequest)
 		req.Store.snapshot.handle(req.Sequence, req.Data)
+		projectionPool.Put(req.Data)
 		snapshotRequestPool.Put(req)
 	}
 
@@ -47,13 +48,21 @@ func (ss *SnapshotScheduler) initialize() error {
 	return nil
 }
 
-func (ss *SnapshotScheduler) Request(store *Store, seq uint64, data *projection.Projection) error {
+func (ss *SnapshotScheduler) Request(store *Store, seq uint64, data []byte) error {
+
+	// Parsing data
+	pj := projectionPool.Get().(*projection.Projection)
+	err := projection.Unmarshal(data, pj)
+	if err != nil {
+		projectionPool.Put(pj)
+		return err
+	}
 
 	// Create a new snapshot request
 	req := snapshotRequestPool.Get().(*SnapshotRequest)
 	req.Store = store
 	req.Sequence = seq
-	req.Data = data
+	req.Data = pj
 
 	ss.shard.PushKV(store.name, req)
 

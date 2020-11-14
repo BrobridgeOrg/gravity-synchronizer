@@ -8,7 +8,6 @@ import (
 	"sync"
 
 	"github.com/BrobridgeOrg/gravity-synchronizer/pkg/datastore"
-	"github.com/BrobridgeOrg/gravity-synchronizer/pkg/projection"
 	log "github.com/sirupsen/logrus"
 	"github.com/tecbot/gorocksdb"
 )
@@ -224,22 +223,16 @@ func (store *Store) Write(data []byte) (uint64, error) {
 		return 0, err
 	}
 
-	// Parsing data
-	pj, err := projection.Unmarshal(data)
-	if err == nil {
+	// Dispatch event to subscribers
+	store.DispatchEvent()
 
-		// Update snapshot
-		//		store.snapshot.Write(seq, pj)
-		store.manager.snapshotScheduler.Request(store, seq, pj)
-
-		// Dispatch event to subscribers
-		store.DispatchEvent(seq, pj)
-	}
+	// Snapshot
+	store.manager.snapshotScheduler.Request(store, seq, data)
 
 	return seq, nil
 }
 
-func (store *Store) DispatchEvent(seq uint64, pj *projection.Projection) {
+func (store *Store) DispatchEvent() {
 
 	// Publish event to all of subscription which is waiting for
 	store.subscriptions.Range(func(k, v interface{}) bool {
