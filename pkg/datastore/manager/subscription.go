@@ -28,6 +28,7 @@ func NewSubscription(startAt uint64, fn datastore.StoreHandler) *Subscription {
 }
 
 func (sub *Subscription) Close() {
+	close(sub.newTriggered)
 	sub.close <- struct{}{}
 }
 
@@ -36,12 +37,6 @@ func (sub *Subscription) Watch(iter *gorocksdb.Iterator) {
 	defer close(sub.close)
 
 	for _ = range sub.newTriggered {
-
-		select {
-		case <-sub.close:
-			return
-		default:
-		}
 
 		iter.Seek(Uint64ToBytes(sub.lastSequence))
 		if !iter.Valid() {
