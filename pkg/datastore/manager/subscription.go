@@ -37,6 +37,12 @@ func (sub *Subscription) Watch(iter *gorocksdb.Iterator) {
 
 	for _ = range sub.newTriggered {
 
+		select {
+		case <-sub.close:
+			return
+		default:
+		}
+
 		iter.Seek(Uint64ToBytes(sub.lastSequence))
 		if !iter.Valid() {
 			//			break
