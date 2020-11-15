@@ -22,7 +22,7 @@ type Subscription struct {
 func NewSubscription(startAt uint64, fn datastore.StoreHandler) *Subscription {
 	return &Subscription{
 		lastSequence: startAt,
-		newTriggered: make(chan struct{}),
+		newTriggered: make(chan struct{}, 1),
 		close:        make(chan struct{}),
 		watchFn:      fn,
 	}
