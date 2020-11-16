@@ -3,7 +3,6 @@ package synchronizer
 import (
 	"fmt"
 	"os"
-	"runtime"
 	"strings"
 
 	"github.com/BrobridgeOrg/gravity-synchronizer/pkg/app"
@@ -136,7 +135,6 @@ func (synchronizer *Synchronizer) initializeShard() error {
 	options.Handler = func(id int32, data interface{}) {
 		event := data.(*PipelineEvent)
 		event.Pipeline.push(event)
-		runtime.Gosched()
 	}
 
 	// Create shard with options
