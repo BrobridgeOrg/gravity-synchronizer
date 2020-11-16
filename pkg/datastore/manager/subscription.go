@@ -1,7 +1,6 @@
 package datastore
 
 import (
-	"runtime"
 	"time"
 
 	"github.com/BrobridgeOrg/gravity-synchronizer/pkg/datastore"
@@ -35,8 +34,6 @@ func (sub *Subscription) Close() {
 
 func (sub *Subscription) Watch(iter *gorocksdb.Iterator) {
 
-	defer close(sub.close)
-
 	for _ = range sub.newTriggered {
 
 		iter.Seek(Uint64ToBytes(sub.lastSequence))
@@ -65,31 +62,31 @@ func (sub *Subscription) Watch(iter *gorocksdb.Iterator) {
 			case <-sub.close:
 				return
 			default:
-				key := iter.Key()
-				seq := BytesToUint64(key.Data())
-				key.Free()
+			}
 
-				sub.lastSequence = seq
+			// Getting sequence number
+			key := iter.Key()
+			seq := BytesToUint64(key.Data())
+			key.Free()
 
-				// Parsing data
-				value := iter.Value()
-				pj := projectionPool.Get().(*projection.Projection)
-				err := projection.Unmarshal(value.Data(), pj)
-				value.Free()
-				if err != nil {
-					continue
-				}
+			sub.lastSequence = seq
 
-				// Invoke data handler
-				quit := sub.handle(seq, pj)
-				projectionPool.Put(pj)
-				if quit {
-					return
-				}
+			// Parsing data
+			value := iter.Value()
+			pj := projectionPool.Get().(*projection.Projection)
+			err := projection.Unmarshal(value.Data(), pj)
+			value.Free()
+			if err != nil {
+				continue
+			}
+
+			// Invoke data handler
+			quit := sub.handle(seq, pj)
+			projectionPool.Put(pj)
+			if quit {
+				return
 			}
 		}
-
-		runtime.Gosched()
 	}
 }
 
@@ -112,14 +109,15 @@ func (sub *Subscription) handle(seq uint64, data *projection.Projection) bool {
 		case <-sub.close:
 			return true
 		default:
-			success := sub.watchFn(seq, data)
-			if success {
-				return false
-			}
-
-			log.Warn("Failed to process. Trying to do again in second")
-
-			time.Sleep(time.Second)
 		}
+
+		success := sub.watchFn(seq, data)
+		if success {
+			return false
+		}
+
+		log.Warn("Failed to process. Trying to do again in second")
+
+		<-time.After(1 * time.Second)
 	}
 }

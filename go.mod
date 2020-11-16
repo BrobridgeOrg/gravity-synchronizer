@@ -5,7 +5,7 @@ go 1.15
 require (
 	github.com/BrobridgeOrg/gravity-api v0.2.2
 	github.com/BrobridgeOrg/gravity-synchronizer v0.0.0-00010101000000-000000000000
-	github.com/cfsghost/gosharding v0.0.2
+	github.com/cfsghost/gosharding v0.0.3
 	github.com/cfsghost/grpc-connection-pool v0.6.0
 	github.com/golang/protobuf v1.4.2
 	github.com/json-iterator/go v1.1.6
