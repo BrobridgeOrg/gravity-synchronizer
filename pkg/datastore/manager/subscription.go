@@ -87,9 +87,9 @@ func (sub *Subscription) Watch(iter *gorocksdb.Iterator) {
 			if quit {
 				return
 			}
-
-			runtime.Gosched()
 		}
+
+		runtime.Gosched()
 	}
 }
 
