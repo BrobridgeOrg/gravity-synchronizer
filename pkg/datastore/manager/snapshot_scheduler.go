@@ -1,6 +1,7 @@
 package datastore
 
 import (
+	"runtime"
 	"sync"
 
 	"github.com/BrobridgeOrg/gravity-synchronizer/pkg/projection"
@@ -54,6 +55,8 @@ func (ss *SnapshotScheduler) initialize() error {
 		// Release
 		projectionPool.Put(pj)
 		snapshotRequestPool.Put(req)
+
+		runtime.Gosched()
 	}
 
 	// Create shard with options
