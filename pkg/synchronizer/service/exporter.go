@@ -82,8 +82,7 @@ func (ex *Exporter) InitWorkers() error {
 
 		go func() {
 
-			for {
-				pj := <-ex.output
+			for pj := range ex.output {
 				ex.send(pj)
 			}
 		}()

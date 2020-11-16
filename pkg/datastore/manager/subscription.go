@@ -1,6 +1,7 @@
 package datastore
 
 import (
+	"runtime"
 	"time"
 
 	"github.com/BrobridgeOrg/gravity-synchronizer/pkg/datastore"
@@ -86,6 +87,8 @@ func (sub *Subscription) Watch(iter *gorocksdb.Iterator) {
 			if quit {
 				return
 			}
+
+			runtime.Gosched()
 		}
 	}
 }
