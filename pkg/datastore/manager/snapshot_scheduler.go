@@ -14,7 +14,8 @@ type SnapshotScheduler struct {
 type SnapshotRequest struct {
 	Store    *Store
 	Sequence uint64
-	Data     *projection.Projection
+	Data     []byte
+	//	Data     *projection.Projection
 }
 
 var snapshotRequestPool = sync.Pool{
@@ -36,9 +37,22 @@ func (ss *SnapshotScheduler) initialize() error {
 	options.PipelineCount = 32
 	options.BufferSize = 10240
 	options.Handler = func(id int32, data interface{}) {
+
 		req := data.(*SnapshotRequest)
-		req.Store.snapshot.handle(req.Sequence, req.Data)
-		projectionPool.Put(req.Data)
+
+		// Parsing data
+		pj := projectionPool.Get().(*projection.Projection)
+		err := projection.Unmarshal(req.Data, pj)
+		if err != nil {
+			projectionPool.Put(pj)
+			return
+		}
+
+		// Store to database
+		req.Store.snapshot.handle(req.Sequence, pj)
+
+		// Release
+		projectionPool.Put(pj)
 		snapshotRequestPool.Put(req)
 	}
 
@@ -50,19 +64,11 @@ func (ss *SnapshotScheduler) initialize() error {
 
 func (ss *SnapshotScheduler) Request(store *Store, seq uint64, data []byte) error {
 
-	// Parsing data
-	pj := projectionPool.Get().(*projection.Projection)
-	err := projection.Unmarshal(data, pj)
-	if err != nil {
-		projectionPool.Put(pj)
-		return err
-	}
-
 	// Create a new snapshot request
 	req := snapshotRequestPool.Get().(*SnapshotRequest)
 	req.Store = store
 	req.Sequence = seq
-	req.Data = pj
+	req.Data = data
 
 	ss.shard.PushKV(store.name, req)
 
