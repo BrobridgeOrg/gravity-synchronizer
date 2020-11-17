@@ -72,23 +72,16 @@ func (ex *Exporter) Initialize() error {
 
 	ex.pool = p
 
-	return ex.InitWorkers()
-}
-
-func (ex *Exporter) InitWorkers() error {
-
-	// Multiplexing
-	for i := 0; i < 4; i++ {
-
-		go func() {
-
-			for pj := range ex.output {
-				ex.send(pj)
-			}
-		}()
-	}
+	go ex.dispatcher()
 
 	return nil
+}
+
+func (ex *Exporter) dispatcher() {
+
+	for pj := range ex.output {
+		ex.send(pj)
+	}
 }
 
 func (ex *Exporter) Send(pj *projection.Projection) error {
