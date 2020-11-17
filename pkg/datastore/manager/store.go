@@ -254,7 +254,7 @@ func (store *Store) GetDurableState(durableName string) (uint64, error) {
 	}
 
 	// Write
-	value, err := store.db.GetCF(store.ro, cfHandle, []byte(durableName))
+	value, err := store.db.GetCF(store.ro, cfHandle, StrToBytes(durableName))
 	if err != nil {
 		return 0, err
 	}
@@ -279,7 +279,7 @@ func (store *Store) UpdateDurableState(durableName string, lastSeq uint64) error
 	value := Uint64ToBytes(lastSeq)
 
 	// Write
-	err = store.db.PutCF(store.wo, cfHandle, []byte(durableName), value)
+	err = store.db.PutCF(store.wo, cfHandle, StrToBytes(durableName), value)
 	if err != nil {
 		return err
 	}
