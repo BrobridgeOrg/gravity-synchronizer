@@ -130,8 +130,8 @@ func (synchronizer *Synchronizer) initializeShard() error {
 
 	// Initializing shard
 	options := gosharding.NewOptions()
-	options.PipelineCount = 32
-	options.BufferSize = 102400
+	options.PipelineCount = 16
+	options.BufferSize = 204800
 	options.Handler = func(id int32, data interface{}) {
 		event := data.(*PipelineEvent)
 		event.Pipeline.push(event)
