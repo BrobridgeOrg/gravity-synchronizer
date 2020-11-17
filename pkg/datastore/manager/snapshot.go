@@ -56,11 +56,11 @@ func (snapshot *Snapshot) Initialize() error {
 
 func (snapshot *Snapshot) getPrimaryKeyData(data *projection.Projection) ([]byte, error) {
 
+	var buf bytes.Buffer
 	for _, field := range data.Fields {
 		if field.Primary == true {
 
 			// Getting value of primary key
-			var buf bytes.Buffer
 			enc := gob.NewEncoder(&buf)
 			err := enc.Encode(field.Value)
 			if err != nil {
