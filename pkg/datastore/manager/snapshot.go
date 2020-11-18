@@ -95,7 +95,7 @@ func (snapshot *Snapshot) handle(seq uint64, data *projection.Projection) {
 
 	// collection name as prefix
 	key := bytes.Join([][]byte{
-		[]byte(data.Collection),
+		StrToBytes(data.Collection),
 		primaryKey,
 	}, []byte("-"))
 
@@ -119,7 +119,8 @@ func (snapshot *Snapshot) handle(seq uint64, data *projection.Projection) {
 		if err != nil {
 
 			// Original data is unrecognized, so using new data instead
-			newData, _ := data.ToJSON()
+			//			newData, _ := data.ToJSON()
+			newData := data.Raw.Bytes()
 
 			// Write to database
 			snapshot.writeData(cfHandle, stateHandle, seq, key, newData)
@@ -140,7 +141,8 @@ func (snapshot *Snapshot) handle(seq uint64, data *projection.Projection) {
 	}
 
 	// Convert data to json string
-	newData, _ := data.ToJSON()
+	//newData, _ := data.ToJSON()
+	newData := data.Raw.Bytes()
 
 	// Write to database
 	snapshot.writeData(cfHandle, stateHandle, seq, key, newData)
