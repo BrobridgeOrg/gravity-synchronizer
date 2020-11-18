@@ -91,11 +91,18 @@ func (ex *Exporter) Send(pj *projection.Projection) error {
 
 func (ex *Exporter) send(pj *projection.Projection) error {
 
-	// Genereate JSON string
-	data, err := pj.ToJSON()
-	if err != nil {
-		return err
+	if pj.Raw == nil {
+		// Genereate JSON string
+		data, err := pj.ToJSON()
+		if err != nil {
+			return err
+		}
+
+		return ex.Emit(ex.channel, data)
 	}
+
+	// Getting raw data directly without conversion
+	data := pj.Raw.Bytes()
 
 	return ex.Emit(ex.channel, data)
 }

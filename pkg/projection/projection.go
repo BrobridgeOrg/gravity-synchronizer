@@ -1,6 +1,7 @@
 package projection
 
 import (
+	"bytes"
 	"sync"
 
 	jsoniter "github.com/json-iterator/go"
@@ -17,6 +18,7 @@ type Projection struct {
 	Collection string  `json:"collection"`
 	Method     string  `json:"method"`
 	Fields     []Field `json:"fields"`
+	Raw        *bytes.Buffer
 }
 
 type JSONResult struct {
@@ -34,6 +36,8 @@ var pool = sync.Pool{
 }
 
 func Unmarshal(data []byte, pj *Projection) error {
+
+	pj.Raw = bytes.NewBuffer(data)
 
 	err := json.Unmarshal(data, pj)
 	if err != nil {
