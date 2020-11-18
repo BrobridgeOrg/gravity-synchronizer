@@ -47,8 +47,8 @@ func (ex *Exporter) Initialize() error {
 	}).Info("  Connecting to exporter...")
 
 	options := &grpc_connection_pool.Options{
-		InitCap:     8,
-		MaxCap:      16,
+		InitCap:     1,
+		MaxCap:      1,
 		DialTimeout: time.Second * 20,
 	}
 
