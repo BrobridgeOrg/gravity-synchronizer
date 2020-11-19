@@ -1,7 +1,6 @@
 package projection
 
 import (
-	"bytes"
 	"sync"
 
 	jsoniter "github.com/json-iterator/go"
@@ -18,7 +17,7 @@ type Projection struct {
 	Collection string  `json:"collection"`
 	Method     string  `json:"method"`
 	Fields     []Field `json:"fields"`
-	Raw        *bytes.Buffer
+	Raw        []byte
 }
 
 type JSONResult struct {
@@ -40,16 +39,16 @@ func Unmarshal(data []byte, pj *Projection) error {
 	if pj.Raw != nil {
 
 		// data size is bigger than current buffer
-		if len(data) > pj.Raw.Cap() {
-			pj.Raw = bytes.NewBuffer(data)
+		if len(data) > cap(pj.Raw) {
+			pj.Raw = make([]byte, len(data))
 		} else {
-			pj.Raw.Reset()
-			pj.Raw.Write(data)
+			pj.Raw = pj.Raw[:0]
 		}
 	} else {
-		// Create a new buffer
-		pj.Raw = bytes.NewBuffer(data)
+		pj.Raw = make([]byte, len(data))
 	}
+
+	copy(pj.Raw, data)
 
 	err := json.Unmarshal(data, pj)
 	if err != nil {

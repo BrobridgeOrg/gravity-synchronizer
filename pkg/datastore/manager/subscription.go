@@ -4,12 +4,11 @@ import (
 	"time"
 
 	"github.com/BrobridgeOrg/gravity-synchronizer/pkg/datastore"
-	"github.com/BrobridgeOrg/gravity-synchronizer/pkg/projection"
 	log "github.com/sirupsen/logrus"
 	"github.com/tecbot/gorocksdb"
 )
 
-type StoreHandler func(uint64, *projection.Projection) bool
+type StoreHandler func(uint64, []byte) bool
 
 type Subscription struct {
 	lastSequence uint64
@@ -38,7 +37,6 @@ func (sub *Subscription) Watch(iter *gorocksdb.Iterator) {
 
 		iter.Seek(Uint64ToBytes(sub.lastSequence))
 		if !iter.Valid() {
-			//			break
 			continue
 		}
 
@@ -48,12 +46,6 @@ func (sub *Subscription) Watch(iter *gorocksdb.Iterator) {
 		key.Free()
 		if seq == sub.lastSequence {
 			iter.Next()
-		}
-
-		// No more data
-		if !iter.Valid() {
-			continue
-			//			return
 		}
 
 		for ; iter.Valid(); iter.Next() {
@@ -71,18 +63,11 @@ func (sub *Subscription) Watch(iter *gorocksdb.Iterator) {
 
 			sub.lastSequence = seq
 
-			// Parsing data
-			value := iter.Value()
-			pj := projectionPool.Get().(*projection.Projection)
-			err := projection.Unmarshal(value.Data(), pj)
-			value.Free()
-			if err != nil {
-				continue
-			}
-
 			// Invoke data handler
-			quit := sub.handle(seq, pj)
-			projectionPool.Put(pj)
+			value := iter.Value()
+			quit := sub.handle(seq, value.Data())
+			value.Free()
+			//			projectionPool.Put(pj)
 			if quit {
 				return
 			}
@@ -101,7 +86,7 @@ func (sub *Subscription) Trigger() error {
 	return nil
 }
 
-func (sub *Subscription) handle(seq uint64, data *projection.Projection) bool {
+func (sub *Subscription) handle(seq uint64, data []byte) bool {
 
 	for {
 

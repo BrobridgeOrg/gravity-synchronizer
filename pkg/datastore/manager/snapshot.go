@@ -120,7 +120,7 @@ func (snapshot *Snapshot) handle(seq uint64, data *projection.Projection) {
 
 			// Original data is unrecognized, so using new data instead
 			//			newData, _ := data.ToJSON()
-			newData := data.Raw.Bytes()
+			newData := data.Raw
 
 			// Write to database
 			snapshot.writeData(cfHandle, stateHandle, seq, key, newData)
@@ -142,7 +142,7 @@ func (snapshot *Snapshot) handle(seq uint64, data *projection.Projection) {
 
 	// Convert data to json string
 	//newData, _ := data.ToJSON()
-	newData := data.Raw.Bytes()
+	newData := data.Raw
 
 	// Write to database
 	snapshot.writeData(cfHandle, stateHandle, seq, key, newData)

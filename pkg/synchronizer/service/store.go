@@ -49,7 +49,7 @@ func (store *Store) AddEventSource(eventStore *EventStore) error {
 	}).Info("  Initializing store")
 
 	// Subscribe to event source
-	sub, err := eventStore.Subscribe(durableSeq, func(seq uint64, data *projection.Projection) bool {
+	sub, err := eventStore.Subscribe(durableSeq, func(seq uint64, data []byte) bool {
 
 		if seq <= durableSeq {
 			return true
@@ -103,7 +103,16 @@ func (store *Store) IsMatch(pj *projection.Projection) bool {
 	return true
 }
 
-func (store *Store) ProcessData(eventStore *EventStore, seq uint64, pj *projection.Projection) bool {
+//func (store *Store) ProcessData(eventStore *EventStore, seq uint64, pj *projection.Projection) bool {
+func (store *Store) ProcessData(eventStore *EventStore, seq uint64, data []byte) bool {
+
+	// Parsing data
+	pj := projectionPool.Get().(*projection.Projection)
+	err := projection.Unmarshal(data, pj)
+	if err != nil {
+		log.Error(err)
+		return true
+	}
 
 	/*
 		log.WithFields(log.Fields{
@@ -127,7 +136,7 @@ func (store *Store) ProcessData(eventStore *EventStore, seq uint64, pj *projecti
 		}).Info("Processing record")
 	*/
 	if store.Transmitter != nil {
-		err := store.Transmitter.ProcessData(store.Table, seq, pj)
+		err = store.Transmitter.ProcessData(store.Table, seq, pj)
 		if err != nil {
 			log.WithFields(log.Fields{
 				"component": "transmitter",
@@ -137,7 +146,7 @@ func (store *Store) ProcessData(eventStore *EventStore, seq uint64, pj *projecti
 	}
 
 	// Trigger
-	err := store.TriggerManager.Handle(store.Name, pj)
+	err = store.TriggerManager.Handle(store.Name, pj)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"component": "trigger",
@@ -146,6 +155,8 @@ func (store *Store) ProcessData(eventStore *EventStore, seq uint64, pj *projecti
 			"store":     store.Name,
 		}).Error(err)
 	}
+
+	projectionPool.Put(pj)
 
 	return true
 }
