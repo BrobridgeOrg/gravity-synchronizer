@@ -37,7 +37,19 @@ var pool = sync.Pool{
 
 func Unmarshal(data []byte, pj *Projection) error {
 
-	pj.Raw = bytes.NewBuffer(data)
+	if pj.Raw != nil {
+
+		// data size is bigger than current buffer
+		if len(data) > pj.Raw.Cap() {
+			pj.Raw = bytes.NewBuffer(data)
+		} else {
+			pj.Raw.Reset()
+			pj.Raw.Write(data)
+		}
+	} else {
+		// Create a new buffer
+		pj.Raw = bytes.NewBuffer(data)
+	}
 
 	err := json.Unmarshal(data, pj)
 	if err != nil {
