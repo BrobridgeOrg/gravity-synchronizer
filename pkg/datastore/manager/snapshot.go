@@ -3,7 +3,6 @@ package datastore
 import (
 	"bytes"
 	"encoding/gob"
-	"sync"
 
 	"github.com/BrobridgeOrg/gravity-synchronizer/pkg/projection"
 	jsoniter "github.com/json-iterator/go"
@@ -15,29 +14,14 @@ var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
 var LastSequenceKey = []byte("lastSeq")
 
-var recordPool = &sync.Pool{
-	New: func() interface{} {
-		return &Record{}
-	},
-}
-
-type Record struct {
-	Sequence uint64
-	Data     *projection.Projection
-}
-
 type Snapshot struct {
 	store   *Store
 	lastSeq uint64
-	close   chan struct{}
-	queue   chan *Record
 }
 
 func NewSnapshot(store *Store) *Snapshot {
 	return &Snapshot{
 		store: store,
-		close: make(chan struct{}),
-		queue: make(chan *Record, 1024),
 	}
 }
 
@@ -67,43 +51,13 @@ func (snapshot *Snapshot) Initialize() error {
 
 	value.Free()
 
-	go func() {
-		for {
-			select {
-			case <-snapshot.close:
-				return
-			case record := <-snapshot.queue:
-				// Invoke data handler
-				snapshot.handle(record.Sequence, record.Data)
-
-				// Release
-				recordPool.Put(record)
-			}
-		}
-	}()
-
 	return nil
-}
-
-func (snapshot *Snapshot) Close() {
-	snapshot.close <- struct{}{}
-}
-
-func (snapshot *Snapshot) Write(seq uint64, data *projection.Projection) {
-
-	// Allocation
-	record := recordPool.Get().(*Record)
-	record.Sequence = seq
-	record.Data = data
-
-	snapshot.queue <- record
 }
 
 func (snapshot *Snapshot) getPrimaryKeyData(data *projection.Projection) ([]byte, error) {
 
 	for _, field := range data.Fields {
 		if field.Primary == true {
-
 			// Getting value of primary key
 			var buf bytes.Buffer
 			enc := gob.NewEncoder(&buf)
@@ -140,7 +94,7 @@ func (snapshot *Snapshot) handle(seq uint64, data *projection.Projection) {
 
 	// collection name as prefix
 	key := bytes.Join([][]byte{
-		[]byte(data.Collection),
+		StrToBytes(data.Collection),
 		primaryKey,
 	}, []byte("-"))
 
@@ -156,35 +110,41 @@ func (snapshot *Snapshot) handle(seq uint64, data *projection.Projection) {
 	}
 
 	// Not found
-	if value.Size() > 0 {
-		orig, err := projection.Unmarshal(value.Data())
-		if err != nil {
+	if value.Size() == 0 {
+		value.Free()
 
-			// Original data is unrecognized, so using new data instead
-			newData, _ := data.ToJSON()
-
-			// Write to database
-			snapshot.writeData(cfHandle, stateHandle, seq, key, newData)
-
-			return
-		}
-
-		newData := snapshot.merge(orig, data)
+		// Using new data to create snapshot
+		newData := data.Raw
 
 		// Write to database
 		snapshot.writeData(cfHandle, stateHandle, seq, key, newData)
 
-		value.Free()
 		return
 	}
 
-	// Convert data to json string
-	newData, _ := data.ToJSON()
+	// Parsing original data which from database
+	orig := projectionPool.Get().(*projection.Projection)
+	err = projection.Unmarshal(value.Data(), orig)
+	value.Free()
+	if err != nil {
+
+		// Original data is unrecognized, so using new data instead
+		//			newData, _ := data.ToJSON()
+		newData := data.Raw
+
+		// Write to database
+		snapshot.writeData(cfHandle, stateHandle, seq, key, newData)
+
+		return
+	}
+
+	newData := snapshot.merge(orig, data)
+
+	// Release projection data
+	projectionPool.Put(orig)
 
 	// Write to database
 	snapshot.writeData(cfHandle, stateHandle, seq, key, newData)
-
-	value.Free()
 }
 
 func (snapshot *Snapshot) writeData(cfHandle *gorocksdb.ColumnFamilyHandle, stateHandle *gorocksdb.ColumnFamilyHandle, seq uint64, key []byte, data []byte) {

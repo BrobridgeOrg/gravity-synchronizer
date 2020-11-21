@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sync"
 
 	controller "github.com/BrobridgeOrg/gravity-api/service/controller"
 	pipeline_pb "github.com/BrobridgeOrg/gravity-api/service/pipeline"
@@ -23,6 +24,17 @@ var FailureReply, _ = proto.Marshal(&pipeline_pb.PipelineReply{
 	Reason:  "Failed to write to database",
 })
 
+var pipelineEventPool = sync.Pool{
+	New: func() interface{} {
+		return &PipelineEvent{}
+	},
+}
+
+type PipelineEvent struct {
+	Pipeline *Pipeline
+	Payload  interface{}
+}
+
 type Pipeline struct {
 	synchronizer *Synchronizer
 	id           uint64
@@ -40,6 +52,10 @@ func NewPipeline(synchronizer *Synchronizer, id uint64) *Pipeline {
 
 func (pipeline *Pipeline) Init() error {
 
+	// Initializing message receiver
+	// TODO: close when pipeline was releaseed
+	//go pipeline.messageReceiver()
+
 	// Initializing event store
 	err := pipeline.eventStore.Init()
 	if err != nil {
@@ -54,7 +70,14 @@ func (pipeline *Pipeline) Init() error {
 	log.WithFields(log.Fields{
 		"channel": channel,
 	}).Info("Subscribing to pipeline channel")
-	sub, err := connection.Subscribe(channel, pipeline.handleMessage)
+	//sub, err := connection.Subscribe(channel, pipeline.handleMessage)
+	sub, err := connection.Subscribe(channel, func(m *nats.Msg) {
+
+		event := pipelineEventPool.Get().(*PipelineEvent)
+		event.Pipeline = pipeline
+		event.Payload = m
+		pipeline.synchronizer.shard.Push(pipeline.id, event)
+	})
 	if err != nil {
 		return err
 	}
@@ -115,6 +138,11 @@ func (pipeline *Pipeline) release() error {
 	}
 
 	return nil
+}
+
+func (pipeline *Pipeline) push(event *PipelineEvent) {
+	event.Pipeline.handleMessage(event.Payload.(*nats.Msg))
+	pipelineEventPool.Put(event)
 }
 
 func (pipeline *Pipeline) handleMessage(m *nats.Msg) {

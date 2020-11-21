@@ -1,86 +1,73 @@
 package datastore
 
 import (
-	"sync"
 	"time"
 
 	"github.com/BrobridgeOrg/gravity-synchronizer/pkg/datastore"
-	"github.com/BrobridgeOrg/gravity-synchronizer/pkg/projection"
-	"github.com/prometheus/common/log"
+	log "github.com/sirupsen/logrus"
 	"github.com/tecbot/gorocksdb"
 )
 
-type StoreHandler func(uint64, *projection.Projection) bool
-
-var eventPool = &sync.Pool{
-	New: func() interface{} {
-		return &Event{}
-	},
-}
-
-type Event struct {
-	Sequence uint64
-	Data     *projection.Projection
-}
+type StoreHandler func(uint64, []byte) bool
 
 type Subscription struct {
-	close   chan struct{}
-	queue   chan *Event
-	tailing bool
+	lastSequence uint64
+	newTriggered chan struct{}
+	close        chan struct{}
+	watchFn      datastore.StoreHandler
 }
 
-func NewSubscription() *Subscription {
+func NewSubscription(startAt uint64, fn datastore.StoreHandler) *Subscription {
 	return &Subscription{
-		close: make(chan struct{}),
-		queue: make(chan *Event, 102400),
+		lastSequence: startAt,
+		newTriggered: make(chan struct{}, 1),
+		close:        make(chan struct{}),
+		watchFn:      fn,
 	}
 }
 
 func (sub *Subscription) Close() {
+	close(sub.newTriggered)
 	sub.close <- struct{}{}
 }
 
-func (sub *Subscription) Watch(iter *gorocksdb.Iterator, fn datastore.StoreHandler) {
+func (sub *Subscription) Watch(iter *gorocksdb.Iterator) {
 
-	for ; iter.Valid(); iter.Next() {
+	for _ = range sub.newTriggered {
 
-		select {
-		case <-sub.close:
-			return
-		default:
-			key := iter.Key()
-			value := iter.Value()
-			seq := BytesToUint64(key.Data())
-
-			// Parsing data
-			pj, err := projection.Unmarshal(value.Data())
-			if err != nil {
-				continue
-			}
-
-			// Release
-			key.Free()
-			value.Free()
-
-			// Invoke data handler
-			quit := sub.handle(seq, pj, fn)
-			if quit {
-				return
-			}
+		iter.Seek(Uint64ToBytes(sub.lastSequence))
+		if !iter.Valid() {
+			continue
 		}
-	}
 
-	sub.tailing = true
+		// If we get record which is the same with last seq, find next one
+		key := iter.Key()
+		seq := BytesToUint64(key.Data())
+		key.Free()
+		if seq == sub.lastSequence {
+			iter.Next()
+		}
 
-	// Receving real-time events
-	for {
-		select {
-		case <-sub.close:
-			return
-		case event := <-sub.queue:
+		for ; iter.Valid(); iter.Next() {
+
+			select {
+			case <-sub.close:
+				return
+			default:
+			}
+
+			// Getting sequence number
+			key := iter.Key()
+			seq := BytesToUint64(key.Data())
+			key.Free()
+
+			sub.lastSequence = seq
+
 			// Invoke data handler
-			quit := sub.handle(event.Sequence, event.Data, fn)
-			eventPool.Put(event)
+			value := iter.Value()
+			quit := sub.handle(seq, value.Data())
+			value.Free()
+			//			projectionPool.Put(pj)
 			if quit {
 				return
 			}
@@ -88,23 +75,18 @@ func (sub *Subscription) Watch(iter *gorocksdb.Iterator, fn datastore.StoreHandl
 	}
 }
 
-func (sub *Subscription) Publish(seq uint64, data *projection.Projection) error {
+func (sub *Subscription) Trigger() error {
 
-	if !sub.tailing {
+	select {
+	case sub.newTriggered <- struct{}{}:
+	default:
 		return nil
 	}
-
-	// Allocate
-	event := eventPool.Get().(*Event)
-	event.Sequence = seq
-	event.Data = data
-
-	sub.queue <- event
 
 	return nil
 }
 
-func (sub *Subscription) handle(seq uint64, data *projection.Projection, fn datastore.StoreHandler) bool {
+func (sub *Subscription) handle(seq uint64, data []byte) bool {
 
 	for {
 
@@ -112,14 +94,15 @@ func (sub *Subscription) handle(seq uint64, data *projection.Projection, fn data
 		case <-sub.close:
 			return true
 		default:
-			success := fn(seq, data)
-			if success {
-				return false
-			}
-
-			log.Warn("Failed to process. Trying to do again in second")
-
-			time.Sleep(time.Second)
 		}
+
+		success := sub.watchFn(seq, data)
+		if success {
+			return false
+		}
+
+		log.Warn("Failed to process. Trying to do again in second")
+
+		<-time.After(1 * time.Second)
 	}
 }

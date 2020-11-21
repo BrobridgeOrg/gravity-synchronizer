@@ -8,7 +8,6 @@ import (
 	"sync"
 
 	"github.com/BrobridgeOrg/gravity-synchronizer/pkg/datastore"
-	"github.com/BrobridgeOrg/gravity-synchronizer/pkg/projection"
 	log "github.com/sirupsen/logrus"
 	"github.com/tecbot/gorocksdb"
 )
@@ -224,35 +223,21 @@ func (store *Store) Write(data []byte) (uint64, error) {
 		return 0, err
 	}
 
-	// Parsing data
-	pj, err := projection.Unmarshal(data)
-	if err == nil {
+	// Snapshot
+	store.manager.snapshotScheduler.Request(store, seq, data)
 
-		// Update snapshot
-		store.snapshot.Write(seq, pj)
-
-		// Dispatch event to subscribers
-		store.DispatchEvent(seq, pj)
-	}
+	// Dispatch event to subscribers
+	store.DispatchEvent()
 
 	return seq, nil
 }
 
-func (store *Store) DispatchEvent(seq uint64, pj *projection.Projection) {
+func (store *Store) DispatchEvent() {
 
 	// Publish event to all of subscription which is waiting for
 	store.subscriptions.Range(func(k, v interface{}) bool {
 		sub := v.(*Subscription)
-		/*
-			log.WithFields(log.Fields{
-				"seq":     seq,
-				"tailing": sub.tailing,
-			}).Info("Publish to all subscibers")
-		*/
-		if sub.tailing {
-			sub.Publish(seq, pj)
-		}
-
+		sub.Trigger()
 		return true
 	})
 }
@@ -269,7 +254,7 @@ func (store *Store) GetDurableState(durableName string) (uint64, error) {
 	}
 
 	// Write
-	value, err := store.db.GetCF(store.ro, cfHandle, []byte(durableName))
+	value, err := store.db.GetCF(store.ro, cfHandle, StrToBytes(durableName))
 	if err != nil {
 		return 0, err
 	}
@@ -294,7 +279,7 @@ func (store *Store) UpdateDurableState(durableName string, lastSeq uint64) error
 	value := Uint64ToBytes(lastSeq)
 
 	// Write
-	err = store.db.PutCF(store.wo, cfHandle, []byte(durableName), value)
+	err = store.db.PutCF(store.wo, cfHandle, StrToBytes(durableName), value)
 	if err != nil {
 		return err
 	}
@@ -323,9 +308,6 @@ func (store *Store) Subscribe(startAt uint64, fn datastore.StoreHandler) (datast
 		return nil, errors.New("Not found \"events\" column family")
 	}
 
-	// Create a new subscription entry
-	sub := NewSubscription()
-
 	// Initializing iterator
 	ro := gorocksdb.NewDefaultReadOptions()
 	ro.SetFillCache(false)
@@ -335,22 +317,24 @@ func (store *Store) Subscribe(startAt uint64, fn datastore.StoreHandler) (datast
 		return nil, iter.Err()
 	}
 
+	// Create a new subscription entry
+	sub := NewSubscription(startAt, fn)
+
 	// Register subscription
 	store.registerSubscription(sub)
 
-	go func() {
-		defer func() {
-			iter.Close()
-			store.unregisterSubscription(sub)
-		}()
-
-		// Seek
-		key := Uint64ToBytes(startAt)
-		iter.Seek(key)
-
-		// Start watching
-		sub.Watch(iter, fn)
-	}()
+	// Start watching
+	go store.watch(sub, iter)
 
 	return datastore.Subscription(sub), nil
+}
+
+func (store *Store) watch(sub *Subscription, iter *gorocksdb.Iterator) {
+
+	defer func() {
+		iter.Close()
+		store.unregisterSubscription(sub)
+	}()
+
+	sub.Watch(iter)
 }

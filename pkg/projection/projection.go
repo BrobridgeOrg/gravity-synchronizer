@@ -17,6 +17,7 @@ type Projection struct {
 	Collection string  `json:"collection"`
 	Method     string  `json:"method"`
 	Fields     []Field `json:"fields"`
+	Raw        []byte
 }
 
 type JSONResult struct {
@@ -33,15 +34,28 @@ var pool = sync.Pool{
 	},
 }
 
-func Unmarshal(data []byte) (*Projection, error) {
+func Unmarshal(data []byte, pj *Projection) error {
 
-	var pj Projection
-	err := json.Unmarshal(data, &pj)
-	if err != nil {
-		return nil, err
+	if pj.Raw != nil {
+
+		// data size is bigger than current buffer
+		if len(data) > cap(pj.Raw) {
+			pj.Raw = make([]byte, len(data))
+		} else {
+			pj.Raw = pj.Raw[:0]
+		}
+	} else {
+		pj.Raw = make([]byte, len(data))
 	}
 
-	return &pj, nil
+	copy(pj.Raw, data)
+
+	err := json.Unmarshal(data, pj)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (pj *Projection) ToJSON() ([]byte, error) {

@@ -28,12 +28,12 @@ type Exporter struct {
 	port    int
 	channel string
 	pool    *grpc_connection_pool.GRPCPool
-	output  chan *projection.Projection
+	output  chan []byte
 }
 
 func (ex *Exporter) Initialize() error {
 
-	ex.output = make(chan *projection.Projection, 102400)
+	ex.output = make(chan []byte, 102400)
 
 	if len(ex.channel) == 0 {
 		ex.channel = DefaultChannel
@@ -47,8 +47,8 @@ func (ex *Exporter) Initialize() error {
 	}).Info("  Connecting to exporter...")
 
 	options := &grpc_connection_pool.Options{
-		InitCap:     8,
-		MaxCap:      16,
+		InitCap:     1,
+		MaxCap:      1,
 		DialTimeout: time.Second * 20,
 	}
 
@@ -72,47 +72,44 @@ func (ex *Exporter) Initialize() error {
 
 	ex.pool = p
 
-	return ex.InitWorkers()
-}
-
-func (ex *Exporter) InitWorkers() error {
-
-	// Multiplexing
-	for i := 0; i < 4; i++ {
-
-		go func() {
-
-			for {
-				pj := <-ex.output
-				ex.send(pj)
-			}
-		}()
-	}
+	go ex.dispatcher()
 
 	return nil
+}
+
+func (ex *Exporter) dispatcher() {
+
+	for data := range ex.output {
+		ex.emit(ex.channel, data)
+	}
 }
 
 func (ex *Exporter) Send(pj *projection.Projection) error {
-	ex.output <- pj
+
+	if pj.Raw == nil {
+		// Genereate JSON string
+		data, err := pj.ToJSON()
+		if err != nil {
+			return err
+		}
+
+		ex.output <- data
+		return nil
+	}
+
+	// Getting raw data directly without conversion
+	data := make([]byte, len(pj.Raw))
+	copy(data, pj.Raw)
+
+	ex.output <- data
 	return nil
 }
 
-func (ex *Exporter) send(pj *projection.Projection) error {
-
-	// Genereate JSON string
-	data, err := pj.ToJSON()
-	if err != nil {
-		return err
-	}
-
-	return ex.Emit(ex.channel, data)
-}
-
-func (ex *Exporter) Emit(eventName string, data []byte) error {
+func (ex *Exporter) emit(channelName string, data []byte) error {
 
 	// Preparing request
 	request := sendEventRequestPool.Get().(*exporter.SendEventRequest)
-	request.Channel = eventName
+	request.Channel = channelName
 	request.Payload = data
 
 	// Getting stream from pool
