@@ -80,7 +80,7 @@ func (ex *Exporter) Initialize() error {
 func (ex *Exporter) dispatcher() {
 
 	for data := range ex.output {
-		ex.Emit(ex.channel, data)
+		ex.emit(ex.channel, data)
 	}
 }
 
@@ -105,7 +105,7 @@ func (ex *Exporter) Send(pj *projection.Projection) error {
 	return nil
 }
 
-func (ex *Exporter) Emit(channelName string, data []byte) error {
+func (ex *Exporter) emit(channelName string, data []byte) error {
 
 	// Preparing request
 	request := sendEventRequestPool.Get().(*exporter.SendEventRequest)
