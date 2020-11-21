@@ -5,6 +5,8 @@ import (
 
 	"github.com/BrobridgeOrg/gravity-synchronizer/pkg/projection"
 	"github.com/cfsghost/gosharding"
+	log "github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 )
 
 type SnapshotScheduler struct {
@@ -31,10 +33,13 @@ func NewSnapshotScheduler() *SnapshotScheduler {
 
 func (ss *SnapshotScheduler) initialize() error {
 
+	viper.SetDefault("snapshot.workerCount", 8)
+	viper.SetDefault("snapshot.workerBufferSize", 102400)
+
 	// Initializing shard
 	options := gosharding.NewOptions()
-	options.PipelineCount = 8
-	options.BufferSize = 102400
+	options.PipelineCount = viper.GetInt32("snapshot.workerCount")
+	options.BufferSize = viper.GetInt("snapshot.workerBufferSize")
 	options.Handler = func(id int32, data interface{}) {
 
 		req := data.(*SnapshotRequest)
@@ -57,6 +62,11 @@ func (ss *SnapshotScheduler) initialize() error {
 
 	// Create shard with options
 	ss.shard = gosharding.NewShard(options)
+
+	log.WithFields(log.Fields{
+		"count":      viper.GetInt32("snapshot.workerCount"),
+		"bufferSize": viper.GetInt("snapshot.workerBufferSize"),
+	}).Info("Initialized snapshot workers")
 
 	return nil
 }

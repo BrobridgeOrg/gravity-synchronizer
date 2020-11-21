@@ -8,6 +8,14 @@ pingInterval = 10
 maxPingsOutstanding = 3
 maxReconnects = -1
 
+[pipeline]
+workerCount = 16
+workerBufferSize = 102400
+
+[snapshot]
+workerCount = 8
+workerBufferSize = 102400
+
 [controller]
 host = "0.0.0.0"
 port = 40000

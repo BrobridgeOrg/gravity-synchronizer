@@ -10,6 +10,7 @@ import (
 	grpc_connection_pool "github.com/cfsghost/grpc-connection-pool"
 	jsoniter "github.com/json-iterator/go"
 	log "github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 )
 
 var json = jsoniter.ConfigCompatibleWithStandardLibrary
@@ -128,10 +129,13 @@ func (synchronizer *Synchronizer) Init() error {
 
 func (synchronizer *Synchronizer) initializeShard() error {
 
+	viper.SetDefault("pipeline.workerCount", 16)
+	viper.SetDefault("pipeline.workerBufferSize", 102400)
+
 	// Initializing shard
 	options := gosharding.NewOptions()
-	options.PipelineCount = 16
-	options.BufferSize = 102400
+	options.PipelineCount = viper.GetInt32("pipeline.workerCount")
+	options.BufferSize = viper.GetInt("pipeline.workerBufferSize")
 	options.Handler = func(id int32, data interface{}) {
 		event := data.(*PipelineEvent)
 		event.Pipeline.push(event)
@@ -139,6 +143,11 @@ func (synchronizer *Synchronizer) initializeShard() error {
 
 	// Create shard with options
 	synchronizer.shard = gosharding.NewShard(options)
+
+	log.WithFields(log.Fields{
+		"count":      viper.GetInt32("pipeline.workerCount"),
+		"bufferSize": viper.GetInt("pipeline.workerBufferSize"),
+	}).Info("Initialized pipeline workers")
 
 	return nil
 }
