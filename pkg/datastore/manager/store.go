@@ -223,11 +223,11 @@ func (store *Store) Write(data []byte) (uint64, error) {
 		return 0, err
 	}
 
-	// Dispatch event to subscribers
-	store.DispatchEvent()
-
 	// Snapshot
 	store.manager.snapshotScheduler.Request(store, seq, data)
+
+	// Dispatch event to subscribers
+	store.DispatchEvent()
 
 	return seq, nil
 }
