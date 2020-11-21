@@ -56,11 +56,10 @@ func (snapshot *Snapshot) Initialize() error {
 
 func (snapshot *Snapshot) getPrimaryKeyData(data *projection.Projection) ([]byte, error) {
 
-	var buf bytes.Buffer
 	for _, field := range data.Fields {
 		if field.Primary == true {
-
 			// Getting value of primary key
+			var buf bytes.Buffer
 			enc := gob.NewEncoder(&buf)
 			err := enc.Encode(field.Value)
 			if err != nil {
@@ -111,43 +110,41 @@ func (snapshot *Snapshot) handle(seq uint64, data *projection.Projection) {
 	}
 
 	// Not found
-	if value.Size() > 0 {
+	if value.Size() == 0 {
+		value.Free()
 
-		// Parsing original data which from database
-		orig := projectionPool.Get().(*projection.Projection)
-		err := projection.Unmarshal(value.Data(), orig)
-		if err != nil {
-
-			// Original data is unrecognized, so using new data instead
-			//			newData, _ := data.ToJSON()
-			newData := data.Raw
-
-			// Write to database
-			snapshot.writeData(cfHandle, stateHandle, seq, key, newData)
-
-			return
-		}
-
-		newData := snapshot.merge(orig, data)
-
-		// Release projection data
-		projectionPool.Put(orig)
+		// Using new data to create snapshot
+		newData := data.Raw
 
 		// Write to database
 		snapshot.writeData(cfHandle, stateHandle, seq, key, newData)
 
-		value.Free()
 		return
 	}
 
-	// Convert data to json string
-	//newData, _ := data.ToJSON()
-	newData := data.Raw
+	// Parsing original data which from database
+	orig := projectionPool.Get().(*projection.Projection)
+	err = projection.Unmarshal(value.Data(), orig)
+	value.Free()
+	if err != nil {
+
+		// Original data is unrecognized, so using new data instead
+		//			newData, _ := data.ToJSON()
+		newData := data.Raw
+
+		// Write to database
+		snapshot.writeData(cfHandle, stateHandle, seq, key, newData)
+
+		return
+	}
+
+	newData := snapshot.merge(orig, data)
+
+	// Release projection data
+	projectionPool.Put(orig)
 
 	// Write to database
 	snapshot.writeData(cfHandle, stateHandle, seq, key, newData)
-
-	value.Free()
 }
 
 func (snapshot *Snapshot) writeData(cfHandle *gorocksdb.ColumnFamilyHandle, stateHandle *gorocksdb.ColumnFamilyHandle, seq uint64, key []byte, data []byte) {

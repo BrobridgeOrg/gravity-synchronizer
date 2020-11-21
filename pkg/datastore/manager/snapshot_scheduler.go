@@ -33,7 +33,7 @@ func (ss *SnapshotScheduler) initialize() error {
 
 	// Initializing shard
 	options := gosharding.NewOptions()
-	options.PipelineCount = 16
+	options.PipelineCount = 8
 	options.BufferSize = 102400
 	options.Handler = func(id int32, data interface{}) {
 
