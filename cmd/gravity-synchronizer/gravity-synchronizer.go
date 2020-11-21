@@ -10,7 +10,6 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
-	_ "go.uber.org/automaxprocs"
 
 	app "github.com/BrobridgeOrg/gravity-synchronizer/pkg/app/instance"
 )
@@ -32,8 +31,8 @@ func init() {
 	}
 	runtime.GOMAXPROCS(8)
 
+	// Using environment variable to enable debug mode
 	DEBUG_MODE := os.Getenv("DEBUG_MODE")
-
 	if DEBUG_MODE != "" {
 		go func() {
 
