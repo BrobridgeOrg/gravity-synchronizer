@@ -167,7 +167,8 @@ func (snapshot *Snapshot) writeData(cfHandle *gorocksdb.ColumnFamilyHandle, stat
 
 func (snapshot *Snapshot) merge(origData *projection.Projection, updates *projection.Projection) []byte {
 
-	result := make(map[string]interface{})
+	// Pre-allocate map to store data
+	result := make(map[string]interface{}, len(origData.Fields)+len(updates.Fields))
 
 	for _, field := range origData.Fields {
 		result[field.Name] = field.Value
