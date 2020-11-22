@@ -90,12 +90,6 @@ func (sub *Subscription) handle(seq uint64, data []byte) bool {
 
 	for {
 
-		select {
-		case <-sub.close:
-			return true
-		default:
-		}
-
 		success := sub.watchFn(seq, data)
 		if success {
 			return false
@@ -103,6 +97,11 @@ func (sub *Subscription) handle(seq uint64, data []byte) bool {
 
 		log.Warn("Failed to process. Trying to do again in second")
 
-		<-time.After(1 * time.Second)
+		select {
+		case <-time.After(1 * time.Second):
+			continue
+		case <-sub.close:
+			return true
+		}
 	}
 }
