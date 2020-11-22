@@ -36,17 +36,6 @@ func (sub *Subscription) Watch(iter *gorocksdb.Iterator) {
 	for _ = range sub.newTriggered {
 
 		iter.Seek(Uint64ToBytes(sub.lastSequence))
-		if !iter.Valid() {
-			continue
-		}
-
-		// If we get record which is the same with last seq, find next one
-		key := iter.Key()
-		seq := BytesToUint64(key.Data())
-		key.Free()
-		if seq == sub.lastSequence {
-			iter.Next()
-		}
 
 		for ; iter.Valid(); iter.Next() {
 
@@ -60,6 +49,11 @@ func (sub *Subscription) Watch(iter *gorocksdb.Iterator) {
 			key := iter.Key()
 			seq := BytesToUint64(key.Data())
 			key.Free()
+
+			// If we get record which is the same with last seq, find next one
+			if seq == sub.lastSequence {
+				continue
+			}
 
 			sub.lastSequence = seq
 
