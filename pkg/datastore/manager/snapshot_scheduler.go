@@ -49,6 +49,7 @@ func (ss *SnapshotScheduler) initialize() error {
 		err := projection.Unmarshal(req.Data, pj)
 		if err != nil {
 			projectionPool.Put(pj)
+			snapshotRequestPool.Put(req)
 			return
 		}
 
