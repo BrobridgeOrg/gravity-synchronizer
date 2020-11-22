@@ -1,7 +1,7 @@
 package instance
 
 import (
-	"runtime"
+	//	"runtime"
 
 	store_manager "github.com/BrobridgeOrg/gravity-synchronizer/pkg/datastore/manager"
 	grpc_server "github.com/BrobridgeOrg/gravity-synchronizer/pkg/grpc_server/server"
@@ -34,9 +34,11 @@ func NewAppInstance() *AppInstance {
 
 func (a *AppInstance) Init() error {
 
-	log.WithFields(log.Fields{
-		"max_procs": runtime.GOMAXPROCS(32),
-	}).Info("Starting application")
+	/*
+		log.WithFields(log.Fields{
+			"max_procs": runtime.GOMAXPROCS(32),
+		}).Info("Starting application")
+	*/
 
 	// Initializing datastore
 	err := a.initStoreManager()

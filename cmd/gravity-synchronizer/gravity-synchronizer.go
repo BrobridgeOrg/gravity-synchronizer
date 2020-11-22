@@ -5,6 +5,7 @@ import (
 	"os/signal"
 	"runtime"
 	"runtime/trace"
+	"strconv"
 	"strings"
 	"syscall"
 
@@ -29,11 +30,20 @@ func init() {
 	if err := viper.ReadInConfig(); err != nil {
 		log.Warn("No configuration file was loaded")
 	}
-	runtime.GOMAXPROCS(8)
+
+	MAX_PROCS := os.Getenv("MAX_PROCS")
+	if MAX_PROCS != "" {
+		mp, err := strconv.Atoi(MAX_PROCS)
+		if err == nil {
+			runtime.GOMAXPROCS(mp)
+		}
+
+	}
 
 	// Using environment variable to enable debug mode
 	DEBUG_MODE := os.Getenv("DEBUG_MODE")
 	if DEBUG_MODE != "" {
+		log.Warn("Stating trace mode..")
 		go func() {
 
 			host, _ := os.Hostname()
