@@ -157,6 +157,8 @@ func (t *Transmitter) ProcessData(table string, sequence uint64, pj *projection.
 		record.Method = transmitter.Method_DELETE
 	} else if pj.Method == "update" {
 		record.Method = transmitter.Method_UPDATE
+	} else if pj.Method == "truncate" {
+		record.Method = transmitter.Method_TRUNCATE
 	} else {
 		record.Method = transmitter.Method_INSERT
 	}

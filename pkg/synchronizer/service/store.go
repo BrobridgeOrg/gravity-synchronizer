@@ -3,7 +3,7 @@ package synchronizer
 import (
 	"sync"
 
-	"github.com/BrobridgeOrg/gravity-synchronizer/pkg/datastore"
+	eventstore "github.com/BrobridgeOrg/EventStore"
 	"github.com/BrobridgeOrg/gravity-synchronizer/pkg/projection"
 	"github.com/BrobridgeOrg/gravity-synchronizer/pkg/synchronizer/service/transmitter"
 	log "github.com/sirupsen/logrus"
@@ -44,31 +44,32 @@ func (store *Store) AddEventSource(eventStore *EventStore) error {
 	}
 
 	log.WithFields(log.Fields{
-		"seq":   durableSeq,
-		"store": store.Name,
-	}).Info("  Initializing store")
+		"lastSeq": durableSeq,
+		"store":   store.Name,
+	}).Info("  connected to store")
 
 	// Subscribe to event source
-	sub, err := eventStore.Subscribe(durableSeq, func(seq uint64, data []byte) bool {
-
-		if seq <= durableSeq {
-			return true
-		}
-
-		success := store.ProcessData(eventStore, seq, data)
-
-		if success {
-			err = eventStore.UpdateDurableState(store.Name, seq)
-			if err != nil {
-				log.WithFields(log.Fields{
-					"component": "store",
-					"store":     store.Name,
-					"seq":       seq,
-				}).Error(err)
+	sub, err := eventStore.Subscribe(store.Name, durableSeq, func(event *eventstore.Event) {
+		/*
+			if event.Sequence <= durableSeq {
+				event.Ack()
+				return
 			}
-		}
-
-		return success
+		*/
+		store.ProcessData(event)
+		/*
+			if success {
+				err = eventStore.UpdateDurableState(store.Name, event.Sequence)
+				if err != nil {
+					log.WithFields(log.Fields{
+						"component": "store",
+						"store":     store.Name,
+						"seq":       event.Sequence,
+					}).Error(err)
+				}
+				event.Ack()
+			}
+		*/
 	})
 	if err != nil {
 		return err
@@ -86,7 +87,7 @@ func (store *Store) RemoveEventSource(sourceID uint64) error {
 		return nil
 	}
 
-	sub := obj.(datastore.Subscription)
+	sub := obj.(*eventstore.Subscription)
 	sub.Close()
 
 	store.SourceSubs.Delete(sourceID)
@@ -104,16 +105,17 @@ func (store *Store) IsMatch(pj *projection.Projection) bool {
 }
 
 //func (store *Store) ProcessData(eventStore *EventStore, seq uint64, pj *projection.Projection) bool {
-func (store *Store) ProcessData(eventStore *EventStore, seq uint64, data []byte) bool {
+func (store *Store) ProcessData(event *eventstore.Event) {
 
 	// Parsing data
 	pj := projectionPool.Get().(*projection.Projection)
-	err := projection.Unmarshal(data, pj)
+	err := projection.Unmarshal(event.Data, pj)
 	if err != nil {
 		log.Error(err)
-		return true
+		projectionPool.Put(pj)
+		event.Ack()
+		return
 	}
-
 	/*
 		log.WithFields(log.Fields{
 			"source":     eventStore.id,
@@ -125,23 +127,25 @@ func (store *Store) ProcessData(eventStore *EventStore, seq uint64, data []byte)
 	*/
 	// Ignore store which is not matched
 	if !store.IsMatch(pj) {
-		return true
+		projectionPool.Put(pj)
+		event.Ack()
+		return
 	}
 	/*
 		log.WithFields(log.Fields{
-			"source":     eventStore.id,
-			"seq":        seq,
+			"seq":        event.Sequence,
 			"store":      store.Name,
 			"collection": pj.Collection,
 		}).Info("Processing record")
 	*/
 	if store.Transmitter != nil {
-		err = store.Transmitter.ProcessData(store.Table, seq, pj)
+		err = store.Transmitter.ProcessData(store.Table, event.Sequence, pj)
 		if err != nil {
 			log.WithFields(log.Fields{
 				"component": "transmitter",
 			}).Error(err)
-			return false
+			projectionPool.Put(pj)
+			return
 		}
 	}
 
@@ -150,13 +154,14 @@ func (store *Store) ProcessData(eventStore *EventStore, seq uint64, data []byte)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"component": "trigger",
-			"source":    eventStore.id,
-			"seq":       seq,
-			"store":     store.Name,
+			//			"source":    eventStore.id,
+			"seq":   event.Sequence,
+			"store": store.Name,
 		}).Error(err)
 	}
 
 	projectionPool.Put(pj)
+	event.Ack()
 
-	return true
+	return
 }

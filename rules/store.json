@@ -7,7 +7,7 @@
 		},
 		"postgres_accounts": {
 			"collection": "accounts",
-			"database": "my_postgres111",
+			"database": "my_postgres",
 			"table": "accounts"
 		}
 	}

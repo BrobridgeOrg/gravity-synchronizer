@@ -3,7 +3,6 @@ package instance
 import (
 	//	"runtime"
 
-	store_manager "github.com/BrobridgeOrg/gravity-synchronizer/pkg/datastore/manager"
 	grpc_server "github.com/BrobridgeOrg/gravity-synchronizer/pkg/grpc_server/server"
 	mux_manager "github.com/BrobridgeOrg/gravity-synchronizer/pkg/mux_manager/manager"
 	synchronizer_service "github.com/BrobridgeOrg/gravity-synchronizer/pkg/synchronizer/service"
@@ -15,7 +14,6 @@ type AppInstance struct {
 	muxManager   *mux_manager.MuxManager
 	grpcServer   *grpc_server.Server
 	synchronizer *synchronizer_service.Synchronizer
-	storeManager *store_manager.Manager
 }
 
 func NewAppInstance() *AppInstance {
@@ -27,7 +25,6 @@ func NewAppInstance() *AppInstance {
 	a.synchronizer = synchronizer_service.NewSynchronizer(a)
 	a.muxManager = mux_manager.NewMuxManager(a)
 	a.grpcServer = grpc_server.NewServer(a)
-	a.storeManager = store_manager.NewManager()
 
 	return a
 }
@@ -40,13 +37,7 @@ func (a *AppInstance) Init() error {
 		}).Info("Starting application")
 	*/
 
-	// Initializing datastore
-	err := a.initStoreManager()
-	if err != nil {
-		return err
-	}
-
-	err = a.initSynchronizer()
+	err := a.initSynchronizer()
 	if err != nil {
 		return err
 	}

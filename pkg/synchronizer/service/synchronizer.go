@@ -5,6 +5,7 @@ import (
 	"os"
 	"strings"
 
+	eventstore "github.com/BrobridgeOrg/EventStore"
 	"github.com/BrobridgeOrg/gravity-synchronizer/pkg/app"
 	gosharding "github.com/cfsghost/gosharding"
 	grpc_connection_pool "github.com/cfsghost/grpc-connection-pool"
@@ -24,18 +25,21 @@ type Synchronizer struct {
 	pipelines       map[uint64]*Pipeline
 
 	// component manager
-	storeMgr       *StoreManager
-	transmitterMgr *TransmitterManager
-	triggerMgr     *TriggerManager
-	exporterMgr    *ExporterManager
+	snapshotHandler *SnapshotHandler
+	eventStore      *eventstore.EventStore
+	storeMgr        *StoreManager
+	transmitterMgr  *TransmitterManager
+	triggerMgr      *TriggerManager
+	exporterMgr     *ExporterManager
 }
 
 func NewSynchronizer(a app.App) *Synchronizer {
 	synchronizer := &Synchronizer{
-		app:            a,
-		pipelines:      make(map[uint64]*Pipeline, 0),
-		transmitterMgr: NewTransmitterManager(),
-		exporterMgr:    NewExporterManager(),
+		app:             a,
+		pipelines:       make(map[uint64]*Pipeline, 0),
+		transmitterMgr:  NewTransmitterManager(),
+		exporterMgr:     NewExporterManager(),
+		snapshotHandler: NewSnapshotHandler(),
 	}
 
 	synchronizer.eventBus = NewEventBus(synchronizer)
@@ -61,6 +65,12 @@ func (synchronizer *Synchronizer) Init() error {
 	log.WithFields(log.Fields{
 		"clientID": synchronizer.clientID,
 	}).Info("Initializing synchronizer")
+
+	// Initializing event store
+	err = synchronizer.initializeEventStore()
+	if err != nil {
+		return err
+	}
 
 	// Initializing shard
 	err = synchronizer.initializeShard()
@@ -148,6 +158,40 @@ func (synchronizer *Synchronizer) initializeShard() error {
 		"count":      viper.GetInt32("pipeline.workerCount"),
 		"bufferSize": viper.GetInt("pipeline.workerBufferSize"),
 	}).Info("Initialized pipeline workers")
+
+	return nil
+}
+
+func (synchronizer *Synchronizer) initializeEventStore() error {
+
+	options := eventstore.NewOptions()
+	options.DatabasePath = viper.GetString("datastore.path")
+	options.EnabledSnapshot = true
+
+	// Snapshot options
+	viper.SetDefault("snapshot.workerCount", 8)
+	viper.SetDefault("snapshot.workerBufferSize", 102400)
+	options.SnapshotOptions.WorkerCount = viper.GetInt32("snapshot.workerCount")
+	options.SnapshotOptions.BufferSize = viper.GetInt("snapshot.workerBufferSize")
+
+	log.WithFields(log.Fields{
+		"databasePath":        options.DatabasePath,
+		"snapshotWorkerCount": options.SnapshotOptions.WorkerCount,
+		"snapshotBufferSize":  options.SnapshotOptions.BufferSize,
+	}).Info("Initialize event store engine")
+
+	// Initialize event store
+	es, err := eventstore.CreateEventStore(options)
+	if err != nil {
+		return err
+	}
+
+	synchronizer.eventStore = es
+
+	// Setup snapshot
+	es.SetSnapshotHandler(func(request *eventstore.SnapshotRequest) error {
+		return synchronizer.snapshotHandler.handle(request)
+	})
 
 	return nil
 }
