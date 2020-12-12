@@ -86,22 +86,14 @@ func (ex *Exporter) dispatcher() {
 
 func (ex *Exporter) Send(pj *projection.Projection) error {
 
-	if pj.Raw == nil {
-		// Genereate JSON string
-		data, err := pj.ToJSON()
-		if err != nil {
-			return err
-		}
-
-		ex.output <- data
-		return nil
+	// Genereate JSON string
+	data, err := pj.ToJSON()
+	if err != nil {
+		return err
 	}
 
-	// Getting raw data directly without conversion
-	data := make([]byte, len(pj.Raw))
-	copy(data, pj.Raw)
-
 	ex.output <- data
+
 	return nil
 }
 
