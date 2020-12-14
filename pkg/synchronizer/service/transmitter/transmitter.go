@@ -192,6 +192,7 @@ func (t *Transmitter) handle(record *transmitter.Record) error {
 	conn, err := t.pool.Get()
 	if err != nil {
 		log.Error(err)
+		recordPool.Put(record)
 		return err
 	}
 
@@ -268,7 +269,7 @@ func (t *Transmitter) getValue(data interface{}) (*transmitter.Value, error) {
 	case reflect.String:
 		return &transmitter.Value{
 			Type:  transmitter.DataType_STRING,
-			Value: []byte(data.(string)),
+			Value: StrToBytes(data.(string)),
 		}, nil
 	case reflect.Map:
 
