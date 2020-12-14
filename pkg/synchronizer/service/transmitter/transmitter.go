@@ -81,6 +81,7 @@ func (t *Transmitter) Init() error {
 	return nil
 }
 
+/*
 func (t *Transmitter) Insert(table string, data map[string]interface{}, callback func(error)) error {
 
 	// Prepare record
@@ -109,7 +110,7 @@ func (t *Transmitter) Insert(table string, data map[string]interface{}, callback
 
 	return t.handle(record)
 }
-
+*/
 func (t *Transmitter) Truncate(table string) error {
 
 	conn, err := t.pool.Get()
@@ -145,6 +146,7 @@ func (t *Transmitter) ProcessData(table string, sequence uint64, pj *projection.
 	record := recordPool.Get().(*transmitter.Record)
 	record.EventName = pj.EventName
 	record.Table = table
+	record.PrimaryKey = pj.PrimaryKey
 	record.Fields = make([]*transmitter.Field, 0, len(pj.Fields))
 	/*
 		record := &transmitter.Record{
@@ -176,9 +178,9 @@ func (t *Transmitter) ProcessData(table string, sequence uint64, pj *projection.
 		}
 
 		record.Fields = append(record.Fields, &transmitter.Field{
-			Name:      field.Name,
-			Value:     v,
-			IsPrimary: field.Primary,
+			Name:  field.Name,
+			Value: v,
+			//			IsPrimary: field.Primary,
 		})
 	}
 

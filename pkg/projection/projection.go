@@ -16,6 +16,7 @@ type Projection struct {
 	EventName  string  `json:"event"`
 	Collection string  `json:"collection"`
 	Method     string  `json:"method"`
+	PrimaryKey string  `json:"primaryKey"`
 	Fields     []Field `json:"fields"`
 }
 

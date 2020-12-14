@@ -18,7 +18,7 @@ func NewSnapshotHandler() *SnapshotHandler {
 func (snapshot *SnapshotHandler) getPrimaryKeyData(data *projection.Projection) ([]byte, error) {
 
 	for _, field := range data.Fields {
-		if field.Primary == true {
+		if field.Name == data.PrimaryKey {
 			// Getting value of primary key
 			var buf bytes.Buffer
 			enc := gob.NewEncoder(&buf)

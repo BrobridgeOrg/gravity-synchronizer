@@ -4,7 +4,7 @@ go 1.15
 
 require (
 	github.com/BrobridgeOrg/EventStore v0.0.3
-	github.com/BrobridgeOrg/gravity-api v0.2.3
+	github.com/BrobridgeOrg/gravity-api v0.2.4
 	github.com/BrobridgeOrg/gravity-synchronizer v0.0.0-00010101000000-000000000000
 	github.com/cfsghost/gosharding v0.0.3
 	github.com/cfsghost/grpc-connection-pool v0.6.0
@@ -23,10 +23,9 @@ require (
 	google.golang.org/grpc v1.31.1
 )
 
-//replace github.com/BrobridgeOrg/gravity-api => ../gravity-api
-
 replace github.com/BrobridgeOrg/gravity-synchronizer => ./
 
+//replace github.com/BrobridgeOrg/gravity-api => ../gravity-api
 //replace github.com/cfsghost/grpc-connection-pool => /Users/fred/works/opensource/grpc-connection-pool
 //replace github.com/cfsghost/gosharding => /Users/fred/works/opensource/gosharding
 //replace github.com/BrobridgeOrg/EventStore => /Users/fred/works/Brobridge/EventStore
