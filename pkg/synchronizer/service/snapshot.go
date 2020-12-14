@@ -49,7 +49,7 @@ func (snapshot *SnapshotHandler) handle(request *eventstore.SnapshotRequest) err
 	}
 
 	// Upsert to snapshot
-	err = request.Upsert([]byte(newData.Collection), primaryKey, func(origin []byte) ([]byte, error) {
+	err = request.Upsert(StrToBytes(newData.Collection), primaryKey, func(origin []byte) ([]byte, error) {
 
 		originData := projectionPool.Get().(*projection.Projection)
 		err := projection.Unmarshal(origin, originData)
