@@ -150,7 +150,7 @@ func (store *Store) ProcessData(event *eventstore.Event) {
 	}
 
 	// Trigger
-	err = store.TriggerManager.Handle(store.Name, pj)
+	err = store.TriggerManager.Handle(store.Name, pj, event.Data)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"component": "trigger",

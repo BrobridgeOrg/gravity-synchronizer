@@ -84,14 +84,14 @@ func (tm *TriggerManager) LoadTriggerFile(filename string) (*TriggerConfig, erro
 	return &config, nil
 }
 
-func (tm *TriggerManager) Handle(storeName string, pj *projection.Projection) error {
+func (tm *TriggerManager) Handle(storeName string, pj *projection.Projection, rawData []byte) error {
 
 	for _, trigger := range tm.Triggers {
 		if !trigger.IsMatch(storeName, pj) {
 			continue
 		}
 
-		trigger.Handle(storeName, pj)
+		trigger.Handle(storeName, pj, rawData)
 	}
 
 	return nil

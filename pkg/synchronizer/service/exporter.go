@@ -84,7 +84,14 @@ func (ex *Exporter) dispatcher() {
 	}
 }
 
-func (ex *Exporter) Send(pj *projection.Projection) error {
+func (ex *Exporter) Send(pj *projection.Projection, rawData []byte) error {
+
+	if rawData != nil {
+		data := make([]byte, len(rawData))
+		copy(data, rawData)
+		ex.output <- data
+		return nil
+	}
 
 	// Genereate JSON string
 	data, err := pj.ToJSON()
