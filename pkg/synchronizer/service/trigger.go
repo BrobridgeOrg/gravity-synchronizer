@@ -42,6 +42,6 @@ func (trigger *Trigger) IsMatch(storeName string, pj *projection.Projection) boo
 	return true
 }
 
-func (trigger *Trigger) Handle(storeName string, pj *projection.Projection) error {
-	return trigger.Action.ExporterInstance.Send(pj)
+func (trigger *Trigger) Handle(storeName string, pj *projection.Projection, rawData []byte) error {
+	return trigger.Action.ExporterInstance.Send(pj, rawData)
 }
