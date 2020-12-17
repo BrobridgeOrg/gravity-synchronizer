@@ -10,7 +10,7 @@ get_args() {
 [ "$#" -eq 0 ] || {
 	stores=$(get_args stores "$@")
 	[ "$stores" != "" ] && {
-		storeConfigPath="./rules/stores.json"
+		storeConfigPath="./rules/store.json"
 
 		[ "$GRAVITY_SYNCHRONIZER_RULES_STORE" != "" ] && {
 			storeConfigPath=$GRAVITY_SYNCHRONIZER_RULES_STORE
