@@ -393,17 +393,20 @@ func (t *Transmitter) getBytesFromInteger(data interface{}) ([]byte, error) {
 }
 
 func (t *Transmitter) getBytesFromFloat(data interface{}) ([]byte, error) {
-	var buf = make([]byte, 8)
+	//	var buf = make([]byte, 8)
+	var buf bytes.Buffer
 
 	v := reflect.ValueOf(data)
 	switch v.Kind() {
 	case reflect.Float32:
-		binary.LittleEndian.PutUint64(buf, uint64(data.(float32)))
+		binary.Write(&buf, binary.LittleEndian, data)
+		//		binary.LittleEndian.PutUint64(buf, uint64(data.(float32)))
 	case reflect.Float64:
-		binary.LittleEndian.PutUint64(buf, uint64(data.(float64)))
+		binary.Write(&buf, binary.LittleEndian, data)
+		//		binary.LittleEndian.PutUint64(buf, uint64(data.(float64)))
 	default:
 		return nil, NotFloatErr
 	}
 
-	return buf, nil
+	return buf.Bytes(), nil
 }
