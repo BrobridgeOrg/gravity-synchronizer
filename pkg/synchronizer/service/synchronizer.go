@@ -2,6 +2,7 @@ package synchronizer
 
 import (
 	"fmt"
+	"gravity-synchronizer/pkg/synchronizer/service/data_handler"
 	"os"
 	"strings"
 
@@ -24,7 +25,8 @@ type Synchronizer struct {
 	clientID        string
 	pipelines       map[uint64]*Pipeline
 
-	// component manager
+	// components
+	dataHandler     *data_handler.DataHandler
 	snapshotHandler *SnapshotHandler
 	eventStore      *eventstore.EventStore
 	storeMgr        *StoreManager
@@ -128,6 +130,12 @@ func (synchronizer *Synchronizer) Init() error {
 
 	// register synchronizer
 	err = synchronizer.RegisterClient()
+	if err != nil {
+		return err
+	}
+
+	// Initializing data handler
+	err = synchronizer.initializeDataHandler()
 	if err != nil {
 		return err
 	}

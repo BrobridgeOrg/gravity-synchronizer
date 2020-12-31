@@ -1,0 +1,109 @@
+{
+	"rules": [
+		{
+			"event": "userCreated",
+			"collection": "users",
+			"method": "update",
+			"primaryKey": "id",
+			"mapping": [
+				{
+					"source": "id",
+					"target": "id"
+				},
+				{
+					"source": "name",
+					"target": "name"
+				},
+				{
+					"source": "email",
+					"target": "email"
+				}
+			]
+		},
+		{
+			"event": "userDeleted",
+			"collection": "users",
+			"method": "delete",
+			"primaryKey": "id",
+			"mapping": [
+				{
+					"source": "id",
+					"target": "id",
+					"primary": true
+				}
+			]
+		},
+		{
+			"event": "accountCreated",
+			"collection": "accounts",
+			"method": "insert",
+			"primaryKey": "id",
+			"mapping": [
+				{
+					"source": "id",
+					"target": "id"
+				},
+				{
+					"source": "name",
+					"target": "name"
+				},
+				{
+					"source": "type",
+					"target": "type"
+				},
+				{
+					"source": "phone",
+					"target": "phone"
+				},
+				{
+					"source": "attrs",
+					"target": "attrs"
+				},
+				{
+					"source": "createdAt",
+					"target": "createdAt"
+				}
+			]
+		},
+		{
+			"event": "accountUpdated",
+			"collection": "accounts",
+			"method": "update",
+			"primaryKey": "id",
+			"mapping": [
+				{
+					"source": "id",
+					"target": "id"
+				},
+				{
+					"source": "name",
+					"target": "name"
+				},
+				{
+					"source": "type",
+					"target": "type"
+				},
+				{
+					"source": "phone",
+					"target": "phone"
+				},
+				{
+					"source": "attrs",
+					"target": "attrs"
+				}
+			]
+		},
+		{
+			"event": "accountDeleted",
+			"collection": "accounts",
+			"method": "delete",
+			"primaryKey": "id",
+			"mapping": [
+				{
+					"source": "id",
+					"target": "id"
+				}
+			]
+		}
+	]
+}
