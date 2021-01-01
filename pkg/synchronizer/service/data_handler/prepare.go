@@ -60,10 +60,10 @@ func (processor *Processor) preparePacket(event *Event) []byte {
 
 func (processor *Processor) preparePipelineData(workerID int32, event *Event) (interface{}, error) {
 
-	data := pipelineDataPool.Get().(*PipelineData)
+	data := pipelinePacketPool.Get().(*PipelinePacket)
 	data.Request = event.Request
-	data.PipelineID = event.PipelineID
-	data.Payload = processor.preparePacket(event)
+	data.Data.PipelineID = event.PipelineID
+	data.Data.Payload = processor.preparePacket(event)
 	eventPool.Put(event)
 
 	return data, nil

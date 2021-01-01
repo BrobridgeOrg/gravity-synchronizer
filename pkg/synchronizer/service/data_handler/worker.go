@@ -35,7 +35,7 @@ func (processor *Processor) initializePipelineWorkers() error {
 
 		for {
 			// Process data
-			err := processor.processPipelineData(id, data.(*PipelineData))
+			err := processor.processPipelineData(id, data.(*PipelinePacket))
 			if err == nil {
 				return
 			}

@@ -36,6 +36,6 @@ func (dh *DataHandler) ProcessData(eventName string, data []byte, meta map[strin
 	return dh.processor.ProcessData(eventName, data, meta)
 }
 */
-func (dh *DataHandler) SetPipelineHandler(fn func(*PipelineData)) {
+func (dh *DataHandler) SetPipelineHandler(fn func(*PipelinePacket)) {
 	dh.processor.SetPipelineHandler(fn)
 }

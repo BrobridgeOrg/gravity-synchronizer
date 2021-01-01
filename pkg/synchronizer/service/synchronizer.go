@@ -145,31 +145,6 @@ func (synchronizer *Synchronizer) Init() error {
 	return nil
 }
 
-func (synchronizer *Synchronizer) initializeShard() error {
-
-	viper.SetDefault("pipeline.workerCount", 16)
-	viper.SetDefault("pipeline.workerBufferSize", 102400)
-
-	// Initializing shard
-	options := gosharding.NewOptions()
-	options.PipelineCount = viper.GetInt32("pipeline.workerCount")
-	options.BufferSize = viper.GetInt("pipeline.workerBufferSize")
-	options.Handler = func(id int32, data interface{}) {
-		event := data.(*PipelineEvent)
-		event.Pipeline.push(event)
-	}
-
-	// Create shard with options
-	synchronizer.shard = gosharding.NewShard(options)
-
-	log.WithFields(log.Fields{
-		"count":      viper.GetInt32("pipeline.workerCount"),
-		"bufferSize": viper.GetInt("pipeline.workerBufferSize"),
-	}).Info("Initialized pipeline workers")
-
-	return nil
-}
-
 func (synchronizer *Synchronizer) initializeEventStore() error {
 
 	options := eventstore.NewOptions()

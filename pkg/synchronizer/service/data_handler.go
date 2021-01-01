@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"gravity-synchronizer/pkg/synchronizer/service/data_handler"
+	"gravity-synchronizer/pkg/synchronizer/service/request"
 	"sync"
 	"time"
 
@@ -42,20 +43,20 @@ func FailedReply(reason string) []byte {
 func (synchronizer *Synchronizer) initializeDataHandler() error {
 
 	synchronizer.dataHandler = data_handler.NewDataHandler()
-	synchronizer.dataHandler.SetPipelineHandler(func(data *data_handler.PipelineData) {
+	synchronizer.dataHandler.SetPipelineHandler(func(packet *data_handler.PipelinePacket) {
 
 		// Store data
-		request := data.Request
-		err := synchronizer.storeData(data)
+		req := packet.Request
+		err := synchronizer.storeData(packet)
 		if err != nil {
-			request.GetMsg().Respond(FailedReply(err.Error()))
-			request.Free()
+			req.GetMsg().Respond(FailedReply(err.Error()))
+			req.Free()
 			return
 		}
 
 		// Complete
-		request.GetMsg().Respond(SuccessDSAReply)
-		request.Free()
+		req.GetMsg().Respond(SuccessDSAReply)
+		req.Free()
 	})
 
 	err := synchronizer.dataHandler.Init()
@@ -89,17 +90,48 @@ func (synchronizer *Synchronizer) initializeDataHandler() error {
 	return nil
 }
 
-func (synchronizer *Synchronizer) storeData(data *data_handler.PipelineData) error {
+func (synchronizer *Synchronizer) storeData(packet *data_handler.PipelinePacket) error {
 
-	// TODO: check whether pipeline is located on here
+	// Trying to find pipeline from this node
+	pipeline, ok := synchronizer.pipelines[uint64(packet.Data.PipelineID)]
+	if ok {
+
+		var err error
+		var wg sync.WaitGroup
+		wg.Add(1)
+
+		// Found so create a customized request for internal pipeline
+		customReq := request.NewCustomRequest(
+			func() []byte {
+				return packet.Data.Payload
+			},
+			func(e error) error {
+				err = e
+				wg.Done()
+				return nil
+			},
+			func() error {
+				wg.Done()
+				return nil
+			},
+		)
+
+		err = synchronizer.processEvent(pipeline, customReq)
+
+		wg.Wait()
+
+		return err
+	}
+
+	// TODO: process data direct right here if target pipeline is at the same place
 
 	// Getting channel name to dispatch
-	channel := fmt.Sprintf("gravity.pipeline.%d", data.PipelineID)
+	channel := fmt.Sprintf("gravity.pipeline.%d", packet.Data.PipelineID)
 
 	// Send request
 	connection := synchronizer.eventBus.bus.GetConnection()
-	resp, err := connection.Request(channel, data.Payload, time.Second*5)
-	data.Free()
+	resp, err := connection.Request(channel, packet.Data.Payload, time.Second*5)
+	packet.Free()
 	if err != nil {
 		return err
 	}

@@ -4,17 +4,16 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"sync"
+	"gravity-synchronizer/pkg/synchronizer/service/request"
 
 	controller "github.com/BrobridgeOrg/gravity-api/service/controller"
-	pipeline_pb "github.com/BrobridgeOrg/gravity-api/service/pipeline"
-	"github.com/golang/protobuf/proto"
 	"github.com/nats-io/nats.go"
 	log "github.com/sirupsen/logrus"
 )
 
 var counter uint64
 
+/*
 var SuccessReply, _ = proto.Marshal(&pipeline_pb.PipelineReply{
 	Success: true,
 })
@@ -23,18 +22,7 @@ var FailureReply, _ = proto.Marshal(&pipeline_pb.PipelineReply{
 	Success: false,
 	Reason:  "Failed to write to database",
 })
-
-var pipelineEventPool = sync.Pool{
-	New: func() interface{} {
-		return &PipelineEvent{}
-	},
-}
-
-type PipelineEvent struct {
-	Pipeline *Pipeline
-	Payload  interface{}
-}
-
+*/
 type Pipeline struct {
 	synchronizer *Synchronizer
 	id           uint64
@@ -73,10 +61,15 @@ func (pipeline *Pipeline) Init() error {
 	//sub, err := connection.Subscribe(channel, pipeline.handleMessage)
 	sub, err := connection.Subscribe(channel, func(m *nats.Msg) {
 
-		event := pipelineEventPool.Get().(*PipelineEvent)
-		event.Pipeline = pipeline
-		event.Payload = m
-		pipeline.synchronizer.shard.Push(pipeline.id, event)
+		req := request.NewNATSRequest(m)
+
+		pipeline.synchronizer.processEvent(pipeline, req)
+		/*
+			event := pipelineEventPool.Get().(*PipelineEvent)
+			event.Pipeline = pipeline
+			event.Payload = m
+			pipeline.synchronizer.shard.Push(pipeline.id, event)
+		*/
 	})
 	if err != nil {
 		return err
@@ -141,11 +134,11 @@ func (pipeline *Pipeline) release() error {
 }
 
 func (pipeline *Pipeline) push(event *PipelineEvent) {
-	event.Pipeline.handleMessage(event.Payload.(*nats.Msg))
+	event.Pipeline.handleRequest(event.Request)
 	pipelineEventPool.Put(event)
 }
 
-func (pipeline *Pipeline) handleMessage(m *nats.Msg) {
+func (pipeline *Pipeline) handleRequest(req request.Request) {
 	/*
 		id := atomic.AddUint64((*uint64)(&counter), 1)
 		if id%1000 == 0 {
@@ -153,11 +146,13 @@ func (pipeline *Pipeline) handleMessage(m *nats.Msg) {
 		}
 	*/
 	// Event sourcing
-	err := pipeline.eventStore.Write(m.Data)
+	err := pipeline.eventStore.Write(req.Data())
 	if err != nil {
-		m.Respond(FailureReply)
+		req.Error(err)
+		//		req.Respond(FailureReply)
 		return
 	}
 
-	m.Respond(SuccessReply)
+	//	req.Respond(SuccessReply)
+	req.Respond()
 }

@@ -24,6 +24,7 @@ require (
 	github.com/tecbot/gorocksdb v0.0.0-20191217155057-f0fad39f321c
 	go.uber.org/automaxprocs v1.3.0
 	google.golang.org/grpc v1.32.0
+	google.golang.org/protobuf v1.25.0
 )
 
 replace github.com/BrobridgeOrg/gravity-synchronizer => ./

@@ -17,7 +17,7 @@ type Processor struct {
 	workerCount     int32
 	shard           *gosharding.Shard
 	preprocess      *parallel_chunked_flow.ParallelChunkedFlow
-	pipelineHandler func(*PipelineData)
+	pipelineHandler func(*PipelinePacket)
 }
 
 type Field struct {
@@ -73,16 +73,16 @@ func NewProcessor() *Processor {
 	return processor
 }
 
-func (processor *Processor) processPipelineData(workerID int32, data *PipelineData) error {
+func (processor *Processor) processPipelineData(workerID int32, data *PipelinePacket) error {
 
 	processor.pipelineHandler(data)
 
-	pipelineDataPool.Put(data)
+	pipelinePacketPool.Put(data)
 
 	return nil
 }
 
-func (processor *Processor) SetPipelineHandler(fn func(*PipelineData)) {
+func (processor *Processor) SetPipelineHandler(fn func(*PipelinePacket)) {
 	processor.pipelineHandler = fn
 }
 
