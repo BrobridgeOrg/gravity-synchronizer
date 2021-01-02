@@ -123,8 +123,6 @@ func (synchronizer *Synchronizer) storeData(packet *data_handler.PipelinePacket)
 		return err
 	}
 
-	// TODO: process data direct right here if target pipeline is at the same place
-
 	// Getting channel name to dispatch
 	channel := fmt.Sprintf("gravity.pipeline.%d", packet.Data.PipelineID)
 

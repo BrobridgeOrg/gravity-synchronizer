@@ -30,9 +30,6 @@ func (store *Store) Init() error {
 
 func (store *Store) AddEventSource(eventStore *EventStore) error {
 
-	// TODO: get last sequence then compare with it, to determine whether it does sync from snapshot first
-	//	lastSeq := eventStore.GetLastSequence()
-
 	// Getting durable state of store
 	durableSeq, err := eventStore.GetDurableState(store.Name)
 	if err != nil {
@@ -57,19 +54,6 @@ func (store *Store) AddEventSource(eventStore *EventStore) error {
 			}
 		*/
 		store.ProcessData(event)
-		/*
-			if success {
-				err = eventStore.UpdateDurableState(store.Name, event.Sequence)
-				if err != nil {
-					log.WithFields(log.Fields{
-						"component": "store",
-						"store":     store.Name,
-						"seq":       event.Sequence,
-					}).Error(err)
-				}
-				event.Ack()
-			}
-		*/
 	})
 	if err != nil {
 		return err
@@ -104,7 +88,6 @@ func (store *Store) IsMatch(pj *projection.Projection) bool {
 	return true
 }
 
-//func (store *Store) ProcessData(eventStore *EventStore, seq uint64, pj *projection.Projection) bool {
 func (store *Store) ProcessData(event *eventstore.Event) {
 
 	// Parsing data
