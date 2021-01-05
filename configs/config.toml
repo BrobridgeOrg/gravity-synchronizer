@@ -9,6 +9,7 @@ maxPingsOutstanding = 3
 maxReconnects = -1
 
 [pipeline]
+pipelineCount = 256
 workerCount = 16
 workerBufferSize = 102400
 
