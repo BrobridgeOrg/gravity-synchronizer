@@ -49,6 +49,7 @@ func (synchronizer *Synchronizer) initializeDataHandler() error {
 		req := packet.Request
 		err := synchronizer.storeData(packet)
 		if err != nil {
+			log.Error(err)
 			req.GetMsg().Respond(FailedReply(err.Error()))
 			req.Free()
 			return
@@ -78,7 +79,12 @@ func (synchronizer *Synchronizer) initializeDataHandler() error {
 		}
 
 		// Do preprocess and mapping job
-		synchronizer.dataHandler.ProcessData(m, &req)
+		err = synchronizer.dataHandler.ProcessData(m, &req)
+		if err != nil {
+			log.Error(err)
+			m.Respond(FailedReply(err.Error()))
+			return
+		}
 	})
 	if err != nil {
 		return err
