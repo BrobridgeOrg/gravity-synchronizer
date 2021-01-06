@@ -51,6 +51,17 @@ get_args() {
 
 		echo $exporter > $exporterConfigPath
 	}
+
+	rules=$(get_args rules "$@")
+	[ "$rules" != "" ] &&{
+		rulesConfigPath="./rules/rules.json"
+
+		[ "$GRAVITY_SYNCHRONIZER_RULES_RULES" != "" ] && {
+			rulesConfigPath=$GRAVITY_SYNCHRONIZER_RULES_RULES
+		}
+
+		echo $rules > $rulesConfigPath
+	}
 }
 export GRAVITY_SYNCHRONIZER_EVENT_STORE_CLIENT_NAME=$(hostname)
 exec /gravity-synchronizer

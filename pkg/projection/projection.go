@@ -23,8 +23,9 @@ type Projection struct {
 
 type JSONResult struct {
 	EventName  string                 `json:"event"`
-	Collection string                 `json:"table"`
+	Collection string                 `json:"collection"`
 	Payload    map[string]interface{} `json:"payload"`
+	Meta       map[string][]byte      `json:"meta"`
 }
 
 var json = jsoniter.ConfigCompatibleWithStandardLibrary
@@ -52,6 +53,7 @@ func (pj *Projection) ToJSON() ([]byte, error) {
 	result.EventName = pj.EventName
 	result.Collection = pj.Collection
 	result.Payload = make(map[string]interface{})
+	result.Meta = pj.Meta
 
 	for _, field := range pj.Fields {
 		result.Payload[field.Name] = field.Value
