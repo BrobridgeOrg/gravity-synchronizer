@@ -1,6 +1,7 @@
 package projection
 
 import (
+	"bytes"
 	"sync"
 
 	jsoniter "github.com/json-iterator/go"
@@ -37,11 +38,20 @@ var pool = sync.Pool{
 
 func Unmarshal(data []byte, pj *Projection) error {
 
-	err := json.Unmarshal(data, pj)
+	decoder := json.NewDecoder(bytes.NewReader(data))
+	decoder.UseNumber()
+	err := decoder.Decode(pj)
 	if err != nil {
-		return err
+		return nil
 	}
 
+	/*
+
+		err := json.Unmarshal(data, pj)
+		if err != nil {
+			return err
+		}
+	*/
 	return nil
 }
 

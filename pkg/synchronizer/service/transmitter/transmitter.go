@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/binary"
 	"encoding/gob"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"reflect"
@@ -227,36 +228,42 @@ func (t *Transmitter) handle(record *transmitter.Record) error {
 func (t *Transmitter) getValue(data interface{}) (*transmitter.Value, error) {
 
 	if data == nil {
-		return nil, errors.New("data cannnot be nil")
+		return nil, errors.New("data cannot be nil")
 	}
 
-	// Float
-	bytes, err := t.getBytesFromFloat(data)
-	if err == nil {
-		return &transmitter.Value{
-			Type:  transmitter.DataType_FLOAT64,
-			Value: bytes,
-		}, nil
-	}
+	switch data.(type) {
+	case json.Number:
 
-	// Integer
-	bytes, err = t.getBytesFromInteger(data)
-	if err == nil {
-		return &transmitter.Value{
-			Type:  transmitter.DataType_INT64,
-			Value: bytes,
-		}, nil
+		if n, err := data.(json.Number).Int64(); err == nil {
+			// Integer
+			bytes, err := t.getBytesFromInteger(n)
+			if err == nil {
+				return &transmitter.Value{
+					Type:  transmitter.DataType_INT64,
+					Value: bytes,
+				}, nil
+			}
+		} else if f, err := data.(json.Number).Float64(); err == nil {
+			// Float
+			bytes, err := t.getBytesFromFloat(f)
+			if err == nil {
+				return &transmitter.Value{
+					Type:  transmitter.DataType_FLOAT64,
+					Value: bytes,
+				}, nil
+			}
+		}
 	}
-
-	// Unsigned integer
-	bytes, err = t.getBytesFromUnsignedInteger(data)
-	if err == nil {
-		return &transmitter.Value{
-			Type:  transmitter.DataType_INT64,
-			Value: bytes,
-		}, nil
-	}
-
+	/*
+		// Unsigned integer
+		bytes, err := t.getBytesFromUnsignedInteger(data)
+		if err == nil {
+			return &transmitter.Value{
+				Type:  transmitter.DataType_INT64,
+				Value: bytes,
+			}, nil
+		}
+	*/
 	v := reflect.ValueOf(data)
 
 	switch v.Kind() {
@@ -393,17 +400,15 @@ func (t *Transmitter) getBytesFromInteger(data interface{}) ([]byte, error) {
 }
 
 func (t *Transmitter) getBytesFromFloat(data interface{}) ([]byte, error) {
-	//	var buf = make([]byte, 8)
+
 	var buf bytes.Buffer
 
 	v := reflect.ValueOf(data)
 	switch v.Kind() {
 	case reflect.Float32:
 		binary.Write(&buf, binary.LittleEndian, data)
-		//		binary.LittleEndian.PutUint64(buf, uint64(data.(float32)))
 	case reflect.Float64:
 		binary.Write(&buf, binary.LittleEndian, data)
-		//		binary.LittleEndian.PutUint64(buf, uint64(data.(float64)))
 	default:
 		return nil, NotFloatErr
 	}
