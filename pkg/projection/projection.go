@@ -66,7 +66,17 @@ func (pj *Projection) ToJSON() ([]byte, error) {
 	result.Meta = pj.Meta
 
 	for _, field := range pj.Fields {
-		result.Payload[field.Name] = field.Value
+		switch field.Value.(type) {
+		case jsoniter.Number:
+
+			if n, err := field.Value.(jsoniter.Number).Int64(); err == nil {
+				result.Payload[field.Name] = n
+			} else if f, err := field.Value.(jsoniter.Number).Float64(); err == nil {
+				result.Payload[field.Name] = f
+			}
+		default:
+			result.Payload[field.Name] = field.Value
+		}
 	}
 
 	data, err := json.Marshal(result)
