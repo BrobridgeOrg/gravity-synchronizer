@@ -86,7 +86,7 @@ func (ex *Exporter) dispatcher() {
 
 func (ex *Exporter) Send(pj *projection.Projection, rawData []byte) error {
 
-	if rawData != nil {
+	if rawData != nil && pj == nil {
 		data := make([]byte, len(rawData))
 		copy(data, rawData)
 		ex.output <- data
