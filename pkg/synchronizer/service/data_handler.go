@@ -100,34 +100,38 @@ func (synchronizer *Synchronizer) storeData(packet *data_handler.PipelinePacket)
 
 	// Trying to find pipeline from this node
 	pipeline, ok := synchronizer.pipelines[uint64(packet.Data.PipelineID)]
-	if ok {
-
-		var err error
-		var wg sync.WaitGroup
-		wg.Add(1)
-
-		// Found so create a customized request for internal pipeline
-		customReq := request.NewCustomRequest(
-			func() []byte {
-				return packet.Data.Payload
-			},
-			func(e error) error {
-				err = e
-				wg.Done()
-				return nil
-			},
-			func() error {
-				wg.Done()
-				return nil
-			},
-		)
-
-		err = synchronizer.processEvent(pipeline, customReq)
-
-		wg.Wait()
-
-		return err
+	if !ok {
+		return synchronizer.pushToExternalWorker(packet)
 	}
+
+	var err error
+	var wg sync.WaitGroup
+	wg.Add(1)
+
+	// Found so create a customized request for internal pipeline
+	customReq := request.NewCustomRequest(
+		func() []byte {
+			return packet.Data.Payload
+		},
+		func(e error) error {
+			err = e
+			wg.Done()
+			return nil
+		},
+		func() error {
+			wg.Done()
+			return nil
+		},
+	)
+
+	err = synchronizer.processEvent(pipeline, customReq)
+
+	wg.Wait()
+
+	return err
+}
+
+func (synchronizer *Synchronizer) pushToExternalWorker(packet *data_handler.PipelinePacket) error {
 
 	// Getting channel name to dispatch
 	channel := fmt.Sprintf("gravity.pipeline.%d", packet.Data.PipelineID)
