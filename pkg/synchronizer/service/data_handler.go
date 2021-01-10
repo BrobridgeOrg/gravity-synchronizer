@@ -68,23 +68,7 @@ func (synchronizer *Synchronizer) initializeDataHandler() error {
 	// Subscribe to quque to receive events
 	connection := synchronizer.eventBus.bus.GetConnection()
 	sub, err := connection.QueueSubscribe("gravity.dsa.incoming", "synchronizer", func(m *nats.Msg) {
-
-		// Parse incoming data
-		var req dsa.PublishRequest
-		err := proto.Unmarshal(m.Data, &req)
-		if err != nil {
-			log.Error(err)
-			m.Respond(FailedReply(err.Error()))
-			return
-		}
-
-		// Do preprocess and mapping job
-		err = synchronizer.dataHandler.ProcessData(m, &req)
-		if err != nil {
-			log.Error(err)
-			m.Respond(FailedReply(err.Error()))
-			return
-		}
+		synchronizer.dataHandler.PushData(m)
 	})
 	if err != nil {
 		return err

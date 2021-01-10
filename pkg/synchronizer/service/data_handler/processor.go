@@ -89,23 +89,3 @@ func (processor *Processor) SetPipelineHandler(fn func(*PipelinePacket)) {
 func (processor *Processor) ProcessData(request *Request) error {
 	return processor.preprocessData(request)
 }
-
-//func (processor *Processor) ProcessData(eventName string, data []byte, meta map[string][]byte) error {
-
-/*
-	id := atomic.AddUint64((*uint64)(&counter), 1)
-	if id%1000 == 0 {
-		log.Info(id)
-	}
-*/
-/*
-	rawData := rawDataPool.Get().(*RawData)
-	rawData.EventName = eventName
-	rawData.Payload = data
-	rawData.Meta = meta
-
-	processor.preprocessData(rawData)
-
-	return nil
-}
-*/
