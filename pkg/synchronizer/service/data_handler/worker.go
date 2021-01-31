@@ -21,7 +21,7 @@ func (processor *Processor) initializePipelineWorkers() error {
 
 		for {
 			// Prepare request data for pipeline
-			data, err := processor.preparePipelineData(id, data.(*Event))
+			data, err := processor.preparePipelineData(id, data.(*BatchTask))
 			if err == nil {
 				c <- data
 				return
@@ -49,5 +49,10 @@ func (processor *Processor) initializePipelineWorkers() error {
 	processor.workerCount = workerCount
 	processor.shard = gosharding.NewShard(options)
 
+	return nil
+}
+
+func (processor *Processor) pushToPipeline(task *BatchTask) error {
+	processor.shard.PushKV(task.PrimaryKey, task)
 	return nil
 }

@@ -17,66 +17,51 @@ func (processor *Processor) initializePreprocessWorker() error {
 
 	processor.preprocess = parallel_chunked_flow.NewParallelChunkedFlow(pcfOpts)
 
-	go processor.eventReceiver()
+	go processor.onPreprocessed()
 
 	return nil
 }
 
 func (processor *Processor) preprocessHandler(data interface{}, output chan interface{}) {
 
-	request := data.(*Request)
-	input := request.GetInput()
+	task := data.(*BatchTask)
 
 	// Parse payload
-	var payload Payload
-	err := json.Unmarshal(input.Payload, &payload)
+	err := json.Unmarshal(task.RawPayload, &task.Payload)
 	if err != nil {
 		return
 	}
 
-	eventName := input.EventName
-	meta := input.Meta
-
 	for _, rule := range processor.ruleConfig.Rules {
 
 		// Ignore events
-		if rule.Event != eventName {
+		if rule.Event != task.EventName {
 			continue
 		}
 
 		// Getting primary key
-		primaryKey := processor.findPrimaryKey(rule, payload)
+		primaryKey := processor.findPrimaryKey(rule, task.Payload)
 
 		// Prepare event
-		event := eventPool.Get().(*Event)
-		event.Request = request
-		event.PrimaryKey = primaryKey
-		event.PipelineID = jump.HashString(primaryKey, processor.pipelineCount, jump.NewCRC64())
-		event.Payload = payload
-		event.Rule = rule
-		event.Meta = meta
+		task.Request = task.Request
+		task.PrimaryKey = primaryKey
+		task.PipelineID = jump.HashString(primaryKey, processor.pipelineCount, jump.NewCRC64())
+		task.Rule = rule
 
-		output <- event
+		output <- task
 	}
 }
 
-func (processor *Processor) eventReceiver() {
+func (processor *Processor) onPreprocessed() {
 	for {
 		select {
-		case event := <-processor.preprocess.Output():
-			// Push event to pipeline
-			processor.shard.PushKV(event.(*Event).PrimaryKey, event)
+		case task := <-processor.preprocess.Output():
+			// Push to pipelines
+			processor.pushToPipeline(task.(*BatchTask))
 		}
 	}
 }
 
-func (processor *Processor) preprocessData(request *Request) error {
-	return processor.preprocess.Push(request)
+func (processor *Processor) preprocessTask(task *BatchTask) error {
+	return processor.preprocess.Push(task)
 }
-
-/*
-func (processor *Processor) preprocessData(rawData *RawData) error {
-	processor.preprocess.Push(rawData)
-	return nil
-}
-*/

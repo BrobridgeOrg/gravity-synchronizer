@@ -15,10 +15,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-var SuccessDSAReply, _ = proto.Marshal(&dsa.PublishReply{
-	Success: true,
-})
-
 var dsaReplyPool = sync.Pool{
 	New: func() interface{} {
 		return &dsa.PublishReply{}
@@ -31,33 +27,21 @@ var replyPool = sync.Pool{
 	},
 }
 
-func FailedReply(reason string) []byte {
-	reply := dsaReplyPool.Get().(*dsa.PublishReply)
-	reply.Success = false
-	reply.Reason = reason
-	resp, _ := proto.Marshal(reply)
-	dsaReplyPool.Put(reply)
-	return resp
-}
-
 func (synchronizer *Synchronizer) initializeDataHandler() error {
 
 	synchronizer.dataHandler = data_handler.NewDataHandler()
 	synchronizer.dataHandler.SetPipelineHandler(func(packet *data_handler.PipelinePacket) {
 
 		// Store data
-		req := packet.Request
+		task := packet.Task
 		err := synchronizer.storeData(packet)
 		if err != nil {
 			log.Error(err)
-			req.GetMsg().Respond(FailedReply(err.Error()))
-			req.Free()
+			task.Fail(err)
 			return
 		}
 
-		// Complete
-		req.GetMsg().Respond(SuccessDSAReply)
-		req.Free()
+		task.Done()
 	})
 
 	err := synchronizer.dataHandler.Init()
@@ -67,8 +51,17 @@ func (synchronizer *Synchronizer) initializeDataHandler() error {
 
 	// Subscribe to quque to receive events
 	connection := synchronizer.eventBus.bus.GetConnection()
-	sub, err := connection.QueueSubscribe("gravity.dsa.incoming", "synchronizer", func(m *nats.Msg) {
-		synchronizer.dataHandler.PushData(m)
+	/*
+		sub, err := connection.QueueSubscribe("gravity.dsa.incoming", "synchronizer", func(m *nats.Msg) {
+			id := atomic.AddUint64((*uint64)(&counter), 1)
+			if id%1000 == 0 {
+				log.Info(id)
+			}
+			synchronizer.dataHandler.PushData(m)
+		})
+	*/
+	sub, err := connection.QueueSubscribe("gravity.dsa.batch", "synchronizer", func(m *nats.Msg) {
+		synchronizer.dataHandler.BatchPushData(m)
 	})
 	if err != nil {
 		return err

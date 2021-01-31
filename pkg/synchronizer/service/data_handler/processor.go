@@ -8,8 +8,6 @@ import (
 	"github.com/spf13/viper"
 )
 
-var counter uint64
-
 type Processor struct {
 	ruleConfig *RuleConfig
 	//	pipelineNames   map[int32]string
@@ -34,7 +32,7 @@ type RawData struct {
 }
 
 type Event struct {
-	Request    *Request
+	Request    *BatchRequest
 	PrimaryKey string
 	PipelineID int32
 	Payload    Payload
@@ -63,7 +61,6 @@ func NewProcessor() *Processor {
 	// Create a new object
 	processor := &Processor{
 		pipelineCount: pipelineCount,
-		//		pipelineNames: make(map[int32]string),
 	}
 
 	// Initializing
@@ -86,6 +83,6 @@ func (processor *Processor) SetPipelineHandler(fn func(*PipelinePacket)) {
 	processor.pipelineHandler = fn
 }
 
-func (processor *Processor) ProcessData(request *Request) error {
-	return processor.preprocessData(request)
+func (processor *Processor) ProcessTask(task *BatchTask) error {
+	return processor.preprocessTask(task)
 }

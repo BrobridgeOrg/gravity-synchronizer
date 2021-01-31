@@ -3,8 +3,8 @@ package data_handler
 import "sync"
 
 type PipelinePacket struct {
-	Request *Request
-	Data    *PipelineData
+	Task *BatchTask
+	Data *PipelineData
 }
 
 type PipelineData struct {

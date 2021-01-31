@@ -5,21 +5,21 @@ import (
 	"reflect"
 )
 
-func (processor *Processor) preparePacket(event *Event) []byte {
+func (processor *Processor) preparePacket(task *BatchTask) []byte {
 
 	// Preparing projection
 	projection := projectionPool.Get().(*Projection)
-	projection.EventName = event.Rule.Event
-	projection.Method = event.Rule.Method
-	projection.Collection = event.Rule.Collection
-	projection.PrimaryKey = event.Rule.PrimaryKey
-	projection.Fields = make([]Field, 0, len(event.Rule.Mapping))
-	projection.Meta = event.Meta
+	projection.EventName = task.Rule.Event
+	projection.Method = task.Rule.Method
+	projection.Collection = task.Rule.Collection
+	projection.PrimaryKey = task.Rule.PrimaryKey
+	projection.Fields = make([]Field, 0, len(task.Rule.Mapping))
+	projection.Meta = task.Meta
 
-	if len(event.Rule.Mapping) == 0 {
+	if len(task.Rule.Mapping) == 0 {
 
 		// pass throuh
-		for key, value := range event.Payload {
+		for key, value := range task.Payload {
 
 			field := Field{
 				Name:  key,
@@ -32,10 +32,10 @@ func (processor *Processor) preparePacket(event *Event) []byte {
 	} else {
 
 		// Mapping to new fields
-		for _, mapping := range event.Rule.Mapping {
+		for _, mapping := range task.Rule.Mapping {
 
 			// Getting value from payload
-			val, ok := event.Payload[mapping.Source]
+			val, ok := task.Payload[mapping.Source]
 			if !ok {
 				continue
 			}
@@ -58,13 +58,12 @@ func (processor *Processor) preparePacket(event *Event) []byte {
 	return data
 }
 
-func (processor *Processor) preparePipelineData(workerID int32, event *Event) (interface{}, error) {
+func (processor *Processor) preparePipelineData(workerID int32, task *BatchTask) (interface{}, error) {
 
 	data := pipelinePacketPool.Get().(*PipelinePacket)
-	data.Request = event.Request
-	data.Data.PipelineID = event.PipelineID
-	data.Data.Payload = processor.preparePacket(event)
-	eventPool.Put(event)
+	data.Task = task
+	data.Data.PipelineID = task.PipelineID
+	data.Data.Payload = processor.preparePacket(task)
 
 	return data, nil
 }

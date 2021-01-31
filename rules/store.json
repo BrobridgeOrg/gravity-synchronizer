@@ -2,7 +2,7 @@
 	"stores": {
 		"postgres_users": {
 			"collection": "users",
-			"database": "my_postgres",
+			"database": "my_postgres-disabled",
 			"table": "users"
 		},
 		"postgres_accounts": {
