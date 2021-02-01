@@ -8,18 +8,11 @@ import (
 	"sync"
 	"time"
 
-	dsa "github.com/BrobridgeOrg/gravity-api/service/dsa"
 	pb "github.com/BrobridgeOrg/gravity-api/service/pipeline"
 	"github.com/golang/protobuf/proto"
 	"github.com/nats-io/nats.go"
 	log "github.com/sirupsen/logrus"
 )
-
-var dsaReplyPool = sync.Pool{
-	New: func() interface{} {
-		return &dsa.PublishReply{}
-	},
-}
 
 var replyPool = sync.Pool{
 	New: func() interface{} {
