@@ -9,7 +9,7 @@ require (
 	github.com/BrobridgeOrg/gravity-synchronizer v0.0.0-00010101000000-000000000000
 	github.com/cfsghost/gosharding v0.0.3
 	github.com/cfsghost/grpc-connection-pool v0.6.0
-	github.com/cfsghost/parallel-chunked-flow v0.0.2
+	github.com/cfsghost/parallel-chunked-flow v0.0.5
 	github.com/facebookgo/ensure v0.0.0-20200202191622-63f1cf65ac4c // indirect
 	github.com/facebookgo/stack v0.0.0-20160209184415-751773369052 // indirect
 	github.com/facebookgo/subset v0.0.0-20200203212716-c811ad88dec4 // indirect

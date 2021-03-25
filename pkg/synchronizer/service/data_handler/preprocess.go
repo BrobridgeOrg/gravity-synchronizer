@@ -22,7 +22,7 @@ func (processor *Processor) initializePreprocessWorker() error {
 	return nil
 }
 
-func (processor *Processor) preprocessHandler(data interface{}, output chan interface{}) {
+func (processor *Processor) preprocessHandler(data interface{}, publish func(interface{})) {
 
 	task := data.(*BatchTask)
 
@@ -43,12 +43,11 @@ func (processor *Processor) preprocessHandler(data interface{}, output chan inte
 		primaryKey := processor.findPrimaryKey(rule, task.Payload)
 
 		// Prepare event
-		task.Request = task.Request
 		task.PrimaryKey = primaryKey
 		task.PipelineID = jump.HashString(primaryKey, processor.pipelineCount, jump.NewCRC64())
 		task.Rule = rule
 
-		output <- task
+		publish(task)
 	}
 }
 

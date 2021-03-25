@@ -50,6 +50,11 @@ func (request *BatchRequest) Free() {
 
 func (request *BatchRequest) Done() {
 
+	// already done
+	if request.isCompleted {
+		return
+	}
+
 	count := atomic.AddUint32(&request.done, 1)
 
 	// All requests were done
@@ -62,6 +67,7 @@ func (request *BatchRequest) Done() {
 
 func (request *BatchRequest) Fail(err error) {
 
+	// already done
 	if request.isCompleted {
 		return
 	}

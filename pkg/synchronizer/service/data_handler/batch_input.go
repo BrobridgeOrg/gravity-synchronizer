@@ -43,7 +43,7 @@ func (dh *DataHandler) initBatchInput() error {
 	return nil
 }
 
-func (dh *DataHandler) batchInputHandler(data interface{}, output chan interface{}) {
+func (dh *DataHandler) batchInputHandler(data interface{}, publish func(interface{})) {
 
 	request := batchRequestPool.Get().(*BatchRequest)
 	request.msg = data.(*nats.Msg)
@@ -60,7 +60,7 @@ func (dh *DataHandler) batchInputHandler(data interface{}, output chan interface
 
 	request.SetInput(input)
 
-	output <- request
+	publish(request)
 }
 
 func (dh *DataHandler) batchInputReceiver() {
