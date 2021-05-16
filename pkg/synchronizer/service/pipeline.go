@@ -7,6 +7,8 @@ import (
 	"gravity-synchronizer/pkg/synchronizer/service/request"
 
 	controller "github.com/BrobridgeOrg/gravity-api/service/controller"
+	pb "github.com/BrobridgeOrg/gravity-api/service/synchronizer"
+	"github.com/golang/protobuf/proto"
 	"github.com/nats-io/nats.go"
 	log "github.com/sirupsen/logrus"
 )
@@ -80,6 +82,17 @@ func (pipeline *Pipeline) Init() error {
 
 	pipeline.subscription = sub
 
+	// RPC
+	err = pipeline.initRPC()
+	if err != nil {
+		return err
+	}
+
+	err = pipeline.initRPC_GetState()
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -96,6 +109,102 @@ func (pipeline *Pipeline) Uninit() error {
 
 	// Release pipeline
 	err = pipeline.release()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (pipeline *Pipeline) initRPC() error {
+
+	log.WithFields(log.Fields{
+		"pipeline": pipeline.id,
+	}).Info("Initializing pipeline RPC")
+
+	connection := pipeline.synchronizer.eventBus.bus.GetConnection()
+	channel := fmt.Sprintf("gravity.pipeline.%d.fetch", pipeline.id)
+	_, err := connection.Subscribe(channel, func(m *nats.Msg) {
+
+		var request pb.PipelineFetchRequest
+		err := proto.Unmarshal(m.Data, &request)
+		if err != nil {
+			log.Error(err)
+			return
+		}
+
+		// Find the subscriber
+		subscriber := pipeline.synchronizer.subscriberMgr.Get(request.SubscriberID)
+		if subscriber == nil {
+			reply := &pb.PipelineFetchReply{
+				Success: false,
+				Reason:  "No such subscriber",
+			}
+
+			data, _ := proto.Marshal(reply)
+			m.Respond(data)
+			return
+		}
+
+		// Fetch data and push to subscriber
+		count, lastSeq, err := subscriber.Fetch(pipeline, request.StartAt, request.Offset, int(request.Count))
+		if err != nil {
+			log.Error(err)
+			reply := &pb.PipelineFetchReply{
+				Success: false,
+				Reason:  err.Error(),
+			}
+
+			data, _ := proto.Marshal(reply)
+			m.Respond(data)
+			return
+		}
+
+		// Success
+		reply := &pb.PipelineFetchReply{
+			LastSeq: lastSeq,
+			Count:   uint64(count),
+			Success: true,
+		}
+
+		data, _ := proto.Marshal(reply)
+		m.Respond(data)
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (pipeline *Pipeline) initRPC_GetState() error {
+
+	log.WithFields(log.Fields{
+		"pipeline": pipeline.id,
+	}).Info("Initializing RPC pipeline.GetState")
+
+	connection := pipeline.synchronizer.eventBus.bus.GetConnection()
+	channel := fmt.Sprintf("gravity.pipeline.%d.getState", pipeline.id)
+	_, err := connection.Subscribe(channel, func(m *nats.Msg) {
+
+		var request pb.GetPipelineStateRequest
+		err := proto.Unmarshal(m.Data, &request)
+		if err != nil {
+			log.Error(err)
+			return
+		}
+
+		// TODO: Read state from storage
+
+		// Success
+		reply := &pb.GetPipelineStateReply{
+			LastSeq: 0,
+			Success: true,
+		}
+
+		data, _ := proto.Marshal(reply)
+		m.Respond(data)
+	})
 	if err != nil {
 		return err
 	}

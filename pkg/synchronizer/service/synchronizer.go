@@ -30,6 +30,7 @@ type Synchronizer struct {
 	snapshotHandler *SnapshotHandler
 	eventStore      *eventstore.EventStore
 	storeMgr        *StoreManager
+	subscriberMgr   *SubscriberManager
 	transmitterMgr  *TransmitterManager
 	triggerMgr      *TriggerManager
 	exporterMgr     *ExporterManager
@@ -46,6 +47,7 @@ func NewSynchronizer(a app.App) *Synchronizer {
 
 	synchronizer.eventBus = NewEventBus(synchronizer)
 	synchronizer.storeMgr = NewStoreManager(synchronizer)
+	synchronizer.subscriberMgr = NewSubscriberManager(synchronizer)
 	synchronizer.triggerMgr = NewTriggerManager(synchronizer)
 
 	return synchronizer
@@ -94,6 +96,12 @@ func (synchronizer *Synchronizer) Init() error {
 
 	// Initializing controller connection pool
 	err = synchronizer.initControllerConnection()
+	if err != nil {
+		return err
+	}
+
+	// Initializing subscriber
+	err = synchronizer.subscriberMgr.Initialize()
 	if err != nil {
 		return err
 	}

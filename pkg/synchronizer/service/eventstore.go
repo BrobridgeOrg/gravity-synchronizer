@@ -77,6 +77,10 @@ func (es *EventStore) Subscribe(durableName string, seq uint64, fn func(event *e
 	return es.store.Subscribe(durableName, seq, fn)
 }
 
+func (es *EventStore) Fetch(startAt uint64, offset uint64, count int) ([]*eventstore.Event, error) {
+	return es.store.Fetch(startAt, offset, count)
+}
+
 func (es *EventStore) Write(data []byte) error {
 
 	// Event sourcing
