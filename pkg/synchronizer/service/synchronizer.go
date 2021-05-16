@@ -31,7 +31,6 @@ type Synchronizer struct {
 	eventStore      *eventstore.EventStore
 	storeMgr        *StoreManager
 	subscriberMgr   *SubscriberManager
-	transmitterMgr  *TransmitterManager
 	triggerMgr      *TriggerManager
 	exporterMgr     *ExporterManager
 }
@@ -40,7 +39,6 @@ func NewSynchronizer(a app.App) *Synchronizer {
 	synchronizer := &Synchronizer{
 		app:             a,
 		pipelines:       make(map[uint64]*Pipeline, 0),
-		transmitterMgr:  NewTransmitterManager(),
 		exporterMgr:     NewExporterManager(),
 		snapshotHandler: NewSnapshotHandler(),
 	}
@@ -102,12 +100,6 @@ func (synchronizer *Synchronizer) Init() error {
 
 	// Initializing subscriber
 	err = synchronizer.subscriberMgr.Initialize()
-	if err != nil {
-		return err
-	}
-
-	// Initializing transmitter
-	err = synchronizer.transmitterMgr.Initialize()
 	if err != nil {
 		return err
 	}

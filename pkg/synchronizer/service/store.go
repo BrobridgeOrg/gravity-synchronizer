@@ -5,7 +5,6 @@ import (
 
 	eventstore "github.com/BrobridgeOrg/EventStore"
 	gravity_sdk_types_projection "github.com/BrobridgeOrg/gravity-sdk/types/projection"
-	"github.com/BrobridgeOrg/gravity-synchronizer/pkg/synchronizer/service/transmitter"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -14,7 +13,6 @@ type Store struct {
 	Collection     string `json:"collection"`
 	Database       string `json:"database"`
 	Table          string `json:"table"`
-	Transmitter    *transmitter.Transmitter
 	TriggerManager *TriggerManager
 
 	SourceSubs sync.Map
@@ -90,6 +88,8 @@ func (store *Store) IsMatch(pj *gravity_sdk_types_projection.Projection) bool {
 
 func (store *Store) ProcessData(event *eventstore.Event) {
 
+	// TODO: statisics
+
 	// Parsing data
 	pj := projectionPool.Get().(*gravity_sdk_types_projection.Projection)
 	err := gravity_sdk_types_projection.Unmarshal(event.Data, pj)
@@ -121,16 +121,6 @@ func (store *Store) ProcessData(event *eventstore.Event) {
 			"collection": pj.Collection,
 		}).Info("Processing record")
 	*/
-	if store.Transmitter != nil {
-		err = store.Transmitter.ProcessData(store.Table, event.Sequence, pj)
-		if err != nil {
-			log.WithFields(log.Fields{
-				"component": "transmitter",
-			}).Error(err)
-			projectionPool.Put(pj)
-			return
-		}
-	}
 
 	// Trigger
 	err = store.TriggerManager.Handle(store.Name, pj, event.Data)

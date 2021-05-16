@@ -14,8 +14,6 @@ type StoreConfig struct {
 
 type StoreEntry struct {
 	Collection string `json:"collection"`
-	Database   string `json:"database"`
-	Table      string `json:"table"`
 }
 
 type StoreManager struct {
@@ -54,8 +52,6 @@ func (sm *StoreManager) Init() error {
 		log.WithFields(log.Fields{
 			"name":       storeName,
 			"collection": s.Collection,
-			"database":   s.Database,
-			"table":      s.Table,
 		}).Info("  Loaded configuration")
 
 		sm.stores = append(sm.stores, s)
@@ -88,9 +84,6 @@ func (sm *StoreManager) LoadStore(name string, entry *StoreEntry) (*Store, error
 	s := &Store{
 		Name:           name,
 		Collection:     entry.Collection,
-		Database:       entry.Database,
-		Table:          entry.Table,
-		Transmitter:    sm.synchronizer.transmitterMgr.GetTransmitter(entry.Database),
 		TriggerManager: sm.synchronizer.triggerMgr,
 	}
 

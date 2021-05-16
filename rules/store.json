@@ -1,14 +1,10 @@
 {
 	"stores": {
 		"postgres_users": {
-			"collection": "users",
-			"database": "my_postgres_disabled",
-			"table": "users"
+			"collection": "users"
 		},
 		"postgres_accounts": {
-			"collection": "accounts",
-			"database": "my_postgres_disabled",
-			"table": "accounts"
+			"collection": "accounts"
 		}
 	}
 }
