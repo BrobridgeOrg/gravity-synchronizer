@@ -1,8 +1,0 @@
-{
-	"transmitters": {
-		"my_postgres": {
-			"host": "0.0.0.0",
-			"port": 44143
-		}
-	}
-}
