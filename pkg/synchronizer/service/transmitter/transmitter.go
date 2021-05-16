@@ -12,14 +12,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/BrobridgeOrg/gravity-synchronizer/pkg/projection"
-
 	grpc_connection_pool "github.com/cfsghost/grpc-connection-pool"
 
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 
 	transmitter "github.com/BrobridgeOrg/gravity-api/service/transmitter"
+	gravity_sdk_types_projection "github.com/BrobridgeOrg/gravity-sdk/types/projection"
 )
 
 var (
@@ -142,7 +141,7 @@ func (t *Transmitter) Truncate(table string) error {
 	return nil
 }
 
-func (t *Transmitter) ProcessData(table string, sequence uint64, pj *projection.Projection) error {
+func (t *Transmitter) ProcessData(table string, sequence uint64, pj *gravity_sdk_types_projection.Projection) error {
 
 	record := recordPool.Get().(*transmitter.Record)
 	record.EventName = pj.EventName

@@ -1,6 +1,6 @@
 package synchronizer
 
-import "github.com/BrobridgeOrg/gravity-synchronizer/pkg/projection"
+import gravity_sdk_types_projection "github.com/BrobridgeOrg/gravity-sdk/types/projection"
 
 type Trigger struct {
 	Condition Condition `json:"condition"`
@@ -19,7 +19,7 @@ type Action struct {
 	ExporterInstance *Exporter
 }
 
-func (trigger *Trigger) IsMatch(storeName string, pj *projection.Projection) bool {
+func (trigger *Trigger) IsMatch(storeName string, pj *gravity_sdk_types_projection.Projection) bool {
 
 	if len(trigger.Condition.Store) > 0 {
 		if storeName != trigger.Condition.Store {
@@ -42,6 +42,6 @@ func (trigger *Trigger) IsMatch(storeName string, pj *projection.Projection) boo
 	return true
 }
 
-func (trigger *Trigger) Handle(storeName string, pj *projection.Projection, rawData []byte) error {
+func (trigger *Trigger) Handle(storeName string, pj *gravity_sdk_types_projection.Projection, rawData []byte) error {
 	return trigger.Action.ExporterInstance.Send(pj, rawData)
 }

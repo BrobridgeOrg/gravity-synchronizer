@@ -5,7 +5,7 @@ import (
 	"encoding/gob"
 
 	eventstore "github.com/BrobridgeOrg/EventStore"
-	"github.com/BrobridgeOrg/gravity-synchronizer/pkg/projection"
+	gravity_sdk_types_projection "github.com/BrobridgeOrg/gravity-sdk/types/projection"
 )
 
 type SnapshotHandler struct {
@@ -15,7 +15,7 @@ func NewSnapshotHandler() *SnapshotHandler {
 	return &SnapshotHandler{}
 }
 
-func (snapshot *SnapshotHandler) getPrimaryKeyData(data *projection.Projection) ([]byte, error) {
+func (snapshot *SnapshotHandler) getPrimaryKeyData(data *gravity_sdk_types_projection.Projection) ([]byte, error) {
 
 	for _, field := range data.Fields {
 		if field.Name == data.PrimaryKey {
@@ -37,8 +37,8 @@ func (snapshot *SnapshotHandler) getPrimaryKeyData(data *projection.Projection) 
 func (snapshot *SnapshotHandler) handle(request *eventstore.SnapshotRequest) error {
 
 	// Parsing original data which from database
-	newData := projectionPool.Get().(*projection.Projection)
-	err := projection.Unmarshal(request.Data, newData)
+	newData := projectionPool.Get().(*gravity_sdk_types_projection.Projection)
+	err := gravity_sdk_types_projection.Unmarshal(request.Data, newData)
 
 	// Getting data of primary key
 	primaryKey, err := snapshot.getPrimaryKeyData(newData)
@@ -51,8 +51,8 @@ func (snapshot *SnapshotHandler) handle(request *eventstore.SnapshotRequest) err
 	// Upsert to snapshot
 	err = request.Upsert(StrToBytes(newData.Collection), primaryKey, func(origin []byte) ([]byte, error) {
 
-		originData := projectionPool.Get().(*projection.Projection)
-		err := projection.Unmarshal(origin, originData)
+		originData := projectionPool.Get().(*gravity_sdk_types_projection.Projection)
+		err := gravity_sdk_types_projection.Unmarshal(origin, originData)
 		if err != nil {
 			projectionPool.Put(originData)
 			return nil, err
@@ -75,7 +75,7 @@ func (snapshot *SnapshotHandler) handle(request *eventstore.SnapshotRequest) err
 	return nil
 }
 
-func (snapshot *SnapshotHandler) merge(origData *projection.Projection, updates *projection.Projection) []byte {
+func (snapshot *SnapshotHandler) merge(origData *gravity_sdk_types_projection.Projection, updates *gravity_sdk_types_projection.Projection) []byte {
 
 	// Pre-allocate map to store data
 	result := make(map[string]interface{}, len(origData.Fields)+len(updates.Fields))

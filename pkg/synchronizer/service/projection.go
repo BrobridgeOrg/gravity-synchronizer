@@ -3,11 +3,11 @@ package synchronizer
 import (
 	"sync"
 
-	"github.com/BrobridgeOrg/gravity-synchronizer/pkg/projection"
+	gravity_sdk_types_projection "github.com/BrobridgeOrg/gravity-sdk/types/projection"
 )
 
 var projectionPool = sync.Pool{
 	New: func() interface{} {
-		return &projection.Projection{}
+		return &gravity_sdk_types_projection.Projection{}
 	},
 }

@@ -4,7 +4,7 @@ import (
 	"io/ioutil"
 	"os"
 
-	"github.com/BrobridgeOrg/gravity-synchronizer/pkg/projection"
+	gravity_sdk_types_projection "github.com/BrobridgeOrg/gravity-sdk/types/projection"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
@@ -84,7 +84,7 @@ func (tm *TriggerManager) LoadTriggerFile(filename string) (*TriggerConfig, erro
 	return &config, nil
 }
 
-func (tm *TriggerManager) Handle(storeName string, pj *projection.Projection, rawData []byte) error {
+func (tm *TriggerManager) Handle(storeName string, pj *gravity_sdk_types_projection.Projection, rawData []byte) error {
 
 	for _, trigger := range tm.Triggers {
 		if !trigger.IsMatch(storeName, pj) {

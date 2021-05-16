@@ -4,7 +4,7 @@ import (
 	"sync"
 
 	eventstore "github.com/BrobridgeOrg/EventStore"
-	"github.com/BrobridgeOrg/gravity-synchronizer/pkg/projection"
+	gravity_sdk_types_projection "github.com/BrobridgeOrg/gravity-sdk/types/projection"
 	"github.com/BrobridgeOrg/gravity-synchronizer/pkg/synchronizer/service/transmitter"
 	log "github.com/sirupsen/logrus"
 )
@@ -79,7 +79,7 @@ func (store *Store) RemoveEventSource(sourceID uint64) error {
 	return nil
 }
 
-func (store *Store) IsMatch(pj *projection.Projection) bool {
+func (store *Store) IsMatch(pj *gravity_sdk_types_projection.Projection) bool {
 
 	if pj.Collection != store.Collection {
 		return false
@@ -91,8 +91,8 @@ func (store *Store) IsMatch(pj *projection.Projection) bool {
 func (store *Store) ProcessData(event *eventstore.Event) {
 
 	// Parsing data
-	pj := projectionPool.Get().(*projection.Projection)
-	err := projection.Unmarshal(event.Data, pj)
+	pj := projectionPool.Get().(*gravity_sdk_types_projection.Projection)
+	err := gravity_sdk_types_projection.Unmarshal(event.Data, pj)
 	if err != nil {
 		log.Error(err)
 		projectionPool.Put(pj)

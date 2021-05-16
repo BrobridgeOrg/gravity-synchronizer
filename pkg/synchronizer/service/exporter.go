@@ -8,7 +8,7 @@ import (
 	"time"
 
 	exporter "github.com/BrobridgeOrg/gravity-api/service/exporter"
-	"github.com/BrobridgeOrg/gravity-synchronizer/pkg/projection"
+	gravity_sdk_types_projection "github.com/BrobridgeOrg/gravity-sdk/types/projection"
 	grpc_connection_pool "github.com/cfsghost/grpc-connection-pool"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
@@ -84,7 +84,7 @@ func (ex *Exporter) dispatcher() {
 	}
 }
 
-func (ex *Exporter) Send(pj *projection.Projection, rawData []byte) error {
+func (ex *Exporter) Send(pj *gravity_sdk_types_projection.Projection, rawData []byte) error {
 
 	if rawData != nil && pj == nil {
 		data := make([]byte, len(rawData))
