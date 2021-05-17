@@ -11,8 +11,6 @@ import (
 type Store struct {
 	Name           string
 	Collection     string `json:"collection"`
-	Database       string `json:"database"`
-	Table          string `json:"table"`
 	TriggerManager *TriggerManager
 
 	SourceSubs sync.Map
