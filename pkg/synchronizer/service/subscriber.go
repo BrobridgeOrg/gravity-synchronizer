@@ -95,8 +95,9 @@ func (sub *Subscriber) Publish(pipeline *Pipeline, events []*eventstore.Event) e
 		pjPool.Put(pj)
 
 		data, _ := proto.Marshal(&gravity_sdk_types_event.Event{
-			Sequence: event.Sequence,
-			Data:     event.Data,
+			PipelineID: pipeline.id,
+			Sequence:   event.Sequence,
+			Data:       event.Data,
 		})
 
 		err = connection.Publish(channel, data)
