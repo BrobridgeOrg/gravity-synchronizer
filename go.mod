@@ -4,9 +4,9 @@ go 1.15
 
 require (
 	github.com/BrobridgeOrg/EventStore v0.0.7
-	github.com/BrobridgeOrg/gravity-api v0.2.12
+	github.com/BrobridgeOrg/gravity-api v0.2.13
 	github.com/BrobridgeOrg/gravity-data-handler v0.0.0-20201221072337-a33b67c8d037
-	github.com/BrobridgeOrg/gravity-sdk v0.0.3
+	github.com/BrobridgeOrg/gravity-sdk v0.0.5
 	github.com/BrobridgeOrg/gravity-synchronizer v0.0.0-00010101000000-000000000000
 	github.com/cfsghost/gosharding v0.0.3
 	github.com/cfsghost/grpc-connection-pool v0.6.0
