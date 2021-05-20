@@ -1,13 +1,11 @@
 package synchronizer
 
 import (
-	"context"
-	"errors"
 	"fmt"
 	"gravity-synchronizer/pkg/synchronizer/service/request"
 
-	controller "github.com/BrobridgeOrg/gravity-api/service/controller"
 	pb "github.com/BrobridgeOrg/gravity-api/service/synchronizer"
+	synchronizer_manager "github.com/BrobridgeOrg/gravity-sdk/synchronizer_manager"
 	"github.com/golang/protobuf/proto"
 	"github.com/nats-io/nats.go"
 	log "github.com/sirupsen/logrus"
@@ -55,7 +53,7 @@ func (pipeline *Pipeline) Init() error {
 	// TODO: uninitialize event store if failed to initialize pipeline
 
 	// Subscribe to pipeline
-	connection := pipeline.synchronizer.eventBus.bus.GetConnection()
+	connection := pipeline.synchronizer.gravityClient.GetConnection()
 	channel := fmt.Sprintf("gravity.pipeline.%d", pipeline.id)
 	log.WithFields(log.Fields{
 		"channel": channel,
@@ -122,7 +120,7 @@ func (pipeline *Pipeline) initRPC() error {
 		"pipeline": pipeline.id,
 	}).Info("Initializing pipeline RPC")
 
-	connection := pipeline.synchronizer.eventBus.bus.GetConnection()
+	connection := pipeline.synchronizer.gravityClient.GetConnection()
 	channel := fmt.Sprintf("gravity.pipeline.%d.fetch", pipeline.id)
 	_, err := connection.Subscribe(channel, func(m *nats.Msg) {
 
@@ -183,7 +181,7 @@ func (pipeline *Pipeline) initRPC_GetState() error {
 		"pipeline": pipeline.id,
 	}).Info("Initializing RPC pipeline.GetState")
 
-	connection := pipeline.synchronizer.eventBus.bus.GetConnection()
+	connection := pipeline.synchronizer.gravityClient.GetConnection()
 	channel := fmt.Sprintf("gravity.pipeline.%d.getState", pipeline.id)
 	_, err := connection.Subscribe(channel, func(m *nats.Msg) {
 
@@ -214,32 +212,13 @@ func (pipeline *Pipeline) initRPC_GetState() error {
 
 func (pipeline *Pipeline) release() error {
 
-	// call controller to release pipeline
-	grpcConn, err := pipeline.synchronizer.controllerConns.Get()
-	if err != nil {
-		return err
-	}
-
-	// Create gRPC client
-	client := controller.NewControllerClient(grpcConn)
-
-	request := &controller.ReleasePipelinesRequest{
-		ClientID: pipeline.synchronizer.clientID,
-		Pipelines: []uint64{
+	sm := synchronizer_manager.NewSynchronizerManagerWithClient(pipeline.synchronizer.gravityClient, synchronizer_manager.NewOptions())
+	return sm.ReleasePipelines(
+		pipeline.synchronizer.clientID,
+		[]uint64{
 			pipeline.id,
 		},
-	}
-
-	reply, err := client.ReleasePipelines(context.Background(), request)
-	if err != nil {
-		return err
-	}
-
-	if !reply.Success {
-		return errors.New(reply.Reason)
-	}
-
-	return nil
+	)
 }
 
 func (pipeline *Pipeline) push(event *PipelineEvent) {

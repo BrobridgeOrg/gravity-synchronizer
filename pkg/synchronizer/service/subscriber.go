@@ -67,7 +67,7 @@ func (sub *Subscriber) UnsubscribeFromCollections(collections []string) ([]strin
 
 func (sub *Subscriber) Publish(pipeline *Pipeline, events []*eventstore.Event) error {
 
-	connection := sub.synchronizer.eventBus.bus.GetConnection()
+	connection := sub.synchronizer.gravityClient.GetConnection()
 	channel := fmt.Sprintf("gravity.subscriber.%s", sub.id)
 
 	log.WithFields(log.Fields{

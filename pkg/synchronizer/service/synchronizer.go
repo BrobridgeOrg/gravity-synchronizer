@@ -7,9 +7,9 @@ import (
 	"strings"
 
 	eventstore "github.com/BrobridgeOrg/EventStore"
+	core "github.com/BrobridgeOrg/gravity-sdk/core"
 	"github.com/BrobridgeOrg/gravity-synchronizer/pkg/app"
 	gosharding "github.com/cfsghost/gosharding"
-	grpc_connection_pool "github.com/cfsghost/grpc-connection-pool"
 	jsoniter "github.com/json-iterator/go"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
@@ -18,12 +18,11 @@ import (
 var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
 type Synchronizer struct {
-	app             app.App
-	eventBus        *EventBus
-	controllerConns *grpc_connection_pool.GRPCPool
-	shard           *gosharding.Shard
-	clientID        string
-	pipelines       map[uint64]*Pipeline
+	app           app.App
+	gravityClient *core.Client
+	shard         *gosharding.Shard
+	clientID      string
+	pipelines     map[uint64]*Pipeline
 
 	// components
 	dataHandler     *data_handler.DataHandler
@@ -41,9 +40,9 @@ func NewSynchronizer(a app.App) *Synchronizer {
 		pipelines:       make(map[uint64]*Pipeline, 0),
 		exporterMgr:     NewExporterManager(),
 		snapshotHandler: NewSnapshotHandler(),
+		gravityClient:   core.NewClient(),
 	}
 
-	synchronizer.eventBus = NewEventBus(synchronizer)
 	synchronizer.storeMgr = NewStoreManager(synchronizer)
 	synchronizer.subscriberMgr = NewSubscriberManager(synchronizer)
 	synchronizer.triggerMgr = NewTriggerManager(synchronizer)
@@ -80,20 +79,14 @@ func (synchronizer *Synchronizer) Init() error {
 		return err
 	}
 
-	// Initializing eventbus
-	err = synchronizer.eventBus.Initialize()
+	// Connect to gravity
+	err = synchronizer.initializeClient()
 	if err != nil {
 		return err
 	}
 
 	// Initializing RPC handlers
 	err = synchronizer.initRPC()
-	if err != nil {
-		return err
-	}
-
-	// Initializing controller connection pool
-	err = synchronizer.initControllerConnection()
 	if err != nil {
 		return err
 	}
@@ -185,6 +178,10 @@ func (synchronizer *Synchronizer) recoveryPipelines() error {
 
 	pipelines, err := synchronizer.GetPipelines()
 	if err != nil {
+		if err.Error() == "NotFound" {
+			return nil
+		}
+
 		return err
 	}
 

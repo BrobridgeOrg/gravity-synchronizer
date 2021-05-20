@@ -30,9 +30,9 @@ require (
 
 replace github.com/BrobridgeOrg/gravity-synchronizer => ./
 
-//replace github.com/BrobridgeOrg/gravity-api => ../gravity-api
+replace github.com/BrobridgeOrg/gravity-api => ../gravity-api
 
-//replace github.com/BrobridgeOrg/gravity-sdk => ../gravity-sdk
+replace github.com/BrobridgeOrg/gravity-sdk => ../gravity-sdk
 
 //replace github.com/cfsghost/grpc-connection-pool => /Users/fred/works/opensource/grpc-connection-pool
 //replace github.com/cfsghost/gosharding => /Users/fred/works/opensource/gosharding

@@ -11,7 +11,7 @@ import (
 
 func (synchronizer *Synchronizer) initRPC() error {
 
-	connection := synchronizer.eventBus.bus.GetConnection()
+	connection := synchronizer.gravityClient.GetConnection()
 
 	assignPipelineCh := fmt.Sprintf("gravity.eventstore.%s.AssignPipeline", synchronizer.clientID)
 
@@ -112,7 +112,7 @@ func (synchronizer *Synchronizer) init_rpc_subscriber_register() error {
 		"channel": channel,
 	}).Info("Subscribing to RPC channel: registerSubscriber")
 
-	connection := synchronizer.eventBus.bus.GetConnection()
+	connection := synchronizer.gravityClient.GetConnection()
 	_, err := connection.Subscribe(channel, func(m *nats.Msg) {
 
 		var request pb.RegisterSubscriberRequest
@@ -152,7 +152,7 @@ func (synchronizer *Synchronizer) init_rpc_subscriber_subscribe_to_collections()
 		"channel": channel,
 	}).Info("Subscribing to RPC channel: subscribeToCollections")
 
-	connection := synchronizer.eventBus.bus.GetConnection()
+	connection := synchronizer.gravityClient.GetConnection()
 	_, err := connection.Subscribe(channel, func(m *nats.Msg) {
 
 		reply := &pb.SubscribeToCollectionsReply{}

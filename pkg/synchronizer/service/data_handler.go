@@ -43,7 +43,7 @@ func (synchronizer *Synchronizer) initializeDataHandler() error {
 	}
 
 	// Subscribe to quque to receive events
-	connection := synchronizer.eventBus.bus.GetConnection()
+	connection := synchronizer.gravityClient.GetConnection()
 	/*
 		sub, err := connection.QueueSubscribe("gravity.dsa.incoming", "synchronizer", func(m *nats.Msg) {
 			id := atomic.AddUint64((*uint64)(&counter), 1)
@@ -107,7 +107,7 @@ func (synchronizer *Synchronizer) pushToExternalWorker(packet *data_handler.Pipe
 	channel := fmt.Sprintf("gravity.pipeline.%d", packet.Data.PipelineID)
 
 	// Send request
-	connection := synchronizer.eventBus.bus.GetConnection()
+	connection := synchronizer.gravityClient.GetConnection()
 	resp, err := connection.Request(channel, packet.Data.Payload, time.Second*5)
 	packet.Free()
 	if err != nil {
