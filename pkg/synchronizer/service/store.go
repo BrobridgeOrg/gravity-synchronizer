@@ -9,9 +9,8 @@ import (
 )
 
 type Store struct {
-	Name           string
-	Collection     string `json:"collection"`
-	TriggerManager *TriggerManager
+	Name       string
+	Collection string `json:"collection"`
 
 	SourceSubs sync.Map
 }
@@ -112,6 +111,7 @@ func (store *Store) ProcessData(event *eventstore.Event) {
 		event.Ack()
 		return
 	}
+
 	/*
 		log.WithFields(log.Fields{
 			"seq":        event.Sequence,
@@ -119,18 +119,18 @@ func (store *Store) ProcessData(event *eventstore.Event) {
 			"collection": pj.Collection,
 		}).Info("Processing record")
 	*/
-
-	// Trigger
-	err = store.TriggerManager.Handle(store.Name, pj, event.Data)
-	if err != nil {
-		log.WithFields(log.Fields{
-			"component": "trigger",
-			//			"source":    eventStore.id,
-			"seq":   event.Sequence,
-			"store": store.Name,
-		}).Error(err)
-	}
-
+	/*
+		// Trigger
+		err = store.TriggerManager.Handle(store.Name, pj, event.Data)
+		if err != nil {
+			log.WithFields(log.Fields{
+				"component": "trigger",
+				//			"source":    eventStore.id,
+				"seq":   event.Sequence,
+				"store": store.Name,
+			}).Error(err)
+		}
+	*/
 	projectionPool.Put(pj)
 	event.Ack()
 

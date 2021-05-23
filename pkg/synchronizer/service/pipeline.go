@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"gravity-synchronizer/pkg/synchronizer/service/request"
 
+	pipeline_pb "github.com/BrobridgeOrg/gravity-api/service/pipeline"
 	pb "github.com/BrobridgeOrg/gravity-api/service/synchronizer"
 	synchronizer_manager "github.com/BrobridgeOrg/gravity-sdk/synchronizer_manager"
 	"github.com/golang/protobuf/proto"
@@ -81,12 +82,7 @@ func (pipeline *Pipeline) Init() error {
 	pipeline.subscription = sub
 
 	// RPC
-	err = pipeline.initRPC()
-	if err != nil {
-		return err
-	}
-
-	err = pipeline.initRPC_GetState()
+	err = pipeline.initialize_rpc()
 	if err != nil {
 		return err
 	}
@@ -185,18 +181,19 @@ func (pipeline *Pipeline) initRPC_GetState() error {
 	channel := fmt.Sprintf("gravity.pipeline.%d.getState", pipeline.id)
 	_, err := connection.Subscribe(channel, func(m *nats.Msg) {
 
-		var request pb.GetPipelineStateRequest
+		var request pipeline_pb.GetStateRequest
 		err := proto.Unmarshal(m.Data, &request)
 		if err != nil {
 			log.Error(err)
 			return
 		}
 
-		// TODO: Read state from storage
+		// Getting last sequence
+		lastSeq := pipeline.eventStore.GetLastSequence()
 
 		// Success
-		reply := &pb.GetPipelineStateReply{
-			LastSeq: 0,
+		reply := &pipeline_pb.GetStateReply{
+			LastSeq: lastSeq,
 			Success: true,
 		}
 

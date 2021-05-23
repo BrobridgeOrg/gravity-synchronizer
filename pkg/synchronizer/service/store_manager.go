@@ -82,9 +82,8 @@ func (sm *StoreManager) LoadConfigFile(filename string) (*StoreConfig, error) {
 func (sm *StoreManager) LoadStore(name string, entry *StoreEntry) (*Store, error) {
 
 	s := &Store{
-		Name:           name,
-		Collection:     entry.Collection,
-		TriggerManager: sm.synchronizer.triggerMgr,
+		Name:       name,
+		Collection: entry.Collection,
 	}
 
 	s.Init()

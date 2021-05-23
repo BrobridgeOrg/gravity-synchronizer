@@ -1,18 +1,14 @@
 package instance
 
 import (
-	//	"runtime"
+	"runtime"
 
-	grpc_server "github.com/BrobridgeOrg/gravity-synchronizer/pkg/grpc_server/server"
-	mux_manager "github.com/BrobridgeOrg/gravity-synchronizer/pkg/mux_manager/manager"
 	synchronizer_service "github.com/BrobridgeOrg/gravity-synchronizer/pkg/synchronizer/service"
 	log "github.com/sirupsen/logrus"
 )
 
 type AppInstance struct {
 	done         chan bool
-	muxManager   *mux_manager.MuxManager
-	grpcServer   *grpc_server.Server
 	synchronizer *synchronizer_service.Synchronizer
 }
 
@@ -23,27 +19,17 @@ func NewAppInstance() *AppInstance {
 	}
 
 	a.synchronizer = synchronizer_service.NewSynchronizer(a)
-	a.muxManager = mux_manager.NewMuxManager(a)
-	a.grpcServer = grpc_server.NewServer(a)
 
 	return a
 }
 
 func (a *AppInstance) Init() error {
 
-	/*
-		log.WithFields(log.Fields{
-			"max_procs": runtime.GOMAXPROCS(32),
-		}).Info("Starting application")
-	*/
+	log.WithFields(log.Fields{
+		"max_procs": runtime.GOMAXPROCS(32),
+	}).Info("Starting application")
 
 	err := a.initSynchronizer()
-	if err != nil {
-		return err
-	}
-
-	// Initializing GRPC server
-	err = a.initGRPCServer()
 	if err != nil {
 		return err
 	}
@@ -55,19 +41,6 @@ func (a *AppInstance) Uninit() {
 }
 
 func (a *AppInstance) Run() error {
-
-	// GRPC
-	go func() {
-		err := a.runGRPCServer()
-		if err != nil {
-			log.Error(err)
-		}
-	}()
-
-	err := a.runMuxManager()
-	if err != nil {
-		return err
-	}
 
 	<-a.done
 
