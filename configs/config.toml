@@ -1,7 +1,4 @@
-[service]
-port = 44448
-
-[eventbus]
+[gravity]
 host = "0.0.0.0"
 port = 32803
 pingInterval = 10
@@ -22,5 +19,3 @@ path = "./datastore"
 
 [rules]
 store = "./rules/store.json"
-exporter = "./rules/exporter.json"
-trigger = "./rules/trigger.json"

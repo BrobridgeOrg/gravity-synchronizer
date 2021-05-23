@@ -1,13 +1,10 @@
 package synchronizer
 
 import (
-	"fmt"
 	"sync"
 
-	"github.com/BrobridgeOrg/gravity-sdk/core"
 	gravity_subscriber_manager "github.com/BrobridgeOrg/gravity-sdk/subscriber_manager"
 	log "github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
 )
 
 type SubscriberManager struct {
@@ -25,25 +22,10 @@ func NewSubscriberManager(synchronizer *Synchronizer) *SubscriberManager {
 
 func (sm *SubscriberManager) Initialize() error {
 
+	// Connecting to subscriber manager
 	options := gravity_subscriber_manager.NewOptions()
 	options.Verbose = false
-
-	host := viper.GetString("eventbus.host")
-	port := viper.GetInt("eventbus.port")
-	address := fmt.Sprintf("%s:%d", host, port)
-
-	log.WithFields(log.Fields{
-		"address": address,
-	}).Info("Connecting to gravity")
-
-	// Connecting to subscriber manager
-	subscriberManager := gravity_subscriber_manager.NewSubscriberManager(options)
-	opts := core.NewOptions()
-	err := subscriberManager.Connect(address, opts)
-	if err != nil {
-		return err
-	}
-
+	subscriberManager := gravity_subscriber_manager.NewSubscriberManagerWithClient(sm.synchronizer.gravityClient, options)
 	sm.subscriberManager = subscriberManager
 
 	// Getting all subscribers to restore

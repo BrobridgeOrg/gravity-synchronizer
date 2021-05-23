@@ -18,16 +18,16 @@ const (
 func (synchronizer *Synchronizer) initializeClient() error {
 
 	// default settings
-	viper.SetDefault("eventbus.pingInterval", DefaultPingInterval)
-	viper.SetDefault("eventbus.maxPingsOutstanding", DefaultMaxPingsOutstanding)
-	viper.SetDefault("eventbus.maxReconnects", DefaultMaxReconnects)
+	viper.SetDefault("gravity.pingInterval", DefaultPingInterval)
+	viper.SetDefault("gravity.maxPingsOutstanding", DefaultMaxPingsOutstanding)
+	viper.SetDefault("gravity.maxReconnects", DefaultMaxReconnects)
 
 	// Read configs
-	host := viper.GetString("eventbus.host")
-	port := viper.GetInt("eventbus.port")
-	pingInterval := viper.GetInt64("eventbus.pingInterval")
-	maxPingsOutstanding := viper.GetInt("eventbus.maxPingsOutstanding")
-	maxReconnects := viper.GetInt("eventbus.maxReconnects")
+	host := viper.GetString("gravity.host")
+	port := viper.GetInt("gravity.port")
+	pingInterval := viper.GetInt64("gravity.pingInterval")
+	maxPingsOutstanding := viper.GetInt("gravity.maxPingsOutstanding")
+	maxReconnects := viper.GetInt("gravity.maxReconnects")
 
 	// Preparing options
 	options := core.NewOptions()
