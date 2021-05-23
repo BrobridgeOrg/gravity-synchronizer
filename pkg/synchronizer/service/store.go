@@ -88,14 +88,16 @@ func (store *Store) ProcessData(event *eventstore.Event) {
 	// TODO: statisics
 
 	// Parsing data
-	pj := projectionPool.Get().(*gravity_sdk_types_projection.Projection)
-	err := gravity_sdk_types_projection.Unmarshal(event.Data, pj)
-	if err != nil {
-		log.Error(err)
-		projectionPool.Put(pj)
-		event.Ack()
-		return
-	}
+	/*
+		pj := projectionPool.Get().(*gravity_sdk_types_projection.Projection)
+		err := gravity_sdk_types_projection.Unmarshal(event.Data, pj)
+		if err != nil {
+			log.Error(err)
+			projectionPool.Put(pj)
+			event.Ack()
+			return
+		}
+	*/
 	/*
 		log.WithFields(log.Fields{
 			"source":     eventStore.id,
@@ -106,12 +108,13 @@ func (store *Store) ProcessData(event *eventstore.Event) {
 		}).Warn("Got")
 	*/
 	// Ignore store which is not matched
-	if !store.IsMatch(pj) {
-		projectionPool.Put(pj)
-		event.Ack()
-		return
-	}
-
+	/*
+		if !store.IsMatch(pj) {
+			projectionPool.Put(pj)
+			event.Ack()
+			return
+		}
+	*/
 	/*
 		log.WithFields(log.Fields{
 			"seq":        event.Sequence,
@@ -131,7 +134,7 @@ func (store *Store) ProcessData(event *eventstore.Event) {
 			}).Error(err)
 		}
 	*/
-	projectionPool.Put(pj)
+	//projectionPool.Put(pj)
 	event.Ack()
 
 	return
