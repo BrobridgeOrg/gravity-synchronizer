@@ -25,18 +25,24 @@ var FailureReply, _ = proto.Marshal(&pipeline_pb.PipelineReply{
 })
 */
 type Pipeline struct {
-	synchronizer *Synchronizer
-	id           uint64
-	subscription *nats.Subscription
-	eventStore   *EventStore
+	synchronizer    *Synchronizer
+	id              uint64
+	subscription    *nats.Subscription
+	eventStore      *EventStore
+	snapshotManager *SnapshotManager
 }
 
 func NewPipeline(synchronizer *Synchronizer, id uint64) *Pipeline {
-	return &Pipeline{
+
+	pipeline := &Pipeline{
 		synchronizer: synchronizer,
 		id:           id,
 		eventStore:   NewEventStore(synchronizer, id),
 	}
+
+	pipeline.snapshotManager = NewSnapshotManager(pipeline)
+
+	return pipeline
 }
 
 func (pipeline *Pipeline) Init() error {

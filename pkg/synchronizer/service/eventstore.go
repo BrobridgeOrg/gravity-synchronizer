@@ -55,6 +55,18 @@ func (es *EventStore) GetLastSequenceOfSnapshot() uint64 {
 	return es.store.GetLastSequenceOfSnapshot()
 }
 */
+
+func (es *EventStore) CreateSnapshot() (*eventstore.SnapshotView, error) {
+
+	view := es.store.CreateSnapshotView()
+	err := view.Initialize()
+	if err != nil {
+		return nil, err
+	}
+
+	return view, nil
+}
+
 func (es *EventStore) GetLastSequence() uint64 {
 	return es.store.GetLastSequence()
 }

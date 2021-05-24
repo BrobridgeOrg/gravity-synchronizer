@@ -39,23 +39,32 @@ func (pipeline *Pipeline) initialize_rpc_create_snapshot() error {
 	channel := fmt.Sprintf("gravity.pipeline.%d.createSnapshot", pipeline.id)
 	_, err := connection.Subscribe(channel, func(m *nats.Msg) {
 
+		reply := &pipeline_pb.CreateSnapshotReply{
+			Success: true,
+		}
+		defer func() {
+			data, _ := proto.Marshal(reply)
+			m.Respond(data)
+		}()
+
 		var request pipeline_pb.CreateSnapshotRequest
 		err := proto.Unmarshal(m.Data, &request)
 		if err != nil {
 			log.Error(err)
+			reply.Success = false
+			reply.Reason = "Unknown parameters"
 			return
 		}
 
-		// Getting last sequence
-		//lastSeq := pipeline.eventStore.GetLastSequence()
-
-		// Success
-		reply := &pipeline_pb.CreateSnapshotReply{
-			Success: true,
+		// Create a new snapshot
+		_, err = pipeline.snapshotManager.CreateSnapshot(request.SnapshotID)
+		if err != nil {
+			log.Error(err)
+			reply.Success = false
+			reply.Reason = err.Error()
+			return
 		}
 
-		data, _ := proto.Marshal(reply)
-		m.Respond(data)
 	})
 	if err != nil {
 		return err
