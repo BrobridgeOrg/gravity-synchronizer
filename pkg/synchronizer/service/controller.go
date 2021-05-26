@@ -14,7 +14,7 @@ func (synchronizer *Synchronizer) RegisterClient() error {
 	}
 	log.WithFields(log.Fields{
 		"id": synchronizer.clientID,
-	}).Info("Registered syncrhonizer")
+	}).Info("Registered synchronizer")
 
 	return nil
 }
