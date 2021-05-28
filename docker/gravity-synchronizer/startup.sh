@@ -7,61 +7,35 @@ get_args() {
 	unset _arg
 }
 
-[ "$#" -eq 0 ] || {
-	stores=$(get_args stores "$@")
-	[ "$stores" != "" ] && {
-		storeConfigPath="./rules/store.json"
+stores=$(get_args stores "$@")
 
-		[ "$GRAVITY_SYNCHRONIZER_RULES_STORE" != "" ] && {
-			storeConfigPath=$GRAVITY_SYNCHRONIZER_RULES_STORE
-		} 
+storeConfigPath="./rules/store.json"
 
-		echo $stores > $storeConfigPath
-	}
+[ "$GRAVITY_SYNCHRONIZER_RULES_STORE" != "" ] && {
+	storeConfigPath=$GRAVITY_SYNCHRONIZER_RULES_STORE
+} 
 
-	triggers=$(get_args triggers "$@")
-	[ "$triggers" != "" ] && {
-		triggerConfigPath="./rules/trigger.json"
-
-		[ "$GRAVITY_SYNCHRONIZER_RULES_TRIGGER" != "" ] && {
-			triggerConfigPath=$GRAVITY_SYNCHRONIZER_RULES_TRIGGER
-		} 
-
-		echo $triggers > $triggerConfigPath
-	}
-
-	transmitter=$(get_args transmitter "$@")
-	[ "$transmitter" != "" ] &&{
-		transmitterConfigPath="./rules/transmitter.json"
-
-		[ "$GRAVITY_SYNCHRONIZER_RULES_TRANSMITTER" != "" ] && {
-			transmitterConfigPath=$GRAVITY_SYNCHRONIZER_RULES_TRANSMITTER
-		} 
-
-		echo $transmitter > $transmitterConfigPath
-	}
-
-	exporter=$(get_args exporter "$@")
-	[ "$exporter" != "" ] &&{
-		exporterConfigPath="./rules/exporter.json"
-
-		[ "$GRAVITY_SYNCHRONIZER_RULES_EXPORTER" != "" ] && {
-			exporterConfigPath=$GRAVITY_SYNCHRONIZER_RULES_EXPORTER
-		} 
-
-		echo $exporter > $exporterConfigPath
-	}
-
-	rules=$(get_args rules "$@")
-	[ "$rules" != "" ] &&{
-		rulesConfigPath="./rules/rules.json"
-
-		[ "$GRAVITY_SYNCHRONIZER_RULES_RULES" != "" ] && {
-			rulesConfigPath=$GRAVITY_SYNCHRONIZER_RULES_RULES
-		}
-
-		echo $rules > $rulesConfigPath
-	}
+[ "$stores" != "" ] && {
+	echo $stores > $storeConfigPath
 }
-export GRAVITY_SYNCHRONIZER_EVENT_STORE_CLIENT_NAME=$(hostname)
+[ "$stores" == "" ] && {
+	echo $GRAVITY_SYNCHRONIZER_RULES_STORE_CONTENT > $storeConfigPath
+}
+
+
+rules=$(get_args rules "$@")
+
+rulesConfigPath="./rules/rules.json"
+
+[ "$GRAVITY_SYNCHRONIZER_RULES_RULES" != "" ] && {
+	rulesConfigPath=$GRAVITY_SYNCHRONIZER_RULES_RULES
+}
+
+[ "$rules" != "" ] && {
+	echo $rules > $rulesConfigPath
+}
+[ "$rules" != "" ] || {
+	echo $GRAVITY_SYNCHRONIZER_RULES_SETTINGS > $rulesConfigPath
+}
+
 exec /gravity-synchronizer
