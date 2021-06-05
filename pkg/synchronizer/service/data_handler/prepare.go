@@ -3,17 +3,19 @@ package data_handler
 import (
 	"fmt"
 	"reflect"
+
+	gravity_sdk_types_projection "github.com/BrobridgeOrg/gravity-sdk/types/projection"
 )
 
 func (processor *Processor) preparePacket(task *BatchTask) []byte {
 
 	// Preparing projection
-	projection := projectionPool.Get().(*Projection)
+	projection := projectionPool.Get().(*gravity_sdk_types_projection.Projection)
 	projection.EventName = task.Rule.Event
 	projection.Method = task.Rule.Method
 	projection.Collection = task.Rule.Collection
 	projection.PrimaryKey = task.Rule.PrimaryKey
-	projection.Fields = make([]Field, 0, len(task.Rule.Mapping))
+	projection.Fields = make([]gravity_sdk_types_projection.Field, 0, len(task.Rule.Mapping))
 	projection.Meta = task.Meta
 
 	if len(task.Rule.Mapping) == 0 {
@@ -21,7 +23,7 @@ func (processor *Processor) preparePacket(task *BatchTask) []byte {
 		// pass throuh
 		for key, value := range task.Payload {
 
-			field := Field{
+			field := gravity_sdk_types_projection.Field{
 				Name:  key,
 				Value: value,
 			}
@@ -40,7 +42,7 @@ func (processor *Processor) preparePacket(task *BatchTask) []byte {
 				continue
 			}
 
-			field := Field{
+			field := gravity_sdk_types_projection.Field{
 				Name:  mapping.Target,
 				Value: val,
 			}
@@ -50,7 +52,7 @@ func (processor *Processor) preparePacket(task *BatchTask) []byte {
 	}
 
 	// Convert to packet
-	data, _ := json.Marshal(&projection)
+	data, _ := gravity_sdk_types_projection.Marshal(projection)
 
 	// Release projection object
 	projectionPool.Put(projection)

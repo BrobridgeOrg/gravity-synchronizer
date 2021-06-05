@@ -1,18 +1,13 @@
 package data_handler
 
-import "sync"
+import (
+	"sync"
 
-type Projection struct {
-	EventName  string            `json:"event"`
-	Collection string            `json:"collection"`
-	Method     string            `json:"method"`
-	PrimaryKey string            `json:"primaryKey"`
-	Fields     []Field           `json:"fields"`
-	Meta       map[string][]byte `json:"meta"`
-}
+	gravity_sdk_types_projection "github.com/BrobridgeOrg/gravity-sdk/types/projection"
+)
 
 var projectionPool = sync.Pool{
 	New: func() interface{} {
-		return &Projection{}
+		return &gravity_sdk_types_projection.Projection{}
 	},
 }

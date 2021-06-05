@@ -18,11 +18,36 @@ var pjPool = sync.Pool{
 	},
 }
 
+var eventPool = sync.Pool{
+	New: func() interface{} {
+		return &gravity_sdk_types_event.Event{}
+	},
+}
+
+var eventPayloadPool = sync.Pool{
+	New: func() interface{} {
+		return &gravity_sdk_types_event.EventPayload{}
+	},
+}
+
+var systemMessagePool = sync.Pool{
+	New: func() interface{} {
+		return &gravity_sdk_types_event.SystemMessage{}
+	},
+}
+
+var systemMessage_AwakeMessagePool = sync.Pool{
+	New: func() interface{} {
+		return &gravity_sdk_types_event.SystemMessage_AwakeMessage{}
+	},
+}
+
 type Subscriber struct {
-	synchronizer *Synchronizer
-	id           string
-	name         string
-	collections  sync.Map
+	synchronizer     *Synchronizer
+	id               string
+	name             string
+	collections      sync.Map
+	suspendPipelines sync.Map
 }
 
 func NewSubscriber(id string, name string) *Subscriber {
@@ -65,6 +90,36 @@ func (sub *Subscriber) UnsubscribeFromCollections(collections []string) ([]strin
 	return collections, nil
 }
 
+func (sub *Subscriber) Awake(pipeline *Pipeline) error {
+
+	connection := sub.synchronizer.gravityClient.GetConnection()
+	channel := fmt.Sprintf("gravity.subscriber.%s", sub.id)
+
+	ev := eventPool.Get().(*gravity_sdk_types_event.Event)
+	ev.Type = gravity_sdk_types_event.Event_TYPE_SYSTEM
+	ev.EventPayload = nil
+	ev.SnapshotInfo = nil
+	ev.SystemInfo = systemMessagePool.Get().(*gravity_sdk_types_event.SystemMessage)
+
+	// Payload
+	ev.SystemInfo.Type = gravity_sdk_types_event.SystemMessage_TYPE_WAKE
+	ev.SystemInfo.AwakeMessage = systemMessage_AwakeMessagePool.Get().(*gravity_sdk_types_event.SystemMessage_AwakeMessage)
+	ev.SystemInfo.AwakeMessage.PipelineID = pipeline.id
+	ev.SystemInfo.AwakeMessage.Sequence = pipeline.GetLastSequence()
+
+	data, _ := proto.Marshal(ev)
+	err := connection.Publish(channel, data)
+	systemMessage_AwakeMessagePool.Put(ev.SystemInfo.AwakeMessage)
+	systemMessagePool.Put(ev.SystemInfo)
+	eventPool.Put(ev)
+	if err != nil {
+		log.Error(err)
+		return err
+	}
+
+	return nil
+}
+
 func (sub *Subscriber) Publish(pipeline *Pipeline, events []*eventstore.Event) error {
 
 	connection := sub.synchronizer.gravityClient.GetConnection()
@@ -75,6 +130,7 @@ func (sub *Subscriber) Publish(pipeline *Pipeline, events []*eventstore.Event) e
 	}).Info("Publishing events")
 
 	// Publish events
+	lastSeq := uint64(0)
 	for _, event := range events {
 
 		// Parsing event
@@ -94,17 +150,51 @@ func (sub *Subscriber) Publish(pipeline *Pipeline, events []*eventstore.Event) e
 		}
 		pjPool.Put(pj)
 
-		data, _ := proto.Marshal(&gravity_sdk_types_event.Event{
-			PipelineID: pipeline.id,
-			Sequence:   event.Sequence,
-			Data:       event.Data,
-		})
+		// Preparing event
+		ev := eventPool.Get().(*gravity_sdk_types_event.Event)
+		ev.Type = gravity_sdk_types_event.Event_TYPE_EVENT
+		ev.EventPayload = eventPayloadPool.Get().(*gravity_sdk_types_event.EventPayload)
+		ev.SnapshotInfo = nil
+		ev.SystemInfo = nil
 
+		// Event payload
+		ev.EventPayload.State = gravity_sdk_types_event.EventPayload_STATE_NONE
+		ev.EventPayload.PipelineID = pipeline.id
+		ev.EventPayload.Sequence = event.Sequence
+		ev.EventPayload.Data = event.Data
+
+		data, _ := proto.Marshal(ev)
 		err = connection.Publish(channel, data)
+		eventPayloadPool.Put(ev.EventPayload)
+		eventPool.Put(ev)
 		if err != nil {
 			log.Error(err)
 			break
 		}
+
+		lastSeq = event.Sequence
+	}
+
+	// EOF
+	ev := eventPool.Get().(*gravity_sdk_types_event.Event)
+	ev.Type = gravity_sdk_types_event.Event_TYPE_EVENT
+	ev.EventPayload = eventPayloadPool.Get().(*gravity_sdk_types_event.EventPayload)
+	ev.SnapshotInfo = nil
+	ev.SystemInfo = nil
+
+	// Event payload
+	ev.EventPayload.State = gravity_sdk_types_event.EventPayload_STATE_CHUNK_END
+	ev.EventPayload.PipelineID = pipeline.id
+	ev.EventPayload.Sequence = lastSeq
+	ev.EventPayload.Data = []byte("")
+
+	data, _ := proto.Marshal(ev)
+	err := connection.Publish(channel, data)
+	eventPayloadPool.Put(ev.EventPayload)
+	eventPool.Put(ev)
+	if err != nil {
+		log.Error(err)
+		return err
 	}
 
 	return nil

@@ -229,6 +229,30 @@ func (pipeline *Pipeline) push(event *PipelineEvent) {
 	pipelineEventPool.Put(event)
 }
 
+func (pipeline *Pipeline) awakeSubscriber() {
+
+	pipeline.synchronizer.subscriberMgr.subscribers.Range(func(key interface{}, value interface{}) bool {
+
+		subscriber := value.(*Subscriber)
+
+		// If this pipeline was suspended by this subscriber
+		if _, ok := subscriber.suspendPipelines.Load(pipeline.id); ok {
+			err := subscriber.Awake(pipeline)
+			if err != nil {
+				log.WithFields(log.Fields{
+					"pipeline":   pipeline.id,
+					"subscriber": subscriber.id,
+				}).Error(err)
+				return true
+			}
+
+			subscriber.suspendPipelines.Delete(pipeline.id)
+		}
+
+		return true
+	})
+}
+
 func (pipeline *Pipeline) handleRequest(req request.Request) {
 	/*
 		id := atomic.AddUint64((*uint64)(&counter), 1)
@@ -246,4 +270,11 @@ func (pipeline *Pipeline) handleRequest(req request.Request) {
 
 	//	req.Respond(SuccessReply)
 	req.Respond()
+
+	// Awake susbscriber to receive data from this pipeline
+	pipeline.awakeSubscriber()
+}
+
+func (pipeline *Pipeline) GetLastSequence() uint64 {
+	return pipeline.eventStore.GetLastSequence()
 }

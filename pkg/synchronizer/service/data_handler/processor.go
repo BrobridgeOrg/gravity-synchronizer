@@ -18,11 +18,12 @@ type Processor struct {
 	pipelineHandler func(*PipelinePacket)
 }
 
+/*
 type Field struct {
 	Name  string      `json:"name"`
 	Value interface{} `json:"value"`
 }
-
+*/
 type Payload map[string]interface{}
 
 type RawData struct {
