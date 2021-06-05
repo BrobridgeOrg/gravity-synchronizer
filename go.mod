@@ -3,7 +3,7 @@ module gravity-synchronizer
 go 1.15
 
 require (
-	github.com/BrobridgeOrg/EventStore v0.0.12
+	github.com/BrobridgeOrg/EventStore v0.0.13
 	github.com/BrobridgeOrg/gravity-adapter-native v0.0.0-20210522184808-9bf6adc07616 // indirect
 	github.com/BrobridgeOrg/gravity-api v0.2.16
 	github.com/BrobridgeOrg/gravity-sdk v0.0.13
@@ -29,4 +29,4 @@ replace github.com/BrobridgeOrg/gravity-synchronizer => ./
 //replace github.com/cfsghost/gosharding => /Users/fred/works/opensource/gosharding
 //replace github.com/cfsghost/parallel-chunked-flow => /Users/fred/works/opensource/parallel-chunked-flow
 
-replace github.com/BrobridgeOrg/EventStore => /Users/fred/works/Brobridge/EventStore
+//replace github.com/BrobridgeOrg/EventStore => /Users/fred/works/Brobridge/EventStore

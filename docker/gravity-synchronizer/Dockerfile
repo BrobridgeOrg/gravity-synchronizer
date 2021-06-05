@@ -28,10 +28,9 @@ COPY ./rules /rules
 COPY ./docker/gravity-synchronizer/startup.sh /startup.sh
 
 RUN apk add --update --no-cache zlib-dev  bzip2-dev snappy-dev lz4-dev zstd-dev
-RUN chmod 2777 -R /rules
-RUN mkdir /datastore && chmod 2777 -R /datastore
+
+RUN chmod 700 -R /rules && chown -R 1001  /rules
+RUN mkdir /datastore && chmod 700 -R /datastore && chown -R 1001 /datastore
 USER 1001
 
-
-EXPOSE 44448
 CMD ["sh", "/startup.sh"]
