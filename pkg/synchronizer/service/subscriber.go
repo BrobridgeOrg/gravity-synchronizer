@@ -48,6 +48,7 @@ type Subscriber struct {
 	name             string
 	collections      sync.Map
 	suspendPipelines sync.Map
+	snapshot         *Snapshot
 }
 
 func NewSubscriber(id string, name string) *Subscriber {

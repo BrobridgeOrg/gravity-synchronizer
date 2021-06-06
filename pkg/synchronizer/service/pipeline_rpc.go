@@ -118,7 +118,15 @@ func (pipeline *Pipeline) initialize_rpc_create_snapshot() error {
 			reply.Reason = "Unknown parameters"
 			return
 		}
-
+		/*
+			// Getting subscriber
+			subscriber := pipeline.synchronizer.subscriberMgr.Get(request)
+			if subscriber == nil {
+				reply.Success = false
+				reply.Reason = "No such subscriber"
+				return
+			}
+		*/
 		// Create a new snapshot
 		_, err = pipeline.snapshotManager.CreateSnapshot(request.SnapshotID)
 		if err != nil {

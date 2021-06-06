@@ -72,3 +72,14 @@ func (sm *SubscriberManager) Get(id string) *Subscriber {
 
 	return element.(*Subscriber)
 }
+
+func (sm *SubscriberManager) AwakeAllSubscribers(pipeline *Pipeline) error {
+
+	sm.subscribers.Range(func(key interface{}, value interface{}) bool {
+		subscriber := value.(*Subscriber)
+		subscriber.Awake(pipeline)
+		return true
+	})
+
+	return nil
+}

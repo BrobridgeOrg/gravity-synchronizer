@@ -5,8 +5,8 @@ go 1.15
 require (
 	github.com/BrobridgeOrg/EventStore v0.0.13
 	github.com/BrobridgeOrg/gravity-adapter-native v0.0.0-20210522184808-9bf6adc07616 // indirect
-	github.com/BrobridgeOrg/gravity-api v0.2.16
-	github.com/BrobridgeOrg/gravity-sdk v0.0.13
+	github.com/BrobridgeOrg/gravity-api v0.2.17
+	github.com/BrobridgeOrg/gravity-sdk v0.0.14
 	github.com/BrobridgeOrg/gravity-synchronizer v0.0.0-00010101000000-000000000000
 	github.com/cfsghost/gosharding v0.0.3
 	github.com/cfsghost/parallel-chunked-flow v0.0.6

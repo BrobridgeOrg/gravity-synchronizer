@@ -93,6 +93,9 @@ func (pipeline *Pipeline) Init() error {
 		return err
 	}
 
+	// Awake all existing subscribers
+	pipeline.synchronizer.subscriberMgr.AwakeAllSubscribers(pipeline)
+
 	return nil
 }
 
