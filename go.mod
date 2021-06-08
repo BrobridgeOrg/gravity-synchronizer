@@ -3,19 +3,17 @@ module gravity-synchronizer
 go 1.15
 
 require (
-	github.com/BrobridgeOrg/EventStore v0.0.13
-	github.com/BrobridgeOrg/gravity-adapter-native v0.0.0-20210522184808-9bf6adc07616 // indirect
+	github.com/BrobridgeOrg/EventStore v0.0.14
 	github.com/BrobridgeOrg/gravity-api v0.2.17
-	github.com/BrobridgeOrg/gravity-sdk v0.0.14
+	github.com/BrobridgeOrg/gravity-sdk v0.0.16
 	github.com/BrobridgeOrg/gravity-synchronizer v0.0.0-00010101000000-000000000000
 	github.com/cfsghost/gosharding v0.0.3
 	github.com/cfsghost/parallel-chunked-flow v0.0.6
-	github.com/golang/protobuf v1.4.2
+	github.com/golang/protobuf v1.5.2
 	github.com/json-iterator/go v1.1.10
 	github.com/lithammer/go-jump-consistent-hash v1.0.1
 	github.com/nats-io/nats.go v1.10.0
-	github.com/prometheus/common v0.15.0
-	github.com/sirupsen/logrus v1.7.0
+	github.com/sirupsen/logrus v1.8.1
 	github.com/spf13/viper v1.7.1
 )
 
