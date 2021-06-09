@@ -94,7 +94,7 @@ func (sub *Subscriber) UnsubscribeFromCollections(collections []string) ([]strin
 func (sub *Subscriber) Awake(pipeline *Pipeline) error {
 
 	connection := sub.synchronizer.gravityClient.GetConnection()
-	channel := fmt.Sprintf("gravity.subscriber.%s", sub.id)
+	channel := fmt.Sprintf("%s.subscriber.%s", sub.synchronizer.domain, sub.id)
 
 	ev := eventPool.Get().(*gravity_sdk_types_event.Event)
 	ev.Type = gravity_sdk_types_event.Event_TYPE_SYSTEM
@@ -124,7 +124,7 @@ func (sub *Subscriber) Awake(pipeline *Pipeline) error {
 func (sub *Subscriber) Publish(pipeline *Pipeline, events []*eventstore.Event) error {
 
 	connection := sub.synchronizer.gravityClient.GetConnection()
-	channel := fmt.Sprintf("gravity.subscriber.%s", sub.id)
+	channel := fmt.Sprintf("%s.subscriber.%s", sub.synchronizer.domain, sub.id)
 
 	log.WithFields(log.Fields{
 		"channel": channel,

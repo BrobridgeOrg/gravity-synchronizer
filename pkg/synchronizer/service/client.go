@@ -17,12 +17,16 @@ const (
 
 func (synchronizer *Synchronizer) initializeClient() error {
 
+	// default Domain
+	viper.SetDefault("gravity.domain", "gravity")
+
 	// default settings
 	viper.SetDefault("gravity.pingInterval", DefaultPingInterval)
 	viper.SetDefault("gravity.maxPingsOutstanding", DefaultMaxPingsOutstanding)
 	viper.SetDefault("gravity.maxReconnects", DefaultMaxReconnects)
 
 	// Read configs
+	domain := viper.GetString("gravity.domain")
 	host := viper.GetString("gravity.host")
 	port := viper.GetInt("gravity.port")
 	pingInterval := viper.GetInt64("gravity.pingInterval")
@@ -38,11 +42,14 @@ func (synchronizer *Synchronizer) initializeClient() error {
 	address := fmt.Sprintf("%s:%d", host, port)
 
 	log.WithFields(log.Fields{
+		"domain":              domain,
 		"address":             address,
 		"pingInterval":        options.PingInterval,
 		"maxPingsOutstanding": options.MaxPingsOutstanding,
 		"maxReconnects":       options.MaxReconnects,
 	}).Info("Connecting to gravity...")
+
+	synchronizer.domain = domain
 
 	// Connect
 	return synchronizer.gravityClient.Connect(address, options)
