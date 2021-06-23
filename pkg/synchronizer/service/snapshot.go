@@ -51,7 +51,7 @@ func (snapshot *Snapshot) Fetch(subscriberID string, collection string, key []by
 func (snapshot *Snapshot) publish(subscriberID string, collection string, records []*eventstore.Record) error {
 
 	connection := snapshot.snapshotManager.pipeline.synchronizer.gravityClient.GetConnection()
-	channel := fmt.Sprintf("gravity.subscriber.%s", subscriberID)
+	channel := fmt.Sprintf("%s.subscriber.%s", snapshot.snapshotManager.pipeline.synchronizer.domain, subscriberID)
 
 	// Publish record
 	for _, record := range records {

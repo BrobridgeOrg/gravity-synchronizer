@@ -13,7 +13,7 @@ func (synchronizer *Synchronizer) initRPC() error {
 
 	connection := synchronizer.gravityClient.GetConnection()
 
-	assignPipelineCh := fmt.Sprintf("gravity.eventstore.%s.AssignPipeline", synchronizer.clientID)
+	assignPipelineCh := fmt.Sprintf("%s.eventstore.%s.AssignPipeline", synchronizer.domain, synchronizer.clientID)
 
 	log.WithFields(log.Fields{
 		"channel": assignPipelineCh,
@@ -54,7 +54,7 @@ func (synchronizer *Synchronizer) initRPC() error {
 		return err
 	}
 
-	revokePipelineCh := fmt.Sprintf("gravity.eventstore.%s.RevokePipeline", synchronizer.clientID)
+	revokePipelineCh := fmt.Sprintf("%s.eventstore.%s.RevokePipeline", synchronizer.domain, synchronizer.clientID)
 
 	log.WithFields(log.Fields{
 		"channel": revokePipelineCh,
@@ -106,7 +106,7 @@ func (synchronizer *Synchronizer) initRPC() error {
 
 func (synchronizer *Synchronizer) init_rpc_subscriber_register() error {
 
-	channel := fmt.Sprintf("gravity.eventstore.%s.registerSubscriber", synchronizer.clientID)
+	channel := fmt.Sprintf("%s.eventstore.%s.registerSubscriber", synchronizer.domain, synchronizer.clientID)
 
 	log.WithFields(log.Fields{
 		"channel": channel,
@@ -146,7 +146,7 @@ func (synchronizer *Synchronizer) init_rpc_subscriber_register() error {
 
 func (synchronizer *Synchronizer) init_rpc_subscriber_subscribe_to_collections() error {
 
-	channel := fmt.Sprintf("gravity.eventstore.%s.subscribeToCollections", synchronizer.clientID)
+	channel := fmt.Sprintf("%s.eventstore.%s.subscribeToCollections", synchronizer.domain, synchronizer.clientID)
 
 	log.WithFields(log.Fields{
 		"channel": channel,

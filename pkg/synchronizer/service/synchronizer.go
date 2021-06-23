@@ -22,6 +22,7 @@ type Synchronizer struct {
 	gravityClient *core.Client
 	shard         *gosharding.Shard
 	clientID      string
+	domain        string
 	pipelines     map[uint64]*Pipeline
 
 	// components

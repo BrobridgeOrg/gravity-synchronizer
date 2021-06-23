@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	pipeline_pb "github.com/BrobridgeOrg/gravity-api/service/pipeline"
+	pb "github.com/BrobridgeOrg/gravity-api/service/synchronizer"
 	"github.com/golang/protobuf/proto"
 	"github.com/nats-io/nats.go"
 	log "github.com/sirupsen/logrus"
@@ -11,12 +12,12 @@ import (
 
 func (pipeline *Pipeline) initialize_rpc() error {
 
-	err := pipeline.initRPC()
+	err := pipeline.initialize_rpc_pipeline_fetch()
 	if err != nil {
 		return err
 	}
 
-	err = pipeline.initRPC_GetState()
+	err = pipeline.initialize_rpc_pipeline_get_state()
 	if err != nil {
 		return err
 	}
@@ -44,14 +45,111 @@ func (pipeline *Pipeline) initialize_rpc() error {
 	return nil
 }
 
+func (pipeline *Pipeline) initialize_rpc_pipeline_fetch() error {
+
+	log.WithFields(log.Fields{
+		"pipeline": pipeline.id,
+	}).Info("Initializing pipeline RPC")
+
+	connection := pipeline.synchronizer.gravityClient.GetConnection()
+	channel := fmt.Sprintf("%s.pipeline.%d.fetch", pipeline.synchronizer.domain, pipeline.id)
+	_, err := connection.Subscribe(channel, func(m *nats.Msg) {
+
+		var request pb.PipelineFetchRequest
+		err := proto.Unmarshal(m.Data, &request)
+		if err != nil {
+			log.Error(err)
+			return
+		}
+
+		// Find the subscriber
+		subscriber := pipeline.synchronizer.subscriberMgr.Get(request.SubscriberID)
+		if subscriber == nil {
+			reply := &pb.PipelineFetchReply{
+				Success: false,
+				Reason:  "No such subscriber",
+			}
+
+			data, _ := proto.Marshal(reply)
+			m.Respond(data)
+			return
+		}
+
+		// Fetch data and push to subscriber
+		count, lastSeq, err := subscriber.Fetch(pipeline, request.StartAt, request.Offset, int(request.Count))
+		if err != nil {
+			log.Error(err)
+			reply := &pb.PipelineFetchReply{
+				Success: false,
+				Reason:  err.Error(),
+			}
+
+			data, _ := proto.Marshal(reply)
+			m.Respond(data)
+			return
+		}
+
+		// Success
+		reply := &pb.PipelineFetchReply{
+			LastSeq: lastSeq,
+			Count:   uint64(count),
+			Success: true,
+		}
+
+		data, _ := proto.Marshal(reply)
+		m.Respond(data)
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (pipeline *Pipeline) initialize_rpc_pipeline_get_state() error {
+
+	log.WithFields(log.Fields{
+		"pipeline": pipeline.id,
+	}).Info("Initializing RPC pipeline.[id].getState")
+
+	connection := pipeline.synchronizer.gravityClient.GetConnection()
+	channel := fmt.Sprintf("%s.pipeline.%d.getState", pipeline.synchronizer.domain, pipeline.id)
+	_, err := connection.Subscribe(channel, func(m *nats.Msg) {
+
+		var request pipeline_pb.GetStateRequest
+		err := proto.Unmarshal(m.Data, &request)
+		if err != nil {
+			log.Error(err)
+			return
+		}
+
+		// Getting last sequence
+		lastSeq := pipeline.eventStore.GetLastSequence()
+
+		// Success
+		reply := &pipeline_pb.GetStateReply{
+			LastSeq: lastSeq,
+			Success: true,
+		}
+
+		data, _ := proto.Marshal(reply)
+		m.Respond(data)
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (pipeline *Pipeline) initialize_rpc_suspend() error {
 
 	log.WithFields(log.Fields{
 		"pipeline": pipeline.id,
-	}).Info("Initializing RPC gravity.pipeline.[id].suspend")
+	}).Info("Initializing RPC pipeline.[id].suspend")
 
 	connection := pipeline.synchronizer.gravityClient.GetConnection()
-	channel := fmt.Sprintf("gravity.pipeline.%d.suspend", pipeline.id)
+	channel := fmt.Sprintf("%s.pipeline.%d.suspend", pipeline.synchronizer.domain, pipeline.id)
 	_, err := connection.Subscribe(channel, func(m *nats.Msg) {
 
 		reply := &pipeline_pb.SuspendReply{
@@ -96,10 +194,10 @@ func (pipeline *Pipeline) initialize_rpc_create_snapshot() error {
 
 	log.WithFields(log.Fields{
 		"pipeline": pipeline.id,
-	}).Info("Initializing RPC gravity.pipeline.[id].createSnapshot")
+	}).Info("Initializing RPC pipeline.[id].createSnapshot")
 
 	connection := pipeline.synchronizer.gravityClient.GetConnection()
-	channel := fmt.Sprintf("gravity.pipeline.%d.createSnapshot", pipeline.id)
+	channel := fmt.Sprintf("%s.pipeline.%d.createSnapshot", pipeline.synchronizer.domain, pipeline.id)
 	_, err := connection.Subscribe(channel, func(m *nats.Msg) {
 
 		reply := &pipeline_pb.CreateSnapshotReply{
@@ -148,10 +246,10 @@ func (pipeline *Pipeline) initialize_rpc_release_snapshot() error {
 
 	log.WithFields(log.Fields{
 		"pipeline": pipeline.id,
-	}).Info("Initializing RPC gravity.pipeline.[id].releaseSnapshot")
+	}).Info("Initializing RPC pipeline.[id].releaseSnapshot")
 
 	connection := pipeline.synchronizer.gravityClient.GetConnection()
-	channel := fmt.Sprintf("gravity.pipeline.%d.releaseSnapshot", pipeline.id)
+	channel := fmt.Sprintf("%s.pipeline.%d.releaseSnapshot", pipeline.synchronizer.domain, pipeline.id)
 	_, err := connection.Subscribe(channel, func(m *nats.Msg) {
 
 		reply := &pipeline_pb.ReleaseSnapshotReply{
@@ -191,10 +289,10 @@ func (pipeline *Pipeline) initialize_rpc_fetch_snapshot() error {
 
 	log.WithFields(log.Fields{
 		"pipeline": pipeline.id,
-	}).Info("Initializing RPC gravity.pipeline.[id].fetchSnapshot")
+	}).Info("Initializing RPC pipeline.[id].fetchSnapshot")
 
 	connection := pipeline.synchronizer.gravityClient.GetConnection()
-	channel := fmt.Sprintf("gravity.pipeline.%d.fetchSnapshot", pipeline.id)
+	channel := fmt.Sprintf("%s.pipeline.%d.fetchSnapshot", pipeline.synchronizer.domain, pipeline.id)
 	_, err := connection.Subscribe(channel, func(m *nats.Msg) {
 
 		reply := &pipeline_pb.FetchSnapshotReply{

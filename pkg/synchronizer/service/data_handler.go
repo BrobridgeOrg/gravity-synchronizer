@@ -44,16 +44,7 @@ func (synchronizer *Synchronizer) initializeDataHandler() error {
 
 	// Subscribe to quque to receive events
 	connection := synchronizer.gravityClient.GetConnection()
-	/*
-		sub, err := connection.QueueSubscribe("gravity.dsa.incoming", "synchronizer", func(m *nats.Msg) {
-			id := atomic.AddUint64((*uint64)(&counter), 1)
-			if id%1000 == 0 {
-				log.Info(id)
-			}
-			synchronizer.dataHandler.PushData(m)
-		})
-	*/
-	sub, err := connection.QueueSubscribe("gravity.dsa.batch", "synchronizer", func(m *nats.Msg) {
+	sub, err := connection.QueueSubscribe(synchronizer.domain+".dsa.batch", "synchronizer", func(m *nats.Msg) {
 		synchronizer.dataHandler.BatchPushData(m)
 	})
 	if err != nil {
@@ -104,7 +95,7 @@ func (synchronizer *Synchronizer) storeData(packet *data_handler.PipelinePacket)
 func (synchronizer *Synchronizer) pushToExternalWorker(packet *data_handler.PipelinePacket) error {
 
 	// Getting channel name to dispatch
-	channel := fmt.Sprintf("gravity.pipeline.%d", packet.Data.PipelineID)
+	channel := fmt.Sprintf("%s.pipeline.%d", synchronizer.domain, packet.Data.PipelineID)
 
 	// Send request
 	connection := synchronizer.gravityClient.GetConnection()
