@@ -32,6 +32,7 @@ func (processor *Processor) preprocessHandler(data interface{}, publish func(int
 		return
 	}
 
+	isMatched := false
 	for _, rule := range processor.ruleConfig.Rules {
 
 		// Ignore events
@@ -39,16 +40,39 @@ func (processor *Processor) preprocessHandler(data interface{}, publish func(int
 			continue
 		}
 
-		// Getting primary key
-		primaryKey := processor.findPrimaryKey(rule, task.Payload)
+		if !isMatched {
+			isMatched = true
 
-		// Prepare event
-		task.PrimaryKey = primaryKey
-		task.PipelineID = jump.HashString(primaryKey, processor.pipelineCount, jump.NewCRC64())
-		task.Rule = rule
+			// Getting primary key
+			primaryKey := processor.findPrimaryKey(rule, task.Payload)
 
-		publish(task)
+			// Prepare event
+			task.PrimaryKey = primaryKey
+			task.PipelineID = jump.HashString(primaryKey, processor.pipelineCount, jump.NewCRC64())
+			task.Rule = rule
+
+			publish(task)
+		} else {
+
+			// Prepare a new task
+			newTask := processor.cloneTask(task)
+
+			publish(newTask)
+		}
 	}
+}
+
+func (processor *Processor) cloneTask(old *BatchTask) *BatchTask {
+
+	task := batchTaskPool.Get().(*BatchTask)
+	task.PrimaryKey = old.PrimaryKey
+	task.PipelineID = old.PipelineID
+	task.Request = old.Request
+	task.EventName = old.EventName
+	task.Meta = old.Meta
+	task.RawPayload = old.RawPayload
+
+	return task
 }
 
 func (processor *Processor) onPreprocessed() {
