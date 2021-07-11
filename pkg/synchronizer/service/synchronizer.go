@@ -2,13 +2,15 @@ package synchronizer
 
 import (
 	"fmt"
-	"gravity-synchronizer/pkg/synchronizer/service/data_handler"
+	data_handler "gravity-synchronizer/pkg/synchronizer/service/data_handler"
+	"gravity-synchronizer/pkg/synchronizer/service/dsa"
 	"os"
 	"strings"
 
 	eventstore "github.com/BrobridgeOrg/EventStore"
 	core "github.com/BrobridgeOrg/gravity-sdk/core"
 	"github.com/BrobridgeOrg/gravity-synchronizer/pkg/app"
+	"github.com/BrobridgeOrg/gravity-synchronizer/pkg/synchronizer/service/rule"
 	gosharding "github.com/cfsghost/gosharding"
 	jsoniter "github.com/json-iterator/go"
 	log "github.com/sirupsen/logrus"
@@ -24,8 +26,10 @@ type Synchronizer struct {
 	clientID      string
 	domain        string
 	pipelines     map[uint64]*Pipeline
+	ruleConfig    *rule.RuleConfig
 
 	// components
+	dsa             *dsa.DataSourceAdapter
 	dataHandler     *data_handler.DataHandler
 	snapshotHandler *SnapshotHandler
 	eventStore      *eventstore.EventStore
@@ -63,6 +67,14 @@ func (synchronizer *Synchronizer) Init() error {
 	log.WithFields(log.Fields{
 		"clientID": synchronizer.clientID,
 	}).Info("Initializing synchronizer")
+
+	// Load rule config
+	ruleConfig, err := rule.LoadRuleFile("./rules/rules.json")
+	if err != nil {
+		return err
+	}
+
+	synchronizer.ruleConfig = ruleConfig
 
 	// Initializing event store
 	err = synchronizer.initializeEventStore()
@@ -114,6 +126,12 @@ func (synchronizer *Synchronizer) Init() error {
 
 	// Initializing data handler
 	err = synchronizer.initializeDataHandler()
+	if err != nil {
+		return err
+	}
+
+	// Initializing data source adapter
+	err = synchronizer.initializeDataSourceAdapter()
 	if err != nil {
 		return err
 	}

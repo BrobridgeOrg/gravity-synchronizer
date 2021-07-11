@@ -160,3 +160,28 @@ func (pipeline *Pipeline) handleRequest(req request.Request) {
 func (pipeline *Pipeline) GetLastSequence() uint64 {
 	return pipeline.eventStore.GetLastSequence()
 }
+
+func (pipeline *Pipeline) store(data []byte) error {
+	/*
+		id := atomic.AddUint64((*uint64)(&counter), 1)
+		log.WithFields(log.Fields{
+			"pipeline": pipeline.id,
+		}).Info(id)
+	*/
+	/*
+		id := atomic.AddUint64((*uint64)(&counter), 1)
+		if id%1000 == 0 {
+			log.Info(id)
+		}
+	*/
+	// Event sourcing
+	err := pipeline.eventStore.Write(data)
+	if err != nil {
+		return err
+	}
+
+	// Awake susbscriber to receive data from this pipeline
+	pipeline.awakeSubscriber()
+
+	return nil
+}

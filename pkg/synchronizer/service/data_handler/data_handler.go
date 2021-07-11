@@ -1,57 +1,112 @@
 package data_handler
 
 import (
-	parallel_chunked_flow "github.com/cfsghost/parallel-chunked-flow"
+	"sync"
+
+	"github.com/cfsghost/taskflow"
+
+	"github.com/BrobridgeOrg/gravity-synchronizer/pkg/synchronizer/service/rule"
+	"github.com/BrobridgeOrg/gravity-synchronizer/pkg/synchronizer/service/task"
 	jsoniter "github.com/json-iterator/go"
-	"github.com/nats-io/nats.go"
 )
 
 var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
 type DataHandler struct {
-	processor *Processor
-	//	input      *parallel_chunked_flow.ParallelChunkedFlow
-	batchInput *parallel_chunked_flow.ParallelChunkedFlow
+	ruleConfig     *rule.RuleConfig
+	taskflow       *taskflow.TaskFlow
+	mappingHandler MappingHandler
+	store          Store
+
+	// Handlers
+	storeHandler func(interface{}, []byte) error
 }
 
 func NewDataHandler() *DataHandler {
+
+	taskflowOpts := taskflow.NewOptions()
+
 	return &DataHandler{
-		processor: NewProcessor(),
+		taskflow: taskflow.NewTaskFlow(taskflowOpts),
 	}
 }
 
-func (dh *DataHandler) Init() error {
+func (dh *DataHandler) InitTasks() error {
 
-	err := dh.processor.LoadRuleFile("./rules/rules.json")
+	// Request handler
+	err := dh.mappingHandler.Init(dh)
 	if err != nil {
 		return err
 	}
 
-	//	dh.initInput()
-	dh.initBatchInput()
+	dh.taskflow.AddTask(dh.mappingHandler.task)
+
+	// Store
+	err = dh.store.Init(dh)
+	if err != nil {
+		return err
+	}
+
+	dh.taskflow.AddTask(dh.store.task)
+	dh.taskflow.Link(dh.mappingHandler.task, 0, dh.store.task, 0)
 
 	return nil
 }
 
-func (dh *DataHandler) BatchPushData(msg *nats.Msg) error {
-	return dh.batchInput.Push(msg)
+func (dh *DataHandler) Init() error {
+
+	// Starting taskflow to execute task
+	err := dh.taskflow.Start()
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
-/*
-func (dh *DataHandler) PushData(msg *nats.Msg) error {
-	return dh.input.Push(msg)
+func (dh *DataHandler) SetRuleConfig(ruleConfig *rule.RuleConfig) {
+	dh.ruleConfig = ruleConfig
 }
-*/
-/*
-func (dh *DataHandler) ProcessData(msg *nats.Msg, req *dsa.PublishRequest) error {
 
-	request := requestPool.Get().(*Request)
-	request.msg = msg
-	request.input = req
+func (dh *DataHandler) PushTaskGroup(privData interface{}, taskGroup *task.TaskGroup) error {
 
-	return dh.processor.ProcessData(request)
+	tasks := taskGroup.GetTasks()
+
+	var wg sync.WaitGroup
+	wg.Add(len(tasks))
+
+	var e error
+	for _, t := range tasks {
+		tr := NewTaskRequest()
+		tr.PrivData = privData
+		tr.Task = t
+		tr.OnCompleted = func(err error) {
+			e = err
+			wg.Done()
+		}
+
+		dh.PushData(tr, t)
+	}
+
+	wg.Wait()
+
+	return e
 }
-*/
-func (dh *DataHandler) SetPipelineHandler(fn func(*PipelinePacket)) {
-	dh.processor.SetPipelineHandler(fn)
+
+func (dh *DataHandler) PushData(privData interface{}, data interface{}) error {
+
+	// Create context for task
+	ctx := taskflow.NewContext()
+	ctx.SetPrivData(privData)
+
+	err := dh.taskflow.PushWithContext(dh.mappingHandler.task.GetID(), 0, ctx, data)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (dh *DataHandler) OnStore(fn func(interface{}, []byte) error) {
+	dh.storeHandler = fn
 }

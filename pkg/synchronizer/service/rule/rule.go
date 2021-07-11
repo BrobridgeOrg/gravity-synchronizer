@@ -1,6 +1,7 @@
-package data_handler
+package rule
 
 import (
+	"encoding/json"
 	"io/ioutil"
 	"os"
 )
@@ -10,6 +11,7 @@ type RuleConfig struct {
 }
 
 type Rule struct {
+	ID         string          `json:"id"`
 	Event      string          `json:"event"`
 	Collection string          `json:"collection"`
 	Method     string          `json:"method"`
@@ -18,12 +20,11 @@ type Rule struct {
 }
 
 type MappingConfig struct {
-	Source  string `json:"source"`
-	Target  string `json:"target"`
-	Primary bool   `json:"primary"`
+	Source string `json:"source"`
+	Target string `json:"target"`
 }
 
-func loadRuleFile(filename string) (*RuleConfig, error) {
+func LoadRuleFile(filename string) (*RuleConfig, error) {
 
 	jsonFile, err := os.Open(filename)
 	if err != nil {
@@ -37,18 +38,25 @@ func loadRuleFile(filename string) (*RuleConfig, error) {
 	var config RuleConfig
 	json.Unmarshal(byteValue, &config)
 
+	for _, rule := range config.Rules {
+		if len(rule.ID) == 0 {
+			// Generate rule ID
+			rule.ID = rule.Event + "_" + rule.Collection + "_" + rule.PrimaryKey
+		}
+	}
+
 	return &config, nil
 }
 
-func (processor *Processor) LoadRuleFile(filename string) error {
+func (rc *RuleConfig) Get(id string) *Rule {
 
-	// Load rule config
-	config, err := loadRuleFile(filename)
-	if err != nil {
-		return err
+	for _, rule := range rc.Rules {
+
+		// Ignore events if no rule matched
+		if rule.ID == id {
+			return rule
+		}
 	}
-
-	processor.ruleConfig = config
 
 	return nil
 }

@@ -9,12 +9,15 @@ require (
 	github.com/BrobridgeOrg/gravity-synchronizer v0.0.0-00010101000000-000000000000
 	github.com/cfsghost/gosharding v0.0.3
 	github.com/cfsghost/parallel-chunked-flow v0.0.6
+	github.com/cfsghost/taskflow v0.0.2
 	github.com/golang/protobuf v1.5.2
 	github.com/json-iterator/go v1.1.10
-	github.com/lithammer/go-jump-consistent-hash v1.0.1
+	github.com/lithammer/go-jump-consistent-hash v1.0.2
 	github.com/nats-io/nats.go v1.10.0
+	github.com/prometheus/common v0.4.0
 	github.com/sirupsen/logrus v1.8.1
 	github.com/spf13/viper v1.7.1
+	google.golang.org/protobuf v1.26.0
 )
 
 replace github.com/BrobridgeOrg/gravity-synchronizer => ./
@@ -26,5 +29,6 @@ replace github.com/BrobridgeOrg/gravity-synchronizer => ./
 //replace github.com/cfsghost/grpc-connection-pool => /Users/fred/works/opensource/grpc-connection-pool
 //replace github.com/cfsghost/gosharding => /Users/fred/works/opensource/gosharding
 //replace github.com/cfsghost/parallel-chunked-flow => /Users/fred/works/opensource/parallel-chunked-flow
+//replace github.com/cfsghost/taskflow => /Users/fred/works/opensource/taskflow
 
 //replace github.com/BrobridgeOrg/EventStore => /Users/fred/works/Brobridge/EventStore
