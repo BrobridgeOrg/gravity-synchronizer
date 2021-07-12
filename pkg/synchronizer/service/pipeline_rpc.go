@@ -169,6 +169,12 @@ func (pipeline *Pipeline) initialize_rpc_suspend() error {
 			return
 		}
 
+		// This subscriber shouldn't suspend
+		if pipeline.GetLastSequence() > request.Sequence {
+			reply.Success = false
+			return
+		}
+
 		subscriber := pipeline.synchronizer.subscriberMgr.Get(request.SubscriberID)
 		if subscriber == nil {
 			reply.Success = false
@@ -182,6 +188,12 @@ func (pipeline *Pipeline) initialize_rpc_suspend() error {
 		}).Info("Subscriber is suspended")
 
 		subscriber.suspendPipelines.Store(pipeline.id, pipeline)
+
+		// This subscriber shouldn't suspend
+		if pipeline.GetLastSequence() > request.Sequence {
+			reply.Success = false
+			return
+		}
 	})
 	if err != nil {
 		return err

@@ -6,7 +6,7 @@ import (
 	dsa_pb "github.com/BrobridgeOrg/gravity-api/service/dsa"
 	"github.com/BrobridgeOrg/gravity-synchronizer/pkg/synchronizer/service/rule"
 	"github.com/cfsghost/taskflow"
-	"google.golang.org/protobuf/proto"
+	"github.com/golang/protobuf/proto"
 )
 
 var testDSA *DataSourceAdapter
