@@ -8,6 +8,7 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/nats-io/nats.go"
 	log "github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 )
 
 var dsaPublishReplyPool = sync.Pool{
@@ -54,6 +55,11 @@ func (synchronizer *Synchronizer) initializeDataSourceAdapter() error {
 		// Success
 		m.Respond(SuccessReply)
 	})
+
+	// Setup worker count
+	viper.SetDefault("pipeline.workerCount", 16)
+	workerCount := viper.GetInt("pipeline.workerCount")
+	synchronizer.dsa.SetWorkerCount(workerCount)
 
 	err := synchronizer.dsa.Init()
 	if err != nil {

@@ -12,6 +12,7 @@ var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
 type DataSourceAdapter struct {
 	pipelineCount  int32
+	workerCount    int
 	ruleConfig     *rule.RuleConfig
 	taskflow       *taskflow.TaskFlow
 	requestHandler RequestHandler
@@ -23,11 +24,8 @@ type DataSourceAdapter struct {
 }
 
 func NewDataSourceAdapter() *DataSourceAdapter {
-
-	taskflowOpts := taskflow.NewOptions()
-
 	return &DataSourceAdapter{
-		taskflow: taskflow.NewTaskFlow(taskflowOpts),
+		workerCount: 8,
 	}
 }
 
@@ -68,6 +66,11 @@ func (dsa *DataSourceAdapter) Init() error {
 	viper.SetDefault("pipeline.pipelineCount", 256)
 	dsa.pipelineCount = viper.GetInt32("pipeline.pipelineCount")
 
+	// Initializing taskflow
+	taskflowOpts := taskflow.NewOptions()
+	taskflowOpts.WorkerCount = dsa.workerCount
+	dsa.taskflow = taskflow.NewTaskFlow(taskflowOpts)
+
 	// Starting taskflow to execute task
 	err := dsa.taskflow.Start()
 	if err != nil {
@@ -75,6 +78,10 @@ func (dsa *DataSourceAdapter) Init() error {
 	}
 
 	return nil
+}
+
+func (dsa *DataSourceAdapter) SetWorkerCount(count int) {
+	dsa.workerCount = count
 }
 
 func (dsa *DataSourceAdapter) SetRuleConfig(ruleConfig *rule.RuleConfig) {

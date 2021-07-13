@@ -30,6 +30,7 @@ func TestDataSourceAdapterInitialization(t *testing.T) {
 	}
 
 	testDSA.pipelineCount = 4
+	testDSA.workerCount = 8
 }
 
 func TestRequestHandler(t *testing.T) {
