@@ -5,6 +5,9 @@ pingInterval = 10
 maxPingsOutstanding = 3
 maxReconnects = -1
 
+[dsa]
+workerCount = 4
+
 [pipeline]
 pipelineCount = 4
 workerCount = 16

@@ -57,8 +57,8 @@ func (synchronizer *Synchronizer) initializeDataSourceAdapter() error {
 	})
 
 	// Setup worker count
-	viper.SetDefault("pipeline.workerCount", 16)
-	workerCount := viper.GetInt("pipeline.workerCount")
+	viper.SetDefault("dsa.workerCount", 4)
+	workerCount := viper.GetInt("dsa.workerCount")
 	synchronizer.dsa.SetWorkerCount(workerCount)
 
 	err := synchronizer.dsa.Init()
