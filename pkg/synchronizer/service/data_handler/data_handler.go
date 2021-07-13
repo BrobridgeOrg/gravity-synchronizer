@@ -13,6 +13,7 @@ import (
 var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
 type DataHandler struct {
+	workerCount    int
 	ruleConfig     *rule.RuleConfig
 	taskflow       *taskflow.TaskFlow
 	mappingHandler MappingHandler
@@ -24,10 +25,8 @@ type DataHandler struct {
 
 func NewDataHandler() *DataHandler {
 
-	taskflowOpts := taskflow.NewOptions()
-
 	return &DataHandler{
-		taskflow: taskflow.NewTaskFlow(taskflowOpts),
+		workerCount: 8,
 	}
 }
 
@@ -55,6 +54,11 @@ func (dh *DataHandler) InitTasks() error {
 
 func (dh *DataHandler) Init() error {
 
+	// Initializing taskflow
+	taskflowOpts := taskflow.NewOptions()
+	taskflowOpts.WorkerCount = dh.workerCount
+	dh.taskflow = taskflow.NewTaskFlow(taskflowOpts)
+
 	// Starting taskflow to execute task
 	err := dh.taskflow.Start()
 	if err != nil {
@@ -62,6 +66,10 @@ func (dh *DataHandler) Init() error {
 	}
 
 	return nil
+}
+
+func (dh *DataHandler) SetWorkerCount(count int) {
+	dh.workerCount = count
 }
 
 func (dh *DataHandler) SetRuleConfig(ruleConfig *rule.RuleConfig) {

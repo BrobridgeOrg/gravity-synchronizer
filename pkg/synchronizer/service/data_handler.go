@@ -2,6 +2,8 @@ package synchronizer
 
 import (
 	data_handler "gravity-synchronizer/pkg/synchronizer/service/data_handler"
+
+	"github.com/spf13/viper"
 )
 
 func (synchronizer *Synchronizer) initializeDataHandler() error {
@@ -12,6 +14,11 @@ func (synchronizer *Synchronizer) initializeDataHandler() error {
 		pipeline := privData.(*Pipeline)
 		return pipeline.store(data)
 	})
+
+	// Setup worker count
+	viper.SetDefault("pipeline.workerCount", 16)
+	workerCount := viper.GetInt("pipeline.workerCount")
+	synchronizer.dataHandler.SetWorkerCount(workerCount)
 
 	err := synchronizer.dataHandler.Init()
 	if err != nil {
