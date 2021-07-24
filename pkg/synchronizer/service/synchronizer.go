@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	eventstore "github.com/BrobridgeOrg/EventStore"
+	"github.com/BrobridgeOrg/broc"
 	core "github.com/BrobridgeOrg/gravity-sdk/core"
 	"github.com/BrobridgeOrg/gravity-synchronizer/pkg/app"
 	"github.com/BrobridgeOrg/gravity-synchronizer/pkg/synchronizer/service/rule"
@@ -35,6 +36,9 @@ type Synchronizer struct {
 	eventStore      *eventstore.EventStore
 	storeMgr        *StoreManager
 	subscriberMgr   *SubscriberManager
+
+	// RPC
+	eventStoreRPC *broc.Broc
 }
 
 func NewSynchronizer(a app.App) *Synchronizer {
