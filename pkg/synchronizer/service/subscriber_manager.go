@@ -34,15 +34,25 @@ func (sm *SubscriberManager) Initialize() error {
 		return err
 	}
 
-	// Restore
+	// Restore subscribers
 	for _, sub := range subscribers {
 		log.WithFields(log.Fields{
 			"id":        sub.ID,
 			"name":      sub.Name,
 			"component": sub.Component,
 		}).Info("Restored subscriber")
-		subscriber := NewSubscriber(sub.ID, sub.Name)
-		sm.Register(sub.ID, subscriber)
+		subscriber := NewSubscriber(sub.ID, sub.Name, sub.AppID)
+		err := sm.Register(sub.ID, subscriber)
+		if err != nil {
+			log.Error(err)
+			continue
+		}
+
+		// Add access key to keyring
+		if len(sub.AppID) > 0 && len(sub.AccessKey) > 0 {
+			keyInfo := sm.synchronizer.keyring.Put(sub.AppID, sub.AccessKey)
+			keyInfo.Permission().AddPermissions(sub.Permissions)
+		}
 	}
 
 	return nil

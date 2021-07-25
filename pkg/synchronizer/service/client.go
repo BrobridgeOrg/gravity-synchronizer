@@ -13,12 +13,14 @@ const (
 	DefaultPingInterval        = 10
 	DefaultMaxPingsOutstanding = 3
 	DefaultMaxReconnects       = -1
+	DefaultAccessKey           = ""
 )
 
 func (synchronizer *Synchronizer) initializeClient() error {
 
-	// default Domain
+	// default domain and access key
 	viper.SetDefault("gravity.domain", "gravity")
+	viper.SetDefault("gravity.accessKey", DefaultAccessKey)
 
 	// default settings
 	viper.SetDefault("gravity.pingInterval", DefaultPingInterval)
@@ -27,6 +29,7 @@ func (synchronizer *Synchronizer) initializeClient() error {
 
 	// Read configs
 	domain := viper.GetString("gravity.domain")
+	accessKey := viper.GetString("gravity.accessKey")
 	host := viper.GetString("gravity.host")
 	port := viper.GetInt("gravity.port")
 	pingInterval := viper.GetInt64("gravity.pingInterval")
@@ -50,6 +53,10 @@ func (synchronizer *Synchronizer) initializeClient() error {
 	}).Info("Connecting to gravity...")
 
 	synchronizer.domain = domain
+
+	// Initializing keyring
+	keyInfo := synchronizer.keyring.Put("gravity", accessKey)
+	keyInfo.Permission().AddPermissions([]string{"SYSTEM"})
 
 	// Connect
 	return synchronizer.gravityClient.Connect(address, options)

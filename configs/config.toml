@@ -1,4 +1,6 @@
 [gravity]
+domain = "gravity"
+accessKey = "TestingACCESSkey"
 host = "0.0.0.0"
 port = 32803
 pingInterval = 10

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"gravity-synchronizer/pkg/synchronizer/service/request"
 
+	"github.com/BrobridgeOrg/broc"
 	synchronizer_manager "github.com/BrobridgeOrg/gravity-sdk/synchronizer_manager"
 	"github.com/nats-io/nats.go"
 	log "github.com/sirupsen/logrus"
@@ -17,6 +18,7 @@ type Pipeline struct {
 	subscription    *nats.Subscription
 	eventStore      *EventStore
 	snapshotManager *SnapshotManager
+	rpcEngine       *broc.Broc
 }
 
 func NewPipeline(synchronizer *Synchronizer, id uint64) *Pipeline {

@@ -46,15 +46,17 @@ type Subscriber struct {
 	synchronizer     *Synchronizer
 	id               string
 	name             string
+	appID            string
 	collections      sync.Map
 	suspendPipelines sync.Map
 	snapshot         *Snapshot
 }
 
-func NewSubscriber(id string, name string) *Subscriber {
+func NewSubscriber(id string, name string, appID string) *Subscriber {
 	return &Subscriber{
-		id:   id,
-		name: name,
+		id:    id,
+		name:  name,
+		appID: appID,
 	}
 }
 

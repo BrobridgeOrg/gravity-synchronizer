@@ -10,6 +10,7 @@ import (
 	eventstore "github.com/BrobridgeOrg/EventStore"
 	"github.com/BrobridgeOrg/broc"
 	core "github.com/BrobridgeOrg/gravity-sdk/core"
+	"github.com/BrobridgeOrg/gravity-sdk/core/keyring"
 	"github.com/BrobridgeOrg/gravity-synchronizer/pkg/app"
 	"github.com/BrobridgeOrg/gravity-synchronizer/pkg/synchronizer/service/rule"
 	gosharding "github.com/cfsghost/gosharding"
@@ -30,6 +31,7 @@ type Synchronizer struct {
 	ruleConfig    *rule.RuleConfig
 
 	// components
+	keyring         *keyring.Keyring
 	dsa             *dsa.DataSourceAdapter
 	dataHandler     *data_handler.DataHandler
 	snapshotHandler *SnapshotHandler
@@ -47,6 +49,7 @@ func NewSynchronizer(a app.App) *Synchronizer {
 		pipelines:       make(map[uint64]*Pipeline, 0),
 		snapshotHandler: NewSnapshotHandler(),
 		gravityClient:   core.NewClient(),
+		keyring:         keyring.NewKeyring(),
 	}
 
 	synchronizer.storeMgr = NewStoreManager(synchronizer)
