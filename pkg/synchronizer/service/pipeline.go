@@ -99,7 +99,10 @@ func (pipeline *Pipeline) Uninit() error {
 
 func (pipeline *Pipeline) release() error {
 
-	sm := synchronizer_manager.NewSynchronizerManagerWithClient(pipeline.synchronizer.gravityClient, synchronizer_manager.NewOptions())
+	opts := synchronizer_manager.NewOptions()
+	opts.Key = pipeline.synchronizer.keyring.Get("gravity")
+
+	sm := synchronizer_manager.NewSynchronizerManagerWithClient(pipeline.synchronizer.gravityClient, opts)
 	return sm.ReleasePipelines(
 		pipeline.synchronizer.clientID,
 		[]uint64{

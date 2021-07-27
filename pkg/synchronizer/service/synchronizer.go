@@ -189,6 +189,7 @@ func (synchronizer *Synchronizer) recoveryPipelines() error {
 	pipelines, err := synchronizer.GetPipelines()
 	if err != nil {
 		if err.Error() == "NotFound" {
+			log.Errorf("Failed to get pipeline subsciprtion information: %v", err)
 			return nil
 		}
 

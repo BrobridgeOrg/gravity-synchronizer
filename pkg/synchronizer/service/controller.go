@@ -7,7 +7,10 @@ import (
 
 func (synchronizer *Synchronizer) RegisterClient() error {
 
-	sm := synchronizer_manager.NewSynchronizerManagerWithClient(synchronizer.gravityClient, synchronizer_manager.NewOptions())
+	opts := synchronizer_manager.NewOptions()
+	opts.Key = synchronizer.keyring.Get("gravity")
+
+	sm := synchronizer_manager.NewSynchronizerManagerWithClient(synchronizer.gravityClient, opts)
 	err := sm.Register(synchronizer.clientID)
 	if err != nil {
 		return err
@@ -21,6 +24,9 @@ func (synchronizer *Synchronizer) RegisterClient() error {
 
 func (synchronizer *Synchronizer) GetPipelines() ([]uint64, error) {
 
-	sm := synchronizer_manager.NewSynchronizerManagerWithClient(synchronizer.gravityClient, synchronizer_manager.NewOptions())
+	opts := synchronizer_manager.NewOptions()
+	opts.Key = synchronizer.keyring.Get("gravity")
+
+	sm := synchronizer_manager.NewSynchronizerManagerWithClient(synchronizer.gravityClient, opts)
 	return sm.GetPipelines(synchronizer.clientID)
 }

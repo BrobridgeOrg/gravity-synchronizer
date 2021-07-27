@@ -25,6 +25,7 @@ func (sm *SubscriberManager) Initialize() error {
 	// Connecting to subscriber manager
 	options := gravity_subscriber_manager.NewOptions()
 	options.Verbose = false
+	options.Key = sm.synchronizer.keyring.Get("gravity")
 	subscriberManager := gravity_subscriber_manager.NewSubscriberManagerWithClient(sm.synchronizer.gravityClient, options)
 	sm.subscriberManager = subscriberManager
 
