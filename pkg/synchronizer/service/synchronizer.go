@@ -33,6 +33,7 @@ type Synchronizer struct {
 	// components
 	keyring         *keyring.Keyring
 	dsa             *dsa.DataSourceAdapter
+	controller      *Controller
 	dataHandler     *data_handler.DataHandler
 	snapshotHandler *SnapshotHandler
 	eventStore      *eventstore.EventStore
@@ -41,6 +42,7 @@ type Synchronizer struct {
 
 	// RPC
 	eventStoreRPC *broc.Broc
+	dsaRPC        *broc.Broc
 }
 
 func NewSynchronizer(a app.App) *Synchronizer {
@@ -52,6 +54,7 @@ func NewSynchronizer(a app.App) *Synchronizer {
 		keyring:         keyring.NewKeyring(),
 	}
 
+	synchronizer.controller = NewController(synchronizer)
 	synchronizer.storeMgr = NewStoreManager(synchronizer)
 	synchronizer.subscriberMgr = NewSubscriberManager(synchronizer)
 
@@ -101,12 +104,6 @@ func (synchronizer *Synchronizer) Init() error {
 		return err
 	}
 
-	// Initializing RPC handlers
-	err = synchronizer.initRPC()
-	if err != nil {
-		return err
-	}
-
 	// Initializing subscriber
 	err = synchronizer.subscriberMgr.Initialize()
 	if err != nil {
@@ -125,11 +122,21 @@ func (synchronizer *Synchronizer) Init() error {
 		return err
 	}
 
-	// register synchronizer
-	err = synchronizer.RegisterClient()
+	// Initializing Event Store RPC handlers
+	err = synchronizer.initEventStoreRPC()
 	if err != nil {
 		return err
 	}
+
+	// register synchronizer
+	err = synchronizer.controller.GetSynchronizerManager().Register(synchronizer.clientID)
+	if err != nil {
+		return err
+	}
+
+	log.WithFields(log.Fields{
+		"id": synchronizer.clientID,
+	}).Info("Registered synchronizer to controller")
 
 	// Initializing data handler
 	err = synchronizer.initializeDataHandler()
@@ -186,7 +193,7 @@ func (synchronizer *Synchronizer) recoveryPipelines() error {
 
 	log.Info("Attempt to recovery pipeline subscriptions")
 
-	pipelines, err := synchronizer.GetPipelines()
+	pipelines, err := synchronizer.controller.GetSynchronizerManager().GetPipelines(synchronizer.clientID)
 	if err != nil {
 		if err.Error() == "NotFound" {
 			log.Errorf("Failed to get pipeline subsciprtion information: %v", err)

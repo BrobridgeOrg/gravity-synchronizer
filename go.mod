@@ -4,9 +4,9 @@ go 1.15
 
 require (
 	github.com/BrobridgeOrg/EventStore v0.0.16
-	github.com/BrobridgeOrg/broc v0.0.1
-	github.com/BrobridgeOrg/gravity-api v0.2.19
-	github.com/BrobridgeOrg/gravity-sdk v0.0.28
+	github.com/BrobridgeOrg/broc v0.0.2
+	github.com/BrobridgeOrg/gravity-api v0.2.20
+	github.com/BrobridgeOrg/gravity-sdk v0.0.31
 	github.com/BrobridgeOrg/gravity-synchronizer v0.0.0-00010101000000-000000000000
 	github.com/cfsghost/gosharding v0.0.3
 	github.com/cfsghost/parallel-chunked-flow v0.0.6
@@ -15,10 +15,8 @@ require (
 	github.com/json-iterator/go v1.1.10
 	github.com/lithammer/go-jump-consistent-hash v1.0.2
 	github.com/nats-io/nats.go v1.11.0
-	github.com/prometheus/common v0.4.0
 	github.com/sirupsen/logrus v1.8.1
 	github.com/spf13/viper v1.7.1
-	google.golang.org/protobuf v1.26.0
 )
 
 replace github.com/BrobridgeOrg/gravity-synchronizer => ./

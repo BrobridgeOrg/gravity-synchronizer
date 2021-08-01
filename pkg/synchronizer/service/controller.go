@@ -1,32 +1,34 @@
 package synchronizer
 
 import (
+	"github.com/BrobridgeOrg/gravity-sdk/authenticator"
 	synchronizer_manager "github.com/BrobridgeOrg/gravity-sdk/synchronizer_manager"
-	log "github.com/sirupsen/logrus"
 )
 
-func (synchronizer *Synchronizer) RegisterClient() error {
-
-	opts := synchronizer_manager.NewOptions()
-	opts.Key = synchronizer.keyring.Get("gravity")
-
-	sm := synchronizer_manager.NewSynchronizerManagerWithClient(synchronizer.gravityClient, opts)
-	err := sm.Register(synchronizer.clientID)
-	if err != nil {
-		return err
-	}
-	log.WithFields(log.Fields{
-		"id": synchronizer.clientID,
-	}).Info("Registered synchronizer to controller")
-
-	return nil
+type Controller struct {
+	synchronizer *Synchronizer
 }
 
-func (synchronizer *Synchronizer) GetPipelines() ([]uint64, error) {
+func NewController(syncronizer *Synchronizer) *Controller {
+	return &Controller{
+		synchronizer: syncronizer,
+	}
+}
+
+func (controller *Controller) GetSynchronizerManager() *synchronizer_manager.SynchronizerManager {
 
 	opts := synchronizer_manager.NewOptions()
-	opts.Key = synchronizer.keyring.Get("gravity")
+	opts.Domain = controller.synchronizer.domain
+	opts.Key = controller.synchronizer.keyring.Get("gravity")
 
-	sm := synchronizer_manager.NewSynchronizerManagerWithClient(synchronizer.gravityClient, opts)
-	return sm.GetPipelines(synchronizer.clientID)
+	return synchronizer_manager.NewSynchronizerManagerWithClient(controller.synchronizer.gravityClient, opts)
+}
+
+func (controller *Controller) GetAuthenticator() *authenticator.Authenticator {
+
+	opts := authenticator.NewOptions()
+	opts.Domain = controller.synchronizer.domain
+	opts.Key = controller.synchronizer.keyring.Get("gravity")
+
+	return authenticator.NewAuthenticatorWithClient(controller.synchronizer.gravityClient, opts)
 }

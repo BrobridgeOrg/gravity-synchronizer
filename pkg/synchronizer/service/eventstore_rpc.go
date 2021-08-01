@@ -6,90 +6,112 @@ import (
 	"github.com/BrobridgeOrg/broc"
 	packet_pb "github.com/BrobridgeOrg/gravity-api/packet"
 	pb "github.com/BrobridgeOrg/gravity-api/service/synchronizer"
+	"github.com/BrobridgeOrg/gravity-synchronizer/pkg/synchronizer/service/middleware"
 	"github.com/golang/protobuf/proto"
 	log "github.com/sirupsen/logrus"
 )
 
-func (synchronizer *Synchronizer) initRPC() error {
+func (synchronizer *Synchronizer) initEventStoreRPC() error {
 
 	log.WithFields(log.Fields{
 		"domain":   synchronizer.domain,
 		"clientID": synchronizer.clientID,
 	}).Info("Initializing RPC Handlers for EventStore")
 
+	// Initializing authentication middleware
+	m := middleware.NewMiddleware(map[string]interface{}{
+		"Authentication": &middleware.Authentication{
+			Enabled: true,
+			Keyring: synchronizer.keyring,
+		},
+	})
+
 	// Initializing RPC handlers
 	connection := synchronizer.gravityClient.GetConnection()
 	synchronizer.eventStoreRPC = broc.NewBroc(connection)
 	synchronizer.eventStoreRPC.SetPrefix(fmt.Sprintf("%s.eventstore.%s.", synchronizer.domain, synchronizer.clientID))
-	synchronizer.eventStoreRPC.Use(synchronizer.rpc_packetHandler)
+	synchronizer.eventStoreRPC.Use(m.PacketHandler)
 
 	// Registering methods
-	synchronizer.eventStoreRPC.Register("assignPipeline", synchronizer.rpc_requiredAuth, synchronizer.rpc_eventstore_assignPipeline)
-	synchronizer.eventStoreRPC.Register("revokePipeline", synchronizer.rpc_requiredAuth, synchronizer.rpc_eventstore_revokePipeline)
-	synchronizer.eventStoreRPC.Register("registerSubscriber", synchronizer.rpc_requiredAuth, synchronizer.rpc_eventstore_registerSubscriber)
-	synchronizer.eventStoreRPC.Register("subscribeToCollections", synchronizer.rpc_requiredAuth, synchronizer.rpc_eventstore_subscribeToCollections)
+	synchronizer.eventStoreRPC.Register("updateKeyring", m.RequiredAuth("SYSTEM"), synchronizer.rpc_eventstore_updateKeyring)
+	synchronizer.eventStoreRPC.Register("assignPipeline", m.RequiredAuth("SYSTEM"), synchronizer.rpc_eventstore_assignPipeline)
+	synchronizer.eventStoreRPC.Register("revokePipeline", m.RequiredAuth("SYSTEM"), synchronizer.rpc_eventstore_revokePipeline)
+	synchronizer.eventStoreRPC.Register("registerSubscriber", m.RequiredAuth("SYSTEM"), synchronizer.rpc_eventstore_registerSubscriber)
+	synchronizer.eventStoreRPC.Register("subscribeToCollections", m.RequiredAuth("SYSTEM"), synchronizer.rpc_eventstore_subscribeToCollections)
 
 	return synchronizer.eventStoreRPC.Apply()
 }
 
-func (synchronizer *Synchronizer) rpc_packetHandler(ctx *broc.Context) (interface{}, error) {
+func (synchronizer *Synchronizer) rpc_eventstore_updateKeyring(ctx *broc.Context) (returnedValue interface{}, err error) {
 
-	var packet packet_pb.Packet
-	err := proto.Unmarshal(ctx.Get("request").([]byte), &packet)
+	reply := &pb.UpdateKeyringReply{
+		Success: true,
+	}
+	defer func() {
+		data, e := proto.Marshal(reply)
+		returnedValue = data
+		err = e
+	}()
+
+	var request pb.UpdateKeyringRequest
+	payload := ctx.Get("payload").(*packet_pb.Payload)
+	err = proto.Unmarshal(payload.Data, &request)
 	if err != nil {
-		// invalid request
-		return nil, nil
+		reply.Success = false
+		reply.Reason = "UnknownParameter"
+		return
 	}
 
-	ctx.Set("request", &packet)
+	// Update keyring
+	for _, key := range request.Keys {
 
-	return ctx.Next()
-}
+		log.WithFields(log.Fields{
+			"appID": key.AppID,
+		}).Info("Updating keyring")
 
-func (synchronizer *Synchronizer) rpc_requiredAuth(ctx *broc.Context) (interface{}, error) {
+		keyInfo := synchronizer.keyring.Get(key.AppID)
+		if keyInfo == nil {
+			// Create a new key info
+			keyInfo = synchronizer.keyring.Put(key.AppID, string(key.Key))
+		} else {
+			keyInfo.Encryption().SetKey(key.Key)
+		}
 
-	packet := ctx.Get("request").(*packet_pb.Packet)
-
-	// find the key for specific app ID
-	keyInfo := synchronizer.keyring.Get(packet.AppID)
-	if keyInfo == nil {
-		return ctx.Next()
+		// Update permissions
+		keyInfo.Permission().Reset()
+		keyInfo.Permission().AddPermissions(key.Permissions)
 	}
 
-	// Decrypt
-	data, err := keyInfo.Encryption().Decrypt(packet.Payload)
-	if err != nil {
-		return nil, nil
-	}
-
-	// pass decrypted payload to next handler
-	packet.Payload = data
-	returnedData, err := ctx.Next()
-	if err != nil {
-		return nil, err
-	}
-
-	// Encrypt
-	encrypted, err := keyInfo.Encryption().Encrypt(returnedData.([]byte))
-	if err != nil {
-		return nil, nil
-	}
-
-	return encrypted, nil
+	return
 }
 
 func (synchronizer *Synchronizer) rpc_eventstore_assignPipeline(ctx *broc.Context) (returnedValue interface{}, err error) {
 
+	reply := &pb.AssignPipelineReply{
+		Success: true,
+	}
+	defer func() {
+		data, e := proto.Marshal(reply)
+		returnedValue = data
+		err = e
+	}()
+
 	var request pb.AssignPipelineRequest
-	packet := ctx.Get("request").(*packet_pb.Packet)
-	err = proto.Unmarshal(packet.Payload, &request)
+	payload := ctx.Get("payload").(*packet_pb.Payload)
+	err = proto.Unmarshal(payload.Data, &request)
 	if err != nil {
-		log.Error(err)
-		return nil, nil
+		reply.Success = false
+		reply.Reason = "UnknownParameter"
+		return
 	}
 
 	if request.ClientID != synchronizer.clientID {
-		log.Warn("Ignore request because client ID is incorrect")
+		log.WithFields(log.Fields{
+			"target": request.ClientID,
+			"self":   synchronizer.clientID,
+		}).Warn("Ignore request because client ID is incorrect")
+		reply.Success = false
+		reply.Reason = "InvalidClientID"
 		return
 	}
 
@@ -97,24 +119,22 @@ func (synchronizer *Synchronizer) rpc_eventstore_assignPipeline(ctx *broc.Contex
 		"pipeline": request.PipelineID,
 	}).Info("Assigned pipeline")
 
-	reply := &pb.AssignPipelineReply{
-		Success: true,
-	}
 	err = synchronizer.AssignPipeline(request.PipelineID)
 	if err != nil {
 		log.Error(err)
 		reply.Success = false
 		reply.Reason = err.Error()
+		return
 	}
 
-	return proto.Marshal(reply)
+	return
 }
 
 func (synchronizer *Synchronizer) rpc_eventstore_revokePipeline(ctx *broc.Context) (returnedValue interface{}, err error) {
 
 	var request pb.RevokePipelineRequest
-	packet := ctx.Get("request").(*packet_pb.Packet)
-	err = proto.Unmarshal(packet.Payload, &request)
+	payload := ctx.Get("payload").(*packet_pb.Payload)
+	err = proto.Unmarshal(payload.Data, &request)
 	if err != nil {
 		log.Error(err)
 		return nil, nil
@@ -141,8 +161,8 @@ func (synchronizer *Synchronizer) rpc_eventstore_revokePipeline(ctx *broc.Contex
 func (synchronizer *Synchronizer) rpc_eventstore_registerSubscriber(ctx *broc.Context) (returnedValue interface{}, err error) {
 
 	var request pb.RegisterSubscriberRequest
-	packet := ctx.Get("request").(*packet_pb.Packet)
-	err = proto.Unmarshal(packet.Payload, &request)
+	payload := ctx.Get("payload").(*packet_pb.Payload)
+	err = proto.Unmarshal(payload.Data, &request)
 	if err != nil {
 		log.Error(err)
 		return nil, nil
@@ -179,12 +199,12 @@ func (synchronizer *Synchronizer) rpc_eventstore_subscribeToCollections(ctx *bro
 	}()
 
 	var request pb.SubscribeToCollectionsRequest
-	packet := ctx.Get("request").(*packet_pb.Packet)
-	err = proto.Unmarshal(packet.Payload, &request)
+	payload := ctx.Get("payload").(*packet_pb.Payload)
+	err = proto.Unmarshal(payload.Data, &request)
 	if err != nil {
 		log.Error(err)
 		reply.Success = false
-		reply.Reason = "Unknown parameters"
+		reply.Reason = "UnknownParameters"
 		return
 	}
 
@@ -192,7 +212,7 @@ func (synchronizer *Synchronizer) rpc_eventstore_subscribeToCollections(ctx *bro
 	subscriber := synchronizer.subscriberMgr.Get(request.SubscriberID)
 	if subscriber == nil {
 		reply.Success = false
-		reply.Reason = "No such subscriber"
+		reply.Reason = "NotFoundSubscriber"
 		return
 	}
 

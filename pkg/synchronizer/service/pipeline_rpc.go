@@ -7,6 +7,7 @@ import (
 	packet_pb "github.com/BrobridgeOrg/gravity-api/packet"
 	pipeline_pb "github.com/BrobridgeOrg/gravity-api/service/pipeline"
 	pb "github.com/BrobridgeOrg/gravity-api/service/synchronizer"
+	"github.com/BrobridgeOrg/gravity-synchronizer/pkg/synchronizer/service/middleware"
 	"github.com/golang/protobuf/proto"
 	log "github.com/sirupsen/logrus"
 )
@@ -18,100 +19,100 @@ func (pipeline *Pipeline) initialize_rpc() error {
 		"pipeline": pipeline.id,
 	}).Info("Initializing RPC Handlers for Pipeline")
 
+	// Initializing authentication middleware
+	m := middleware.NewMiddleware(map[string]interface{}{
+		"Authentication": &middleware.Authentication{
+			Enabled: true,
+			Keyring: pipeline.synchronizer.keyring,
+		},
+	})
+
 	// Initializing RPC handlers
 	connection := pipeline.synchronizer.gravityClient.GetConnection()
 	pipeline.rpcEngine = broc.NewBroc(connection)
-	pipeline.rpcEngine.Use(pipeline.rpc_packetHandler)
 	pipeline.rpcEngine.SetPrefix(fmt.Sprintf("%s.pipeline.%d.", pipeline.synchronizer.domain, pipeline.id))
+	pipeline.rpcEngine.Use(m.PacketHandler)
 
 	// Registering methods
-	pipeline.rpcEngine.Register("fetch", pipeline.rpc_fetch)
-	pipeline.rpcEngine.Register("getState", pipeline.rpc_getState)
-	pipeline.rpcEngine.Register("suspend", pipeline.rpc_suspend)
-	pipeline.rpcEngine.Register("createSnapshot", pipeline.rpc_createSnapshot)
-	pipeline.rpcEngine.Register("releaseSnapshot", pipeline.rpc_releaseSnapshot)
-	pipeline.rpcEngine.Register("fetchSnapshot", pipeline.rpc_fetchSnapshot)
+	pipeline.rpcEngine.Register("fetch", m.RequiredAuth("SYSTEM", "SUBSCRIBER"), pipeline.rpc_fetch)
+	pipeline.rpcEngine.Register("getState", m.RequiredAuth("SYSTEM", "SUBSCRIBER"), pipeline.rpc_getState)
+	pipeline.rpcEngine.Register("suspend", m.RequiredAuth("SYSTEM", "SUBSCRIBER"), pipeline.rpc_suspend)
+	pipeline.rpcEngine.Register("createSnapshot", m.RequiredAuth("SYSTEM", "SUBSCRIBER"), pipeline.rpc_createSnapshot)
+	pipeline.rpcEngine.Register("releaseSnapshot", m.RequiredAuth("SYSTEM", "SUBSCRIBER"), pipeline.rpc_releaseSnapshot)
+	pipeline.rpcEngine.Register("fetchSnapshot", m.RequiredAuth("SYSTEM", "SUBSCRIBER"), pipeline.rpc_fetchSnapshot)
 
 	return pipeline.rpcEngine.Apply()
 }
 
-func (pipeline *Pipeline) rpc_packetHandler(ctx *broc.Context) (interface{}, error) {
+func (pipeline *Pipeline) rpc_fetch(ctx *broc.Context) (returnedValue interface{}, err error) {
 
-	var packet packet_pb.Packet
-	err := proto.Unmarshal(ctx.Get("request").([]byte), &packet)
-	if err != nil {
-		// invalid request
-		return nil, nil
+	reply := &pb.PipelineFetchReply{
+		Success: true,
 	}
-
-	ctx.Set("request", &packet)
-
-	return ctx.Next()
-}
-
-func (pipeline *Pipeline) rpc_fetch(ctx *broc.Context) (interface{}, error) {
+	defer func() {
+		data, e := proto.Marshal(reply)
+		returnedValue = data
+		err = e
+	}()
 
 	var request pb.PipelineFetchRequest
-	packet := ctx.Get("request").(*packet_pb.Packet)
-	err := proto.Unmarshal(packet.Payload, &request)
+	payload := ctx.Get("payload").(*packet_pb.Payload)
+	err = proto.Unmarshal(payload.Data, &request)
 	if err != nil {
 		log.Error(err)
-		return nil, nil
+		reply.Success = false
+		reply.Reason = "UnknownParameters"
 	}
 
 	// Find the subscriber
 	subscriber := pipeline.synchronizer.subscriberMgr.Get(request.SubscriberID)
 	if subscriber == nil {
-		reply := &pb.PipelineFetchReply{
-			Success: false,
-			Reason:  "No such subscriber",
-		}
-
-		return proto.Marshal(reply)
+		reply.Success = false
+		reply.Reason = "NotFoundSubscriber"
+		return
 	}
 
 	// Fetch data and push to subscriber
 	count, lastSeq, err := subscriber.Fetch(pipeline, request.StartAt, request.Offset, int(request.Count))
 	if err != nil {
 		log.Error(err)
-		reply := &pb.PipelineFetchReply{
-			Success: false,
-			Reason:  err.Error(),
-		}
-
-		return proto.Marshal(reply)
+		reply.Success = false
+		reply.Reason = "InternalError"
+		return
 	}
 
 	// Success
-	reply := &pb.PipelineFetchReply{
-		LastSeq: lastSeq,
-		Count:   uint64(count),
-		Success: true,
-	}
+	reply.LastSeq = lastSeq
+	reply.Count = uint64(count)
 
-	return proto.Marshal(reply)
+	return
 }
 
-func (pipeline *Pipeline) rpc_getState(ctx *broc.Context) (interface{}, error) {
+func (pipeline *Pipeline) rpc_getState(ctx *broc.Context) (returnedValue interface{}, err error) {
+
+	reply := &pipeline_pb.GetStateReply{
+		Success: true,
+	}
+	defer func() {
+		data, e := proto.Marshal(reply)
+		returnedValue = data
+		err = e
+	}()
 
 	var request pipeline_pb.GetStateRequest
-	packet := ctx.Get("request").(*packet_pb.Packet)
-	err := proto.Unmarshal(packet.Payload, &request)
+	payload := ctx.Get("payload").(*packet_pb.Payload)
+	err = proto.Unmarshal(payload.Data, &request)
 	if err != nil {
 		log.Error(err)
-		return nil, nil
+		reply.Success = false
+		reply.Reason = "UnknownParameters"
+		return
 	}
 
 	// Getting last sequence
-	lastSeq := pipeline.eventStore.GetLastSequence()
+	reply.LastSeq = pipeline.eventStore.GetLastSequence()
 
-	// Success
-	reply := &pipeline_pb.GetStateReply{
-		LastSeq: lastSeq,
-		Success: true,
-	}
-
-	return proto.Marshal(reply)
+	return
 }
 
 func (pipeline *Pipeline) rpc_suspend(ctx *broc.Context) (returnedValue interface{}, err error) {
@@ -126,12 +127,12 @@ func (pipeline *Pipeline) rpc_suspend(ctx *broc.Context) (returnedValue interfac
 	}()
 
 	var request pipeline_pb.SuspendRequest
-	packet := ctx.Get("request").(*packet_pb.Packet)
-	err = proto.Unmarshal(packet.Payload, &request)
+	payload := ctx.Get("payload").(*packet_pb.Payload)
+	err = proto.Unmarshal(payload.Data, &request)
 	if err != nil {
 		log.Error(err)
 		reply.Success = false
-		reply.Reason = "Unknown parameters"
+		reply.Reason = "UnknownParameters"
 		return
 	}
 
@@ -144,7 +145,7 @@ func (pipeline *Pipeline) rpc_suspend(ctx *broc.Context) (returnedValue interfac
 	subscriber := pipeline.synchronizer.subscriberMgr.Get(request.SubscriberID)
 	if subscriber == nil {
 		reply.Success = false
-		reply.Reason = "No such subscriber"
+		reply.Reason = "NotFoundSubscriber"
 		return
 	}
 
@@ -176,12 +177,12 @@ func (pipeline *Pipeline) rpc_createSnapshot(ctx *broc.Context) (returnedValue i
 	}()
 
 	var request pipeline_pb.CreateSnapshotRequest
-	packet := ctx.Get("request").(*packet_pb.Packet)
-	err = proto.Unmarshal(packet.Payload, &request)
+	payload := ctx.Get("payload").(*packet_pb.Payload)
+	err = proto.Unmarshal(payload.Data, &request)
 	if err != nil {
 		log.Error(err)
 		reply.Success = false
-		reply.Reason = "Unknown parameters"
+		reply.Reason = "UnknownParameters"
 		return
 	}
 
@@ -190,7 +191,7 @@ func (pipeline *Pipeline) rpc_createSnapshot(ctx *broc.Context) (returnedValue i
 	if err != nil {
 		log.Error(err)
 		reply.Success = false
-		reply.Reason = err.Error()
+		reply.Reason = "InternalError"
 		return
 	}
 
@@ -209,12 +210,12 @@ func (pipeline *Pipeline) rpc_releaseSnapshot(ctx *broc.Context) (returnedValue 
 	}()
 
 	var request pipeline_pb.ReleaseSnapshotRequest
-	packet := ctx.Get("request").(*packet_pb.Packet)
-	err = proto.Unmarshal(packet.Payload, &request)
+	payload := ctx.Get("payload").(*packet_pb.Payload)
+	err = proto.Unmarshal(payload.Data, &request)
 	if err != nil {
 		log.Error(err)
 		reply.Success = false
-		reply.Reason = "Unknown parameters"
+		reply.Reason = "UnknownParameters"
 		return
 	}
 
@@ -223,7 +224,7 @@ func (pipeline *Pipeline) rpc_releaseSnapshot(ctx *broc.Context) (returnedValue 
 	if err != nil {
 		log.Error(err)
 		reply.Success = false
-		reply.Reason = err.Error()
+		reply.Reason = "InternalError"
 		return
 	}
 
@@ -242,12 +243,12 @@ func (pipeline *Pipeline) rpc_fetchSnapshot(ctx *broc.Context) (returnedValue in
 	}()
 
 	var request pipeline_pb.FetchSnapshotRequest
-	packet := ctx.Get("request").(*packet_pb.Packet)
-	err = proto.Unmarshal(packet.Payload, &request)
+	payload := ctx.Get("payload").(*packet_pb.Payload)
+	err = proto.Unmarshal(payload.Data, &request)
 	if err != nil {
 		log.Error(err)
 		reply.Success = false
-		reply.Reason = "Unknown parameters"
+		reply.Reason = "UnknownParameters"
 		return
 	}
 
@@ -255,7 +256,7 @@ func (pipeline *Pipeline) rpc_fetchSnapshot(ctx *broc.Context) (returnedValue in
 	snapshot := pipeline.snapshotManager.GetSnapshot(request.SnapshotID)
 	if snapshot == nil {
 		reply.Success = false
-		reply.Reason = "No such snapshot"
+		reply.Reason = "NotFoundSnapshot"
 		return
 	}
 
@@ -264,7 +265,7 @@ func (pipeline *Pipeline) rpc_fetchSnapshot(ctx *broc.Context) (returnedValue in
 	if err != nil {
 		log.Error(err)
 		reply.Success = false
-		reply.Reason = err.Error()
+		reply.Reason = "InternalError"
 		return
 	}
 

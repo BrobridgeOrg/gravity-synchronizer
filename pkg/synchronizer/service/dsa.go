@@ -1,15 +1,23 @@
 package synchronizer
 
 import (
+	"errors"
 	"gravity-synchronizer/pkg/synchronizer/service/dsa"
 	"sync"
 
+	packet_pb "github.com/BrobridgeOrg/gravity-api/packet"
 	dsa_pb "github.com/BrobridgeOrg/gravity-api/service/dsa"
+	"github.com/BrobridgeOrg/gravity-sdk/core/keyring"
 	"github.com/golang/protobuf/proto"
 	"github.com/nats-io/nats.go"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
+
+type DSARequest struct {
+	msg *nats.Msg
+	key *keyring.KeyInfo
+}
 
 var dsaPublishReplyPool = sync.Pool{
 	New: func() interface{} {
@@ -44,16 +52,46 @@ func (synchronizer *Synchronizer) initializeDataSourceAdapter() error {
 
 	synchronizer.dsa.OnCompleted(func(privData interface{}, data interface{}, err error) {
 
-		m := privData.(*nats.Msg)
+		/*
+			m := privData.(*nats.Msg)
+			// Failed
+			if err != nil {
+				m.Respond(FailureReply(0, err.Error()))
+				return
+			}
+
+			// Success
+			m.Respond(SuccessReply)
+		*/
+
+		request := privData.(*DSARequest)
 
 		// Failed
 		if err != nil {
-			m.Respond(FailureReply(0, err.Error()))
+			//			encrypted, _ := request.key.Encryption().Encrypt(FailureReply(0, err.Error()))
+
+			packet := &packet_pb.Packet{
+				Error:  true,
+				Reason: err.Error(),
+			}
+
+			returnedData, _ := proto.Marshal(packet)
+
+			request.msg.Respond(returnedData)
 			return
 		}
 
-		// Success
-		m.Respond(SuccessReply)
+		// Encrypt
+		encrypted, _ := request.key.Encryption().Encrypt(SuccessReply)
+		packet := &packet_pb.Packet{
+			Error:   false,
+			Payload: encrypted,
+		}
+
+		returnedData, _ := proto.Marshal(packet)
+
+		request.msg.Respond(returnedData)
+		//		request.msg.Respond(encrypted)
 	})
 
 	// Setup worker count
@@ -74,7 +112,8 @@ func (synchronizer *Synchronizer) initializeDataSourceAdapter() error {
 	// Subscribe to quque to receive events
 	connection := synchronizer.gravityClient.GetConnection()
 	sub, err := connection.QueueSubscribe(synchronizer.domain+".dsa.batch", "synchronizer", func(m *nats.Msg) {
-		synchronizer.dsa.PushData(m, m.Data)
+		//		synchronizer.dsa.PushData(m, m.Data)
+		synchronizer.handleBatchMsg(m, "ADAPTER")
 	})
 	if err != nil {
 		return err
@@ -83,6 +122,67 @@ func (synchronizer *Synchronizer) initializeDataSourceAdapter() error {
 	sub.SetPendingLimits(-1, -1)
 	connection.Flush()
 
+	return nil
+}
+
+func (synchronizer *Synchronizer) handleBatchMsg(m *nats.Msg, rules ...string) error {
+
+	var packet packet_pb.Packet
+	err := proto.Unmarshal(m.Data, &packet)
+	if err != nil {
+		// invalid request
+		return errors.New("InvalidRequest")
+	}
+
+	// Using appID to find key info
+	keyInfo := synchronizer.keyring.Get(packet.AppID)
+	if keyInfo == nil {
+		// No such app ID
+		return errors.New("NotFoundAppID")
+	}
+
+	// check permissions
+	if len(rules) > 0 {
+		hasPerm := false
+		for _, rule := range rules {
+			if keyInfo.Permission().Check(rule) {
+				hasPerm = true
+			}
+		}
+
+		// No permission
+		if !hasPerm {
+			return errors.New("Forbidden")
+		}
+	}
+
+	// Decrypt
+	data, err := keyInfo.Encryption().Decrypt(packet.Payload)
+	if err != nil {
+		return errors.New("InvalidKey")
+	}
+
+	// pass decrypted payload to next handler
+	var payload packet_pb.Payload
+	err = proto.Unmarshal(data, &payload)
+	if err != nil {
+		return errors.New("InvalidPayload")
+	}
+
+	// Prepare DSA request
+	request := &DSARequest{
+		msg: m,
+		key: keyInfo,
+	}
+
+	synchronizer.dsa.PushData(request, payload.Data)
+	/*
+		// Encrypt
+		encrypted, err := keyInfo.Encryption().Encrypt(returnedData.([]byte))
+		if err != nil {
+			return nil, nil
+		}
+	*/
 	return nil
 }
 
