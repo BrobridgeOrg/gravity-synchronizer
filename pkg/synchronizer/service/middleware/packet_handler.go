@@ -28,7 +28,9 @@ func (m *Middleware) PacketHandler(ctx *broc.Context) (interface{}, error) {
 		return proto.Marshal(p)
 	}
 
-	p.Payload = data.([]byte)
+	if data != nil {
+		p.Payload = data.([]byte)
+	}
 
 	return proto.Marshal(p)
 }
