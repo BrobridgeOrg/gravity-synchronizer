@@ -56,6 +56,8 @@ func (auth *Authentication) RequiredAuth(rules ...string) broc.Handler {
 			}
 		}
 
+		ctx.Set("key", keyInfo)
+
 		// Decrypt
 		data, err := keyInfo.Encryption().Decrypt(packet.Payload)
 		if err != nil {

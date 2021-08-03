@@ -7,6 +7,7 @@ import (
 	packet_pb "github.com/BrobridgeOrg/gravity-api/packet"
 	pipeline_pb "github.com/BrobridgeOrg/gravity-api/service/pipeline"
 	pb "github.com/BrobridgeOrg/gravity-api/service/synchronizer"
+	"github.com/BrobridgeOrg/gravity-sdk/core/keyring"
 	"github.com/BrobridgeOrg/gravity-synchronizer/pkg/synchronizer/service/middleware"
 	"github.com/golang/protobuf/proto"
 	log "github.com/sirupsen/logrus"
@@ -249,6 +250,14 @@ func (pipeline *Pipeline) rpc_fetchSnapshot(ctx *broc.Context) (returnedValue in
 		log.Error(err)
 		reply.Success = false
 		reply.Reason = "UnknownParameters"
+		return
+	}
+
+	// Check collection permission
+	key := ctx.Get("key").(*keyring.KeyInfo)
+	if !key.Collection().Check(request.Collection) {
+		reply.Success = false
+		reply.Reason = "NoPermission"
 		return
 	}
 

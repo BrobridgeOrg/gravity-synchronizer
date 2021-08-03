@@ -6,6 +6,7 @@ import (
 	"github.com/BrobridgeOrg/broc"
 	packet_pb "github.com/BrobridgeOrg/gravity-api/packet"
 	pb "github.com/BrobridgeOrg/gravity-api/service/synchronizer"
+	"github.com/BrobridgeOrg/gravity-sdk/core/keyring"
 	"github.com/BrobridgeOrg/gravity-synchronizer/pkg/synchronizer/service/middleware"
 	"github.com/golang/protobuf/proto"
 	log "github.com/sirupsen/logrus"
@@ -208,6 +209,31 @@ func (synchronizer *Synchronizer) rpc_eventstore_subscribeToCollections(ctx *bro
 		return
 	}
 
+	if len(request.Collections) == 0 {
+		reply.Success = false
+		reply.Reason = "InvalidParameters"
+		return
+	}
+
+	// Check collection permission
+	key := ctx.Get("key").(*keyring.KeyInfo)
+	targetCollections := make([]string, 0)
+	for _, collection := range request.Collections {
+
+		// Ignore collection that no permission to access
+		if !key.Collection().Check(collection) {
+			continue
+		}
+
+		targetCollections = append(targetCollections, collection)
+	}
+
+	if len(targetCollections) == 0 {
+		reply.Success = false
+		reply.Reason = "NoPermission"
+		return
+	}
+
 	// Getting subscriber
 	subscriber := synchronizer.subscriberMgr.Get(request.SubscriberID)
 	if subscriber == nil {
@@ -217,7 +243,7 @@ func (synchronizer *Synchronizer) rpc_eventstore_subscribeToCollections(ctx *bro
 	}
 
 	// Subscribe to collections
-	collections, err := subscriber.SubscribeToCollections(request.Collections)
+	collections, err := subscriber.SubscribeToCollections(targetCollections)
 	if err != nil {
 		log.Error(err)
 		reply.Success = false
