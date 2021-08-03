@@ -48,12 +48,13 @@ func (sm *SubscriberManager) Initialize() error {
 			log.Error(err)
 			continue
 		}
-
-		// Add access key to keyring
-		if len(sub.AppID) > 0 && len(sub.AccessKey) > 0 {
-			keyInfo := sm.synchronizer.keyring.Put(sub.AppID, sub.AccessKey)
-			keyInfo.Permission().AddPermissions(sub.Permissions)
-		}
+		/*
+			// Add access key to keyring
+			if len(sub.AppID) > 0 && len(sub.AccessKey) > 0 {
+				keyInfo := sm.synchronizer.keyring.Put(sub.AppID, sub.AccessKey)
+				keyInfo.Permission().AddPermissions(sub.Permissions)
+			}
+		*/
 	}
 
 	return nil
