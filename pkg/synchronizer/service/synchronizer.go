@@ -39,6 +39,7 @@ type Synchronizer struct {
 	eventStore      *eventstore.EventStore
 	storeMgr        *StoreManager
 	subscriberMgr   *SubscriberManager
+	collectionMgr   *CollectionManager
 
 	// RPC
 	eventStoreRPC *broc.Broc
@@ -57,6 +58,7 @@ func NewSynchronizer(a app.App) *Synchronizer {
 	synchronizer.controller = NewController(synchronizer)
 	synchronizer.storeMgr = NewStoreManager(synchronizer)
 	synchronizer.subscriberMgr = NewSubscriberManager(synchronizer)
+	synchronizer.collectionMgr = NewCollectionManager(synchronizer)
 
 	return synchronizer
 }
@@ -137,6 +139,12 @@ func (synchronizer *Synchronizer) Init() error {
 	log.WithFields(log.Fields{
 		"id": synchronizer.clientID,
 	}).Info("Registered synchronizer to controller")
+
+	// Initializing collection manager
+	err = synchronizer.collectionMgr.Initialize()
+	if err != nil {
+		return err
+	}
 
 	// Initializing data handler
 	err = synchronizer.initializeDataHandler()
