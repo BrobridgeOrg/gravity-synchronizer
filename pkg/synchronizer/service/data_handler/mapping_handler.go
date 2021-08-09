@@ -1,10 +1,10 @@
 package data_handler
 
 import (
-	"fmt"
 	"sync"
 
 	"github.com/cfsghost/taskflow"
+	log "github.com/sirupsen/logrus"
 
 	gravity_sdk_types_projection "github.com/BrobridgeOrg/gravity-sdk/types/projection"
 	"github.com/BrobridgeOrg/gravity-synchronizer/pkg/synchronizer/service/rule"
@@ -76,7 +76,7 @@ func (mh *MappingHandler) processMessage(message *taskflow.Message) {
 	pj, err := mh.convert(r, t)
 	if err != nil {
 		// Failed to parse payload
-		fmt.Println(err)
+		log.Error(err)
 
 		// Ignore
 		if message.Context.GetPrivData() != nil {
@@ -87,7 +87,10 @@ func (mh *MappingHandler) processMessage(message *taskflow.Message) {
 	}
 
 	if pj == nil {
+
 		// Ignore empty data
+		log.Warn("Ignore empty payload")
+
 		if message.Context.GetPrivData() != nil {
 			tr := message.Context.GetPrivData().(*TaskRequest)
 			tr.Done(nil)
