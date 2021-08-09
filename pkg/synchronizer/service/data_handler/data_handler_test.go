@@ -11,6 +11,26 @@ import (
 
 var testDH *DataHandler
 
+func createTestTask(eventName string, payload []byte) *task.Task {
+
+	dt := task.NewTask()
+	dt.PipelineID = 0
+	dt.PrimaryKey = "1"
+	dt.EventName = eventName
+	dt.Payload = payload
+
+	// Find rule
+	for _, r := range testDH.ruleConfig.Rules {
+
+		if r.Event == dt.EventName {
+			dt.Rule = r.ID
+			break
+		}
+	}
+
+	return dt
+}
+
 func TestDataHandlerInitialization(t *testing.T) {
 
 	testDH = NewDataHandler()
@@ -88,6 +108,56 @@ func TestMappingHandler(t *testing.T) {
 		}
 
 		if totalResults == 10 {
+			break
+		}
+	}
+
+	testDH.taskflow.RemoveTask(checkTask.GetID())
+}
+
+func TestEmptyPayload(t *testing.T) {
+
+	// Preparing task to receive results
+	done := make(chan *gravity_sdk_types_projection.Projection, 10)
+	defer close(done)
+	checkTask := taskflow.NewTask(1, 0)
+	checkTask.SetHandler(func(message *taskflow.Message) {
+		pj := message.Data.(*gravity_sdk_types_projection.Projection)
+		done <- pj
+	})
+
+	testDH.taskflow.AddTask(checkTask)
+	testDH.taskflow.Link(testDH.mappingHandler.task, 0, checkTask, 0)
+
+	// Normal task data
+	normalTaskData := createTestTask("accountCreated", []byte(`{"id":1,"name":"fred"}`))
+	err := testDH.taskflow.PushWithContext(testDH.mappingHandler.task.GetID(), 0, taskflow.NewContext(), normalTaskData)
+	if err != nil {
+		t.Error(err)
+	}
+
+	// empty task data
+	emptyTaskData := createTestTask("accountCreated", []byte(""))
+	err = testDH.taskflow.PushWithContext(testDH.mappingHandler.task.GetID(), 0, taskflow.NewContext(), emptyTaskData)
+	if err != nil {
+		t.Error(err)
+	}
+
+	// send normal data again
+	normalTaskData = createTestTask("accountCreated", []byte(`{"id":1,"name":"fred"}`))
+	err = testDH.taskflow.PushWithContext(testDH.mappingHandler.task.GetID(), 0, taskflow.NewContext(), normalTaskData)
+	if err != nil {
+		t.Error(err)
+	}
+
+	totalResults := 0
+	for pj := range done {
+		totalResults++
+		if pj.EventName != "accountCreated" {
+			t.Fail()
+		}
+
+		if totalResults == 2 {
 			break
 		}
 	}

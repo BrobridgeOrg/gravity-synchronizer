@@ -77,13 +77,22 @@ func (mh *MappingHandler) processMessage(message *taskflow.Message) {
 	if err != nil {
 		// Failed to parse payload
 		fmt.Println(err)
+
+		// Ignore
+		if message.Context.GetPrivData() != nil {
+			tr := message.Context.GetPrivData().(*TaskRequest)
+			tr.Done(nil)
+		}
 		return
 	}
 
 	if pj == nil {
 		// Ignore empty data
-		tr := message.Context.GetPrivData().(*TaskRequest)
-		tr.Done(nil)
+		if message.Context.GetPrivData() != nil {
+			tr := message.Context.GetPrivData().(*TaskRequest)
+			tr.Done(nil)
+		}
+
 		return
 	}
 
@@ -93,16 +102,16 @@ func (mh *MappingHandler) processMessage(message *taskflow.Message) {
 
 func (mh *MappingHandler) convert(rule *rule.Rule, t *task.Task) (*gravity_sdk_types_projection.Projection, error) {
 
+	// Empty
+	if len(t.Payload) == 0 {
+		return nil, nil
+	}
+
 	// Parse payload
 	var payload map[string]interface{}
 	err := json.Unmarshal(t.Payload, &payload)
 	if err != nil {
 		return nil, err
-	}
-
-	// Empty
-	if len(payload) == 0 {
-		return nil, nil
 	}
 
 	// Preparing projection
