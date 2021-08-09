@@ -76,8 +76,14 @@ func (mh *MappingHandler) processMessage(message *taskflow.Message) {
 	pj, err := mh.convert(r, t)
 	if err != nil {
 		// Failed to parse payload
-
 		fmt.Println(err)
+		return
+	}
+
+	if pj == nil {
+		// Ignore empty data
+		tr := message.Context.GetPrivData().(*TaskRequest)
+		tr.Done(nil)
 		return
 	}
 
@@ -92,6 +98,11 @@ func (mh *MappingHandler) convert(rule *rule.Rule, t *task.Task) (*gravity_sdk_t
 	err := json.Unmarshal(t.Payload, &payload)
 	if err != nil {
 		return nil, err
+	}
+
+	// Empty
+	if len(payload) == 0 {
+		return nil, nil
 	}
 
 	// Preparing projection
