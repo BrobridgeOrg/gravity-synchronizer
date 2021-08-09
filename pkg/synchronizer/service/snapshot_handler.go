@@ -8,6 +8,7 @@ import (
 	eventstore "github.com/BrobridgeOrg/EventStore"
 	gravity_sdk_types_projection "github.com/BrobridgeOrg/gravity-sdk/types/projection"
 	gravity_sdk_types_snapshot_record "github.com/BrobridgeOrg/gravity-sdk/types/snapshot_record"
+	log "github.com/sirupsen/logrus"
 )
 
 var snapshotRecordPool = sync.Pool{
@@ -55,52 +56,39 @@ func (snapshot *SnapshotHandler) handle(request *eventstore.SnapshotRequest) err
 		// Ignore record which has no primary key
 		return nil
 	}
-	/*
-		// Preparing record
-		newRecord := snapshotRecordPool.Get().(*gravity_sdk_types_snapshot_record.SnapshotRecord)
-		newRecord.Payload = newData.GetPayload()
-	*/
+
+	// Preparing record
+	newRecord := snapshotRecordPool.Get().(*gravity_sdk_types_snapshot_record.SnapshotRecord)
+	newRecord.SetPayload(newData.GetPayload())
+
 	// Release projection data
 	projectionPool.Put(newData)
-	/*
-		data, err := newRecord.ToBytes()
-		if err != nil {
-			log.Error(err)
-			return nil
-		}
 
-		request.Data = data
-	*/
+	data, err := newRecord.ToBytes()
+	if err != nil {
+		log.Error(err)
+		return nil
+	}
+
+	// Release record
+	snapshotRecordPool.Put(newRecord)
+
 	// Upsert to snapshot
-	err = request.Upsert(StrToBytes(newData.Collection), primaryKey, request.Data, func(origin []byte, newValue []byte) []byte {
-
-		//log.Warn(string(origin))
-
-		// Parsing original data
-		originData := projectionPool.Get().(*gravity_sdk_types_projection.Projection)
-		err := gravity_sdk_types_projection.Unmarshal(origin, originData)
-		if err != nil {
-			projectionPool.Put(originData)
-			return origin
-		}
+	err = request.Upsert(StrToBytes(newData.Collection), primaryKey, data, func(origin []byte, newValue []byte) []byte {
 
 		// Preparing original record
 		originRecord := snapshotRecordPool.Get().(*gravity_sdk_types_snapshot_record.SnapshotRecord)
-		originRecord.Payload = originData.GetPayload()
-		projectionPool.Put(originData)
-
-		// Parsing new data
-		newData := projectionPool.Get().(*gravity_sdk_types_projection.Projection)
-		err = gravity_sdk_types_projection.Unmarshal(newValue, originData)
+		err := gravity_sdk_types_snapshot_record.Unmarshal(origin, originRecord)
 		if err != nil {
-			projectionPool.Put(newData)
 			return origin
 		}
 
 		// Preparing new record
 		newRecord := snapshotRecordPool.Get().(*gravity_sdk_types_snapshot_record.SnapshotRecord)
-		newRecord.Payload = newData.GetPayload()
-		projectionPool.Put(newData)
+		err = gravity_sdk_types_snapshot_record.Unmarshal(newValue, newRecord)
+		if err != nil {
+			return origin
+		}
 
 		// Merged new data to original data
 		updatedData := snapshot.merge(originRecord, newRecord)
@@ -116,26 +104,26 @@ func (snapshot *SnapshotHandler) handle(request *eventstore.SnapshotRequest) err
 		return err
 	}
 
-	// Release record
-	//snapshotRecordPool.Put(newRecord)
-
 	return nil
 }
 
 func (snapshot *SnapshotHandler) merge(origRecord *gravity_sdk_types_snapshot_record.SnapshotRecord, updates *gravity_sdk_types_snapshot_record.SnapshotRecord) []byte {
 
 	// Pre-allocate map to store data
-	result := make(map[string]interface{}, len(origRecord.Payload)+len(updates.Payload))
+	origPayload := origRecord.Payload.AsMap()
+	updatesPayload := updates.Payload.AsMap()
+	result := make(map[string]interface{}, len(origPayload)+len(updatesPayload))
 
-	for name, value := range origRecord.Payload {
+	for name, value := range origPayload {
 		result[name] = value
 	}
 
-	for name, value := range updates.Payload {
+	for name, value := range updatesPayload {
 		result[name] = value
 	}
 
-	origRecord.Payload = result
+	//	origRecord.Payload = result
+	origRecord.SetPayload(result)
 	data, _ := origRecord.ToBytes()
 
 	return data
