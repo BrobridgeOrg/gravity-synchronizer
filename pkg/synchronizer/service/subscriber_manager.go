@@ -42,7 +42,13 @@ func (sm *SubscriberManager) Initialize() error {
 			"name":      sub.Name,
 			"component": sub.Component,
 		}).Info("Restored subscriber")
+
+		for _, col := range sub.Collections {
+			log.Infof("  %s", col)
+		}
+
 		subscriber := NewSubscriber(sub.ID, sub.Name, sub.AppID)
+		subscriber.SubscribeToCollections(sub.Collections)
 		err := sm.Register(sub.ID, subscriber)
 		if err != nil {
 			log.Error(err)
