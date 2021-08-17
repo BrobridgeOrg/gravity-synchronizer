@@ -3,7 +3,7 @@ module gravity-synchronizer
 go 1.15
 
 require (
-	github.com/BrobridgeOrg/EventStore v0.0.18
+	github.com/BrobridgeOrg/EventStore v0.0.19
 	github.com/BrobridgeOrg/broc v0.0.2
 	github.com/BrobridgeOrg/gravity-api v0.2.24
 	github.com/BrobridgeOrg/gravity-sdk v0.0.38
