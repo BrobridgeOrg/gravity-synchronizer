@@ -8,6 +8,7 @@ import (
 	synchronizer_manager "github.com/BrobridgeOrg/gravity-sdk/synchronizer_manager"
 	"github.com/nats-io/nats.go"
 	log "github.com/sirupsen/logrus"
+	"go.uber.org/ratelimit"
 )
 
 var counter uint64
@@ -18,15 +19,19 @@ type Pipeline struct {
 	subscription    *nats.Subscription
 	eventStore      *EventStore
 	snapshotManager *SnapshotManager
+	awakeRateLimit  ratelimit.Limiter
 	rpcEngine       *broc.Broc
+	awakeCh         chan struct{}
 }
 
 func NewPipeline(synchronizer *Synchronizer, id uint64) *Pipeline {
 
 	pipeline := &Pipeline{
-		synchronizer: synchronizer,
-		id:           id,
-		eventStore:   NewEventStore(synchronizer, id),
+		synchronizer:   synchronizer,
+		id:             id,
+		eventStore:     NewEventStore(synchronizer, id),
+		awakeRateLimit: ratelimit.New(10),
+		awakeCh:        make(chan struct{}),
 	}
 
 	pipeline.snapshotManager = NewSnapshotManager(pipeline)
@@ -71,6 +76,15 @@ func (pipeline *Pipeline) Init() error {
 		return err
 	}
 
+	// Initializing notification to awake subscriber
+	go func() {
+		for range pipeline.awakeCh {
+			// Prevent to notify too fast
+			pipeline.awakeRateLimit.Take()
+			pipeline.awakeSubscriber()
+		}
+	}()
+
 	// Awake all existing subscribers
 	pipeline.synchronizer.subscriberMgr.AwakeAllSubscribers(pipeline)
 
@@ -87,6 +101,9 @@ func (pipeline *Pipeline) Uninit() error {
 
 	// Close data store
 	pipeline.eventStore.Close()
+
+	// close notification channel
+	close(pipeline.awakeCh)
 
 	// Release pipeline
 	err = pipeline.release()
@@ -133,11 +150,19 @@ func (pipeline *Pipeline) awakeSubscriber() {
 				return true
 			}
 
-			subscriber.suspendPipelines.Delete(pipeline.id)
+			//			subscriber.suspendPipelines.Delete(pipeline.id)
 		}
 
 		return true
 	})
+}
+
+func (pipeline *Pipeline) AwakeSubscriber() {
+
+	select {
+	case pipeline.awakeCh <- struct{}{}:
+	default:
+	}
 }
 
 func (pipeline *Pipeline) handleRequest(req request.Request) {
@@ -159,7 +184,7 @@ func (pipeline *Pipeline) handleRequest(req request.Request) {
 	req.Respond()
 
 	// Awake susbscriber to receive data from this pipeline
-	pipeline.awakeSubscriber()
+	pipeline.AwakeSubscriber()
 }
 
 func (pipeline *Pipeline) GetLastSequence() uint64 {
@@ -186,7 +211,7 @@ func (pipeline *Pipeline) store(data []byte) error {
 	}
 
 	// Awake susbscriber to receive data from this pipeline
-	pipeline.awakeSubscriber()
+	pipeline.AwakeSubscriber()
 
 	return nil
 }
