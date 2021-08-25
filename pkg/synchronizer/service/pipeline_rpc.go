@@ -92,6 +92,7 @@ func (pipeline *Pipeline) rpc_pullEvents(ctx *broc.Context) (returnedValue inter
 	reply.Events = make([][]byte, len(events))
 	for i, event := range events {
 		pe.Payload = event.Data
+		pe.Sequence = event.Sequence
 		data, _ := gravity_sdk_types_pipeline_event.Marshal(&pe)
 		reply.Events[i] = data
 	}
