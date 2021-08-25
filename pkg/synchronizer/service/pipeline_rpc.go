@@ -74,6 +74,13 @@ func (pipeline *Pipeline) rpc_pullEvents(ctx *broc.Context) (returnedValue inter
 		return
 	}
 
+	log.WithFields(log.Fields{
+		"pipeline": pipeline.id,
+		"start":    request.StartAt,
+		"offset":   request.Offset,
+		"count":    request.Count,
+	}).Info("Pulling events")
+
 	// Fetch data and push to subscriber
 	events, lastSeq, err := subscriber.PullEvents(pipeline, request.StartAt, request.Offset, int(request.Count))
 	if err != nil {
