@@ -6,8 +6,9 @@ require (
 	github.com/BrobridgeOrg/EventStore v0.0.20
 	github.com/BrobridgeOrg/broc v0.0.2
 	github.com/BrobridgeOrg/gravity-api v0.2.25
-	github.com/BrobridgeOrg/gravity-sdk v0.0.40
+	github.com/BrobridgeOrg/gravity-sdk v0.0.45
 	github.com/BrobridgeOrg/gravity-synchronizer v0.0.0-00010101000000-000000000000
+	github.com/BrobridgeOrg/sequential-data-flow v0.0.1
 	github.com/cfsghost/gosharding v0.0.3
 	github.com/cfsghost/parallel-chunked-flow v0.0.6
 	github.com/cfsghost/taskflow v0.0.2

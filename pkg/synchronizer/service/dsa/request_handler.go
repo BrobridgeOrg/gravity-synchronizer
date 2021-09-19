@@ -9,7 +9,7 @@ import (
 	dsa_pb "github.com/BrobridgeOrg/gravity-api/service/dsa"
 	"github.com/BrobridgeOrg/gravity-synchronizer/pkg/synchronizer/service/rule"
 	"github.com/BrobridgeOrg/gravity-synchronizer/pkg/synchronizer/service/task"
-	parallel_chunked_flow "github.com/cfsghost/parallel-chunked-flow"
+	sdf "github.com/BrobridgeOrg/sequential-data-flow"
 	"github.com/golang/protobuf/proto"
 	"github.com/lithammer/go-jump-consistent-hash"
 	log "github.com/sirupsen/logrus"
@@ -18,7 +18,7 @@ import (
 type RequestHandler struct {
 	dsa      *DataSourceAdapter
 	task     *taskflow.Task
-	incoming *parallel_chunked_flow.ParallelChunkedFlow
+	incoming *sdf.Flow
 }
 
 func NewRequestHandler() *RequestHandler {
@@ -31,15 +31,13 @@ func (rh *RequestHandler) Init(dsa *DataSourceAdapter) error {
 	rh.dsa = dsa
 	rh.task = taskflow.NewTask(1, 1)
 
-	// Initialize parapllel chunked flow
-	pcfOpts := &parallel_chunked_flow.Options{
-		BufferSize: 1024000,
-		ChunkSize:  512,
-		ChunkCount: 512,
-		Handler:    rh.requestHandler,
-	}
+	// Initializing sequential data flow
+	opts := sdf.NewOptions()
+	opts.BufferSize = 10240
+	opts.WorkerCount = rh.dsa.workerCount
+	opts.Handler = rh.requestHandler
 
-	rh.incoming = parallel_chunked_flow.NewParallelChunkedFlow(pcfOpts)
+	rh.incoming = sdf.NewFlow(opts)
 
 	go rh.receiver()
 
