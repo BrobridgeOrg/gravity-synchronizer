@@ -47,12 +47,18 @@ func (snapshot *SnapshotHandler) handle(request *eventstore.SnapshotRequest) err
 
 	// Parsing original data which from database
 	newData := projectionPool.Get().(*gravity_sdk_types_projection.Projection)
+	defer projectionPool.Put(newData)
 	err := gravity_sdk_types_projection.Unmarshal(request.Data, newData)
 
 	// Getting data of primary key
 	primaryKey, err := snapshot.getPrimaryKeyData(newData)
+	if err != nil {
+		// Ignore
+		log.Error(err)
+		return nil
+	}
+
 	if primaryKey == nil {
-		projectionPool.Put(newData)
 		// Ignore record which has no primary key
 		return nil
 	}
@@ -60,9 +66,6 @@ func (snapshot *SnapshotHandler) handle(request *eventstore.SnapshotRequest) err
 	// Preparing record
 	newRecord := snapshotRecordPool.Get().(*gravity_sdk_types_snapshot_record.SnapshotRecord)
 	newRecord.SetPayload(newData.GetPayload())
-
-	// Release projection data
-	projectionPool.Put(newData)
 
 	data, err := newRecord.ToBytes()
 	if err != nil {
@@ -80,6 +83,7 @@ func (snapshot *SnapshotHandler) handle(request *eventstore.SnapshotRequest) err
 		originRecord := snapshotRecordPool.Get().(*gravity_sdk_types_snapshot_record.SnapshotRecord)
 		err := gravity_sdk_types_snapshot_record.Unmarshal(origin, originRecord)
 		if err != nil {
+			log.Error(err)
 			return origin
 		}
 
@@ -87,6 +91,7 @@ func (snapshot *SnapshotHandler) handle(request *eventstore.SnapshotRequest) err
 		newRecord := snapshotRecordPool.Get().(*gravity_sdk_types_snapshot_record.SnapshotRecord)
 		err = gravity_sdk_types_snapshot_record.Unmarshal(newValue, newRecord)
 		if err != nil {
+			log.Error(err)
 			return origin
 		}
 
