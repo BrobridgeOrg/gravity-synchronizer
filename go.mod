@@ -8,7 +8,7 @@ require (
 	github.com/BrobridgeOrg/gravity-api v0.2.25
 	github.com/BrobridgeOrg/gravity-sdk v0.0.45
 	github.com/BrobridgeOrg/gravity-synchronizer v0.0.0-00010101000000-000000000000
-	github.com/BrobridgeOrg/schemer v0.0.3
+	github.com/BrobridgeOrg/schemer v0.0.4
 	github.com/BrobridgeOrg/sequential-data-flow v0.0.1
 	github.com/cfsghost/gosharding v0.0.3
 	github.com/cfsghost/parallel-chunked-flow v0.0.6

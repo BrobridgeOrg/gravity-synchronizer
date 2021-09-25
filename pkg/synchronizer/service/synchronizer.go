@@ -2,6 +2,7 @@ package synchronizer
 
 import (
 	"fmt"
+	"gravity-synchronizer/pkg/synchronizer/service/collection"
 	data_handler "gravity-synchronizer/pkg/synchronizer/service/data_handler"
 	"gravity-synchronizer/pkg/synchronizer/service/dsa"
 	"os"
@@ -13,6 +14,7 @@ import (
 	"github.com/BrobridgeOrg/gravity-sdk/core/keyring"
 	"github.com/BrobridgeOrg/gravity-synchronizer/pkg/app"
 	"github.com/BrobridgeOrg/gravity-synchronizer/pkg/synchronizer/service/rule"
+	"github.com/BrobridgeOrg/schemer"
 	gosharding "github.com/cfsghost/gosharding"
 	jsoniter "github.com/json-iterator/go"
 	log "github.com/sirupsen/logrus"
@@ -22,13 +24,14 @@ import (
 var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
 type Synchronizer struct {
-	app           app.App
-	gravityClient *core.Client
-	shard         *gosharding.Shard
-	clientID      string
-	domain        string
-	pipelines     map[uint64]*Pipeline
-	ruleConfig    *rule.RuleConfig
+	app              app.App
+	gravityClient    *core.Client
+	shard            *gosharding.Shard
+	clientID         string
+	domain           string
+	pipelines        map[uint64]*Pipeline
+	ruleConfig       *rule.RuleConfig
+	collectionConfig *collection.Config
 
 	// components
 	keyring         *keyring.Keyring
@@ -80,6 +83,15 @@ func (synchronizer *Synchronizer) Init() error {
 		"clientID": synchronizer.clientID,
 	}).Info("Initializing synchronizer")
 
+	// Load collection config
+	collectionConfig, err := collection.LoadConfigFile("./rules/collection.json")
+	if err != nil {
+		log.Error(err)
+		synchronizer.collectionConfig = &collection.Config{}
+	} else {
+		synchronizer.collectionConfig = collectionConfig
+	}
+
 	// Load rule config
 	ruleConfig, err := rule.LoadRuleFile("./rules/rules.json")
 	if err != nil {
@@ -87,6 +99,23 @@ func (synchronizer *Synchronizer) Init() error {
 	}
 
 	synchronizer.ruleConfig = ruleConfig
+
+	// Initializing collection schema
+	for _, rule := range ruleConfig.Rules {
+		// Trying to get collection schema
+		collectionConfig := collectionConfig.GetCollectionConfig(rule.Collection)
+		if collectionConfig == nil {
+			continue
+		}
+
+		schema := schemer.NewSchema()
+		err := schemer.Unmarshal(collectionConfig.Schema, schema)
+		if err != nil {
+			continue
+		}
+
+		rule.Handler.Transformer.SetDestinationSchema(schema)
+	}
 
 	// Initializing event store
 	err = synchronizer.initializeEventStore()
