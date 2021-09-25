@@ -111,6 +111,7 @@ func (synchronizer *Synchronizer) Init() error {
 		schema := schemer.NewSchema()
 		err := schemer.Unmarshal(collectionConfig.Schema, schema)
 		if err != nil {
+			log.Error(err)
 			continue
 		}
 

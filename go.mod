@@ -17,6 +17,7 @@ require (
 	github.com/json-iterator/go v1.1.10
 	github.com/lithammer/go-jump-consistent-hash v1.0.2
 	github.com/nats-io/nats.go v1.11.0
+	github.com/prometheus/common v0.4.0
 	github.com/sirupsen/logrus v1.8.1
 	github.com/spf13/viper v1.7.1
 	go.uber.org/ratelimit v0.2.0

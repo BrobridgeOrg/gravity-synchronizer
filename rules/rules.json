@@ -38,8 +38,16 @@
 			"collection": "accounts",
 			"method": "insert",
 			"primaryKey": "id",
+			"schema": {
+				"id": { "type": "uint" },
+				"idNum": { "type": "string" },
+				"name": { "type": "string" },
+				"type": { "type": "string" },
+				"phone": { "type": "string" },
+				"address": { "type": "string" }
+			},
 			"handler": {
-				"script": "return { id: source.id, name: source.name, type: source.type, phone: source.phone, attrs: source.attrs, createdAt: source.createdAt }"
+				"script": "return { id: source.id, name: source.name, type: source.type, phone: source.phone, address: source.address }"
 			}
 		},
 		{
@@ -47,8 +55,16 @@
 			"collection": "accounts",
 			"method": "update",
 			"primaryKey": "id",
+			"schema": {
+				"id": { "type": "uint" },
+				"idNum": { "type": "string" },
+				"name": { "type": "string" },
+				"type": { "type": "string" },
+				"phone": { "type": "string" },
+				"address": { "type": "string" }
+			},
 			"handler": {
-				"script": "return { id: source.id, name: source.name, type: source.type, phone: source.phone, attrs: source.attrs }"
+				"script": "return { id: source.id, name: source.name, type: source.type, phone: source.phone, address: source.address }"
 			}
 		},
 		{

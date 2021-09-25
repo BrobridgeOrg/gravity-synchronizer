@@ -4,6 +4,9 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"os"
+
+	"github.com/BrobridgeOrg/schemer"
+	log "github.com/sirupsen/logrus"
 )
 
 type RuleConfig struct {
@@ -11,13 +14,14 @@ type RuleConfig struct {
 }
 
 type Rule struct {
-	ID            string          `json:"id"`
-	Event         string          `json:"event"`
-	Collection    string          `json:"collection"`
-	Method        string          `json:"method"`
-	PrimaryKey    string          `json:"primaryKey"`
-	Mapping       []MappingConfig `json:"mapping"`
-	HandlerConfig *HandlerConfig  `json:"handler,omitempty"`
+	ID            string                 `json:"id"`
+	Event         string                 `json:"event"`
+	Collection    string                 `json:"collection"`
+	Method        string                 `json:"method"`
+	PrimaryKey    string                 `json:"primaryKey"`
+	Mapping       []MappingConfig        `json:"mapping"`
+	HandlerConfig *HandlerConfig         `json:"handler,omitempty"`
+	Schema        map[string]interface{} `json:"schema,omitempty"`
 	Handler       *Handler
 }
 
@@ -50,6 +54,18 @@ func LoadRuleFile(filename string) (*RuleConfig, error) {
 		}
 
 		rule.Handler = NewHandler(rule.HandlerConfig)
+
+		// Initializing event payload schema
+		if rule.Schema != nil {
+			schema := schemer.NewSchema()
+			err := schemer.Unmarshal(rule.Schema, schema)
+			if err != nil {
+				log.Error(err)
+				continue
+			}
+
+			rule.Handler.Transformer.SetSourceSchema(schema)
+		}
 	}
 
 	return &config, nil
