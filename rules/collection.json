@@ -6,8 +6,7 @@
 				"name": { "type": "string" },
 				"type": { "type": "string" },
 				"phone": { "type": "string" },
-				"attrs": { "type": "string" },
-				"createdAt": { "type": "time" }
+				"address": { "type": "string" }
 			}
 		}
 	}
