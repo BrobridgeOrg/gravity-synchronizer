@@ -126,38 +126,63 @@ func (mh *MappingHandler) convert(rule *rule.Rule, t *task.Task) (*gravity_sdk_t
 	projection.Fields = make([]gravity_sdk_types_projection.Field, 0, len(rule.Mapping))
 	//	projection.Meta = task.Meta
 
-	if len(rule.Mapping) == 0 {
-
-		// pass throuh
-		for key, value := range payload {
-
-			field := gravity_sdk_types_projection.Field{
-				Name:  key,
-				Value: value,
-			}
-
-			projection.Fields = append(projection.Fields, field)
-		}
-
-	} else {
-
-		// Mapping to new fields
-		for _, mapping := range rule.Mapping {
-
-			// Getting value from payload
-			val, ok := payload[mapping.Source]
-			if !ok {
-				continue
-			}
-
-			field := gravity_sdk_types_projection.Field{
-				Name:  mapping.Target,
-				Value: val,
-			}
-
-			projection.Fields = append(projection.Fields, field)
-		}
+	results, err := rule.Handler.Run(nil, payload)
+	if err != nil {
+		return nil, err
 	}
 
+	if len(results) == 0 {
+		// Ignore
+		return nil, nil
+	}
+
+	// Convert to projection
+	//	for _, result := range results {
+	result := results[0]
+	for key, value := range result {
+
+		field := gravity_sdk_types_projection.Field{
+			Name:  key,
+			Value: value,
+		}
+
+		projection.Fields = append(projection.Fields, field)
+	}
+
+	//	}
+	/*
+		if len(rule.Mapping) == 0 {
+
+			// pass throuh
+			for key, value := range payload {
+
+				field := gravity_sdk_types_projection.Field{
+					Name:  key,
+					Value: value,
+				}
+
+				projection.Fields = append(projection.Fields, field)
+			}
+
+		} else {
+
+			// Mapping to new fields
+			for _, mapping := range rule.Mapping {
+
+				// Getting value from payload
+				val, ok := payload[mapping.Source]
+				if !ok {
+					continue
+				}
+
+				field := gravity_sdk_types_projection.Field{
+					Name:  mapping.Target,
+					Value: val,
+				}
+
+				projection.Fields = append(projection.Fields, field)
+			}
+		}
+	*/
 	return projection, nil
 }

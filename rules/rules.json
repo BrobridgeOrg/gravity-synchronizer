@@ -38,72 +38,27 @@
 			"collection": "accounts",
 			"method": "insert",
 			"primaryKey": "id",
-			"mapping": [
-				{
-					"source": "id",
-					"target": "id"
-				},
-				{
-					"source": "name",
-					"target": "name"
-				},
-				{
-					"source": "type",
-					"target": "type"
-				},
-				{
-					"source": "phone",
-					"target": "phone"
-				},
-				{
-					"source": "attrs",
-					"target": "attrs"
-				},
-				{
-					"source": "createdAt",
-					"target": "createdAt"
-				}
-			]
+			"handler": {
+				"script": "return { id: source.id, name: source.name, type: source.type, phone: source.phone, attrs: source.attrs, createdAt: source.createdAt }"
+			}
 		},
 		{
 			"event": "accountUpdated",
 			"collection": "accounts",
 			"method": "update",
 			"primaryKey": "id",
-			"mapping": [
-				{
-					"source": "id",
-					"target": "id"
-				},
-				{
-					"source": "name",
-					"target": "name"
-				},
-				{
-					"source": "type",
-					"target": "type"
-				},
-				{
-					"source": "phone",
-					"target": "phone"
-				},
-				{
-					"source": "attrs",
-					"target": "attrs"
-				}
-			]
+			"handler": {
+				"script": "return { id: source.id, name: source.name, type: source.type, phone: source.phone, attrs: source.attrs }"
+			}
 		},
 		{
 			"event": "accountDeleted",
 			"collection": "accounts",
 			"method": "delete",
 			"primaryKey": "id",
-			"mapping": [
-				{
-					"source": "id",
-					"target": "id"
-				}
-			]
+			"handler": {
+				"script": "return { id: source.id }"
+			}
 		}
 	]
 }
