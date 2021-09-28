@@ -103,7 +103,7 @@ func (synchronizer *Synchronizer) Init() error {
 	// Initializing collection schema
 	for _, rule := range ruleConfig.Rules {
 		// Trying to get collection schema
-		collectionConfig := collectionConfig.GetCollectionConfig(rule.Collection)
+		collectionConfig := synchronizer.collectionConfig.GetCollectionConfig(rule.Collection)
 		if collectionConfig == nil {
 			continue
 		}
