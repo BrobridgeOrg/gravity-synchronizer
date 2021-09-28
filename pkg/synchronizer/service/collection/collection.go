@@ -35,6 +35,10 @@ func LoadConfigFile(filename string) (*Config, error) {
 }
 
 func (c *Config) GetCollectionConfig(name string) *CollectionConfig {
+	if c.Collections == nil {
+		return nil
+	}
+
 	if v, ok := c.Collections[name]; ok {
 		return v
 	}
