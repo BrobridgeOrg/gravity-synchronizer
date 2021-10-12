@@ -6,7 +6,7 @@ require (
 	github.com/BrobridgeOrg/EventStore v0.0.20
 	github.com/BrobridgeOrg/broc v0.0.2
 	github.com/BrobridgeOrg/gravity-api v0.2.25
-	github.com/BrobridgeOrg/gravity-sdk v0.0.45
+	github.com/BrobridgeOrg/gravity-sdk v0.0.46
 	github.com/BrobridgeOrg/gravity-synchronizer v0.0.0-00010101000000-000000000000
 	github.com/BrobridgeOrg/schemer v0.0.4
 	github.com/BrobridgeOrg/sequential-data-flow v0.0.1
