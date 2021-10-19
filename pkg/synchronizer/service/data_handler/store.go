@@ -1,9 +1,8 @@
 package data_handler
 
 import (
+	gravity_sdk_types_record "github.com/BrobridgeOrg/gravity-sdk/types/record"
 	"github.com/cfsghost/taskflow"
-
-	gravity_sdk_types_projection "github.com/BrobridgeOrg/gravity-sdk/types/projection"
 )
 
 type Store struct {
@@ -29,13 +28,13 @@ func (store *Store) Init(dataHandler *DataHandler) error {
 
 func (store *Store) handle(message *taskflow.Message) {
 
-	pj := message.Data.(*gravity_sdk_types_projection.Projection)
+	record := message.Data.(*gravity_sdk_types_record.Record)
 
 	// Convert to packet
-	data, _ := gravity_sdk_types_projection.Marshal(pj)
+	data, _ := gravity_sdk_types_record.Marshal(record)
 
 	// Release projection object
-	projectionPool.Put(pj)
+	recordPool.Put(record)
 
 	tr := message.Context.GetPrivData().(*TaskRequest)
 

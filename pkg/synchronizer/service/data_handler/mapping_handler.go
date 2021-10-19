@@ -6,16 +6,16 @@ import (
 	"github.com/cfsghost/taskflow"
 	log "github.com/sirupsen/logrus"
 
-	gravity_sdk_types_projection "github.com/BrobridgeOrg/gravity-sdk/types/projection"
+	gravity_sdk_types_record "github.com/BrobridgeOrg/gravity-sdk/types/record"
 	"github.com/BrobridgeOrg/gravity-synchronizer/pkg/synchronizer/service/rule"
 	"github.com/BrobridgeOrg/gravity-synchronizer/pkg/synchronizer/service/task"
 	"github.com/cfsghost/gosharding"
 	"github.com/spf13/viper"
 )
 
-var projectionPool = sync.Pool{
+var recordPool = sync.Pool{
 	New: func() interface{} {
-		return &gravity_sdk_types_projection.Projection{}
+		return &gravity_sdk_types_record.Record{}
 	},
 }
 
@@ -72,8 +72,8 @@ func (mh *MappingHandler) processMessage(message *taskflow.Message) {
 		return
 	}
 
-	// Mapping and convert raw data to projection object
-	pj, err := mh.convert(r, t)
+	// Mapping and convert raw data to record object
+	record, err := mh.convert(r, t)
 	if err != nil {
 		// Failed to parse payload
 		log.Error(err)
@@ -86,7 +86,7 @@ func (mh *MappingHandler) processMessage(message *taskflow.Message) {
 		return
 	}
 
-	if pj == nil {
+	if record == nil {
 
 		// Ignore empty data
 		log.Warn("Ignore empty payload")
@@ -100,10 +100,10 @@ func (mh *MappingHandler) processMessage(message *taskflow.Message) {
 	}
 
 	message.Context.SetMeta("task", t)
-	message.Send(0, pj)
+	message.Send(0, record)
 }
 
-func (mh *MappingHandler) convert(rule *rule.Rule, t *task.Task) (*gravity_sdk_types_projection.Projection, error) {
+func (mh *MappingHandler) convert(rule *rule.Rule, t *task.Task) (*gravity_sdk_types_record.Record, error) {
 
 	// Empty
 	if len(t.Payload) == 0 {
@@ -117,15 +117,14 @@ func (mh *MappingHandler) convert(rule *rule.Rule, t *task.Task) (*gravity_sdk_t
 		return nil, err
 	}
 
-	// Preparing projection
-	projection := projectionPool.Get().(*gravity_sdk_types_projection.Projection)
-	projection.EventName = t.EventName
-	projection.Method = rule.Method
-	projection.Collection = rule.Collection
-	projection.PrimaryKey = rule.PrimaryKey
-	projection.Fields = make([]gravity_sdk_types_projection.Field, 0, len(rule.Mapping))
-	//	projection.Meta = task.Meta
+	// Prepare record
+	record := recordPool.Get().(*gravity_sdk_types_record.Record)
+	record.EventName = t.EventName
+	record.Method = gravity_sdk_types_record.Method(gravity_sdk_types_record.Method_value[rule.Method])
+	record.Table = rule.Collection
+	record.PrimaryKey = rule.PrimaryKey
 
+	// Transforming
 	results, err := rule.Handler.Run(nil, payload)
 	if err != nil {
 		return nil, err
@@ -136,53 +135,12 @@ func (mh *MappingHandler) convert(rule *rule.Rule, t *task.Task) (*gravity_sdk_t
 		return nil, nil
 	}
 
-	// Convert to projection
-	//	for _, result := range results {
+	// fill record
 	result := results[0]
-	for key, value := range result {
-
-		field := gravity_sdk_types_projection.Field{
-			Name:  key,
-			Value: value,
-		}
-
-		projection.Fields = append(projection.Fields, field)
+	err = gravity_sdk_types_record.UnmarshalMapData(result, record)
+	if err != nil {
+		return nil, err
 	}
 
-	//	}
-	/*
-		if len(rule.Mapping) == 0 {
-
-			// pass throuh
-			for key, value := range payload {
-
-				field := gravity_sdk_types_projection.Field{
-					Name:  key,
-					Value: value,
-				}
-
-				projection.Fields = append(projection.Fields, field)
-			}
-
-		} else {
-
-			// Mapping to new fields
-			for _, mapping := range rule.Mapping {
-
-				// Getting value from payload
-				val, ok := payload[mapping.Source]
-				if !ok {
-					continue
-				}
-
-				field := gravity_sdk_types_projection.Field{
-					Name:  mapping.Target,
-					Value: val,
-				}
-
-				projection.Fields = append(projection.Fields, field)
-			}
-		}
-	*/
-	return projection, nil
+	return record, nil
 }

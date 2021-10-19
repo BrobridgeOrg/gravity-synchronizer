@@ -3,7 +3,7 @@ package data_handler
 import (
 	"testing"
 
-	gravity_sdk_types_projection "github.com/BrobridgeOrg/gravity-sdk/types/projection"
+	gravity_sdk_types_record "github.com/BrobridgeOrg/gravity-sdk/types/record"
 	"github.com/BrobridgeOrg/gravity-synchronizer/pkg/synchronizer/service/rule"
 	"github.com/BrobridgeOrg/gravity-synchronizer/pkg/synchronizer/service/task"
 	"github.com/cfsghost/taskflow"
@@ -61,12 +61,12 @@ func TestMappingHandler(t *testing.T) {
 	testDH.taskflow.AddTask(testDH.mappingHandler.task)
 
 	// Preparing task to receive results
-	done := make(chan *gravity_sdk_types_projection.Projection, 10)
+	done := make(chan *gravity_sdk_types_record.Record, 10)
 	defer close(done)
 	checkTask := taskflow.NewTask(1, 0)
 	checkTask.SetHandler(func(message *taskflow.Message) {
-		pj := message.Data.(*gravity_sdk_types_projection.Projection)
-		done <- pj
+		record := message.Data.(*gravity_sdk_types_record.Record)
+		done <- record
 	})
 
 	testDH.taskflow.AddTask(checkTask)
@@ -118,12 +118,12 @@ func TestMappingHandler(t *testing.T) {
 func TestEmptyPayload(t *testing.T) {
 
 	// Preparing task to receive results
-	done := make(chan *gravity_sdk_types_projection.Projection, 10)
+	done := make(chan *gravity_sdk_types_record.Record, 10)
 	defer close(done)
 	checkTask := taskflow.NewTask(1, 0)
 	checkTask.SetHandler(func(message *taskflow.Message) {
-		pj := message.Data.(*gravity_sdk_types_projection.Projection)
-		done <- pj
+		record := message.Data.(*gravity_sdk_types_record.Record)
+		done <- record
 	})
 
 	testDH.taskflow.AddTask(checkTask)

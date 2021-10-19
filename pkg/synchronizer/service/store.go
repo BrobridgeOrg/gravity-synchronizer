@@ -4,7 +4,7 @@ import (
 	"sync"
 
 	eventstore "github.com/BrobridgeOrg/EventStore"
-	gravity_sdk_types_projection "github.com/BrobridgeOrg/gravity-sdk/types/projection"
+	gravity_sdk_types_record "github.com/BrobridgeOrg/gravity-sdk/types/record"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -74,9 +74,9 @@ func (store *Store) RemoveEventSource(sourceID uint64) error {
 	return nil
 }
 
-func (store *Store) IsMatch(pj *gravity_sdk_types_projection.Projection) bool {
+func (store *Store) IsMatch(record *gravity_sdk_types_record.Record) bool {
 
-	if pj.Collection != store.Collection {
+	if record.Table != store.Collection {
 		return false
 	}
 

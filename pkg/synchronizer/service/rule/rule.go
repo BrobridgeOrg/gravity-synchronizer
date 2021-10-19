@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"os"
+	"strings"
 
 	"github.com/BrobridgeOrg/schemer"
 	log "github.com/sirupsen/logrus"
@@ -53,6 +54,7 @@ func LoadRuleFile(filename string) (*RuleConfig, error) {
 			rule.ID = rule.Event + "_" + rule.Collection + "_" + rule.PrimaryKey
 		}
 
+		rule.Method = strings.ToUpper(rule.Method)
 		rule.Handler = NewHandler(rule.HandlerConfig)
 
 		// Initializing event payload schema

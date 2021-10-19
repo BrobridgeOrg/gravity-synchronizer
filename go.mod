@@ -6,7 +6,7 @@ require (
 	github.com/BrobridgeOrg/EventStore v0.0.20
 	github.com/BrobridgeOrg/broc v0.0.2
 	github.com/BrobridgeOrg/gravity-api v0.2.25
-	github.com/BrobridgeOrg/gravity-sdk v0.0.46
+	github.com/BrobridgeOrg/gravity-sdk v0.0.47
 	github.com/BrobridgeOrg/gravity-synchronizer v0.0.0-00010101000000-000000000000
 	github.com/BrobridgeOrg/schemer v0.0.5
 	github.com/BrobridgeOrg/sequential-data-flow v0.0.1
@@ -17,6 +17,7 @@ require (
 	github.com/json-iterator/go v1.1.10
 	github.com/lithammer/go-jump-consistent-hash v1.0.2
 	github.com/nats-io/nats.go v1.11.0
+	github.com/prometheus/common v0.4.0
 	github.com/sirupsen/logrus v1.8.1
 	github.com/spf13/viper v1.7.1
 	go.uber.org/ratelimit v0.2.0

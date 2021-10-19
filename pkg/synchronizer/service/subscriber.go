@@ -7,16 +7,9 @@ import (
 
 	eventstore "github.com/BrobridgeOrg/EventStore"
 	gravity_sdk_types_event "github.com/BrobridgeOrg/gravity-sdk/types/event"
-	gravity_sdk_types_projection "github.com/BrobridgeOrg/gravity-sdk/types/projection"
 	"github.com/golang/protobuf/proto"
 	log "github.com/sirupsen/logrus"
 )
-
-var pjPool = sync.Pool{
-	New: func() interface{} {
-		return &gravity_sdk_types_projection.Projection{}
-	},
-}
 
 var eventPool = sync.Pool{
 	New: func() interface{} {
