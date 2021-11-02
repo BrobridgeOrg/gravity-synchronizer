@@ -43,6 +43,8 @@ github.com/BrobridgeOrg/schemer v0.0.6 h1:nqc+jK98208/7SIyqu3tFTyq1lgjRKwL8Kb3Za
 github.com/BrobridgeOrg/schemer v0.0.6/go.mod h1:ymLlI5Ch8MsmFn3Ah+NphZkNz1NmCar5eUfxCcFTXI8=
 github.com/BrobridgeOrg/schemer v0.0.7 h1:IlU7fcM37UFOVg+DqIBX55tr5NM93OD3u641qe7h+lc=
 github.com/BrobridgeOrg/schemer v0.0.7/go.mod h1:ymLlI5Ch8MsmFn3Ah+NphZkNz1NmCar5eUfxCcFTXI8=
+github.com/BrobridgeOrg/schemer v0.0.8 h1:uFgLXU0zBgIBL0nXNWN42s+IMG6fSNdgYpqKPKrdsQk=
+github.com/BrobridgeOrg/schemer v0.0.8/go.mod h1:ymLlI5Ch8MsmFn3Ah+NphZkNz1NmCar5eUfxCcFTXI8=
 github.com/BrobridgeOrg/sequential-data-flow v0.0.1 h1:l2oKsQK1acXyYWTjpsTLCP8CLMYRyEZ1Ni1BgYi1lS0=
 github.com/BrobridgeOrg/sequential-data-flow v0.0.1/go.mod h1:WpQ0+7QWx9HYFPqA9dISj2hQWInucux7RX+Rr4UvAa0=
 github.com/BurntSushi/toml v0.3.1 h1:WXkYYl6Yr3qBf1K79EBnL4mak0OimBfB0XUf9Vl28OQ=
