@@ -7,6 +7,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	gravity_sdk_types_record "github.com/BrobridgeOrg/gravity-sdk/types/record"
+	"github.com/BrobridgeOrg/gravity-synchronizer/pkg/synchronizer/service/data_handler/converter"
 	"github.com/BrobridgeOrg/gravity-synchronizer/pkg/synchronizer/service/rule"
 	"github.com/BrobridgeOrg/gravity-synchronizer/pkg/synchronizer/service/task"
 	"github.com/cfsghost/gosharding"
@@ -137,10 +138,17 @@ func (mh *MappingHandler) convert(rule *rule.Rule, t *task.Task) (*gravity_sdk_t
 
 	// fill record
 	result := results[0]
-	err = gravity_sdk_types_record.UnmarshalMapData(result, record)
+	fields, err := converter.Convert(rule.Handler.Transformer.GetDestinationSchema(), result)
 	if err != nil {
 		return nil, err
 	}
 
+	record.Fields = fields
+	/*
+		err = gravity_sdk_types_record.UnmarshalMapData(result, record)
+		if err != nil {
+			return nil, err
+		}
+	*/
 	return record, nil
 }
