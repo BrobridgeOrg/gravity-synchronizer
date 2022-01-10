@@ -55,6 +55,11 @@ func (snapshot *SnapshotHandler) handle(request *eventstore.SnapshotRequest) err
 		return nil
 	}
 
+	// Delete snapshot record
+	if newData.Method == gravity_sdk_types_record.Method_DELETE {
+		return request.Delete(StrToBytes(newData.Table), primaryKey)
+	}
+
 	// Preparing record
 	newRecord := snapshotRecordPool.Get().(*gravity_sdk_types_snapshot_record.SnapshotRecord)
 	newRecord.Payload = newData.GetPayload()
