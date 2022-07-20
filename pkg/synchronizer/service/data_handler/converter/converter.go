@@ -88,6 +88,27 @@ func Convert(schema *schemer.Schema, data map[string]interface{}) ([]*gravity_sd
 
 	fields := make([]*gravity_sdk_types_record.Field, 0)
 
+	if schema == nil {
+
+		// No schema has been set so preparing record based on native types
+		for fieldName, value := range data {
+			v, err := gravity_sdk_types_record.GetValueFromInterface(value)
+			if err != nil {
+				fmt.Println(err)
+				continue
+			}
+
+			field := &gravity_sdk_types_record.Field{
+				Name:  fieldName,
+				Value: v,
+			}
+
+			fields = append(fields, field)
+		}
+
+		return fields, nil
+	}
+
 	for fieldName, def := range schema.Fields {
 
 		value, ok := data[fieldName]

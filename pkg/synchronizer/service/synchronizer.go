@@ -8,12 +8,13 @@ import (
 	"os"
 	"strings"
 
+	"github.com/BrobridgeOrg/gravity-synchronizer/pkg/synchronizer/service/rule"
+
 	eventstore "github.com/BrobridgeOrg/EventStore"
 	"github.com/BrobridgeOrg/broc"
 	core "github.com/BrobridgeOrg/gravity-sdk/core"
 	"github.com/BrobridgeOrg/gravity-sdk/core/keyring"
 	"github.com/BrobridgeOrg/gravity-synchronizer/pkg/app"
-	"github.com/BrobridgeOrg/gravity-synchronizer/pkg/synchronizer/service/rule"
 	"github.com/BrobridgeOrg/schemer"
 	gosharding "github.com/cfsghost/gosharding"
 	jsoniter "github.com/json-iterator/go"

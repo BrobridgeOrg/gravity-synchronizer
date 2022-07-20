@@ -87,6 +87,11 @@ func (rh *RequestHandler) requestHandler(data interface{}, publish func(interfac
 	// Filtering requests
 	for _, req := range input.Requests {
 
+		// Ignore if event name is empty
+		if len(req.EventName) == 0 {
+			continue
+		}
+
 		group := rh.prepare(rh.dsa, req)
 		if group == nil {
 			// No matched rules

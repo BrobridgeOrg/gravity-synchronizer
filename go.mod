@@ -3,23 +3,26 @@ module gravity-synchronizer
 go 1.15
 
 require (
-	github.com/BrobridgeOrg/EventStore v0.0.20
+	github.com/BrobridgeOrg/EventStore v0.0.22
 	github.com/BrobridgeOrg/broc v0.0.2
 	github.com/BrobridgeOrg/gravity-api v0.2.25
+	github.com/BrobridgeOrg/gravity-exporter-nats v0.0.0-20211027080937-4b988b57c4e8 // indirect
 	github.com/BrobridgeOrg/gravity-sdk v0.0.50
 	github.com/BrobridgeOrg/gravity-synchronizer v0.0.0-00010101000000-000000000000
-	github.com/BrobridgeOrg/schemer v0.0.10
+	github.com/BrobridgeOrg/schemer v0.0.11
 	github.com/BrobridgeOrg/sequential-data-flow v0.0.1
 	github.com/cfsghost/gosharding v0.0.3
 	github.com/cfsghost/parallel-chunked-flow v0.0.6
 	github.com/cfsghost/taskflow v0.0.2
 	github.com/golang/protobuf v1.5.2
-	github.com/json-iterator/go v1.1.10
+	github.com/json-iterator/go v1.1.12
 	github.com/lithammer/go-jump-consistent-hash v1.0.2
-	github.com/nats-io/nats.go v1.11.0
-	github.com/prometheus/common v0.4.0
+	github.com/nats-io/jsm.go v0.0.27
+	github.com/nats-io/nats.go v1.13.1-0.20220121202836-972a071d373d
+	github.com/prometheus/common v0.9.1
 	github.com/sirupsen/logrus v1.8.1
-	github.com/spf13/viper v1.7.1
+	github.com/spf13/cobra v1.3.0
+	github.com/spf13/viper v1.10.1
 	go.uber.org/ratelimit v0.2.0
 )
 
