@@ -79,7 +79,7 @@ func (rh *RequestHandler) requestHandler(data interface{}, publish func(interfac
 	if err != nil {
 		log.Error(err)
 		if rh.dsa.completionHandler != nil {
-			rh.dsa.completionHandler(message.Context.GetPrivData(), nil, err)
+			rh.dsa.completionHandler(message.Context.GetPrivData(), nil, ErrUnrecognizedRequest)
 		}
 
 		publish(nil)

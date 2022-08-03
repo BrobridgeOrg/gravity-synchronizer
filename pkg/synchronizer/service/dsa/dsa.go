@@ -12,6 +12,7 @@ import (
 )
 
 var (
+	ErrUnrecognizedRequest     = errors.New("dsa: unrecognized request")
 	ErrMaxPendingTasksExceeded = errors.New("dsa: maximum pending tasks exceeded")
 )
 
