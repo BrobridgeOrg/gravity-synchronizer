@@ -52,6 +52,11 @@ func (rh *RequestHandler) receiver() {
 		select {
 		case data := <-rh.incoming.Output():
 
+			if data == nil {
+				// do nothing
+				continue
+			}
+
 			message := data.(*taskflow.Message)
 			message.Send(0, message.Data)
 		}
@@ -73,13 +78,44 @@ func (rh *RequestHandler) requestHandler(data interface{}, publish func(interfac
 	err := proto.Unmarshal(message.Data.([]byte), input)
 	if err != nil {
 		log.Error(err)
-		rh.dsa.completionHandler(message.Context.GetPrivData(), nil, err)
+		if rh.dsa.completionHandler != nil {
+			rh.dsa.completionHandler(message.Context.GetPrivData(), nil, err)
+		}
+
+		publish(nil)
+
+		return
+	}
+
+	// Check if buffer is full
+	if int32(len(input.Requests)*len(rh.dsa.ruleConfig.Rules)) > rh.dsa.maxPending {
+		log.Warn(ErrMaxPendingTasksExceeded)
+
+		if rh.dsa.completionHandler != nil {
+			rh.dsa.completionHandler(message.Context.GetPrivData(), nil, ErrMaxPendingTasksExceeded)
+		}
+
+		publish(nil)
+
 		return
 	}
 
 	// Setup completion handler
 	bundle.OnCompleted(func() {
-		rh.dsa.completionHandler(message.Context.GetPrivData(), nil, nil)
+
+		if rh.dsa.completionHandler != nil {
+			rh.dsa.completionHandler(message.Context.GetPrivData(), nil, nil)
+		}
+
+		// update pending tasks
+		var taskCount int32
+
+		groups := bundle.GetTaskGroups()
+		for _, g := range groups {
+			taskCount += g.GetTaskCount()
+		}
+
+		rh.dsa.decreaseTaskCount(taskCount)
 	})
 
 	message.Data = bundle
@@ -98,7 +134,11 @@ func (rh *RequestHandler) requestHandler(data interface{}, publish func(interfac
 			continue
 		}
 
+		// bundle contains multiple task groups
 		bundle.AddTaskGroup(group)
+
+		// update pending tasks
+		rh.dsa.increaseTaskCount(group.GetTaskCount())
 	}
 
 	publish(message)
@@ -135,7 +175,8 @@ func (rh *RequestHandler) prepare(dsa *DataSourceAdapter, req *dsa_pb.PublishReq
 		group.AddTask(task)
 	}
 
-	if len(group.GetTasks()) == 0 {
+	// No matches
+	if group.GetTaskCount() == 0 {
 		return nil
 	}
 

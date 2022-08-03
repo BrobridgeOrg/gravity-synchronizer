@@ -7,6 +7,7 @@ import (
 	"github.com/BrobridgeOrg/gravity-synchronizer/pkg/synchronizer/service/rule"
 	"github.com/cfsghost/taskflow"
 	"github.com/golang/protobuf/proto"
+	"github.com/stretchr/testify/assert"
 )
 
 var testDSA *DataSourceAdapter
@@ -84,6 +85,90 @@ func TestRequestHandler(t *testing.T) {
 		t.Error("event name is incorrect")
 	}
 
+	// Check if dsa pending tasks state is correct
+	assert.Equal(t, int32(1), testDSA.Pending())
+
+	// task is completed
+	bundle.completionHandler()
+
+	// Check if dsa pending tasks state is correct
+	assert.Equal(t, int32(0), testDSA.Pending())
+
+	testDSA.taskflow.RemoveTask(checkTask.GetID())
+}
+
+func TestMaxPendingLimit(t *testing.T) {
+
+	done := make(chan error, 1)
+	defer close(done)
+
+	// Change DSA settings to set maximum pending limit and callback for results
+	testDSA.maxPending = int32(5)
+	testDSA.OnCompleted(func(privData interface{}, data interface{}, err error) {
+		done <- err
+	})
+	defer func() {
+		testDSA.maxPending = int32(2000)
+		testDSA.OnCompleted(nil)
+	}()
+
+	// Preparing task to receive results
+	checkTask := taskflow.NewTask(1, 0)
+	//checkTask.SetHandler(func(message *taskflow.Message) {
+	//		done <- message
+	//})
+
+	testDSA.taskflow.AddTask(checkTask)
+	testDSA.taskflow.Link(testDSA.requestHandler.task, 0, checkTask, 0)
+
+	// Preparing request
+	req := &dsa_pb.BatchPublishRequest{
+		Requests: []*dsa_pb.PublishRequest{
+			&dsa_pb.PublishRequest{
+				EventName: "accountCreated",
+				Payload:   []byte(`{"id":1,"name":"fred"}`),
+			},
+			&dsa_pb.PublishRequest{
+				EventName: "accountCreated",
+				Payload:   []byte(`{"id":1,"name":"fred"}`),
+			},
+			&dsa_pb.PublishRequest{
+				EventName: "accountCreated",
+				Payload:   []byte(`{"id":1,"name":"fred"}`),
+			},
+			&dsa_pb.PublishRequest{
+				EventName: "accountCreated",
+				Payload:   []byte(`{"id":1,"name":"fred"}`),
+			},
+			&dsa_pb.PublishRequest{
+				EventName: "accountCreated",
+				Payload:   []byte(`{"id":1,"name":"fred"}`),
+			},
+			&dsa_pb.PublishRequest{
+				EventName: "accountCreated",
+				Payload:   []byte(`{"id":1,"name":"fred"}`),
+			},
+		},
+	}
+
+	// Prepare data to push
+	data, err := proto.Marshal(req)
+	if err != nil {
+		t.Error(err)
+	}
+
+	ctx := taskflow.NewContext()
+	testDSA.taskflow.PushWithContext(1, 0, ctx, data)
+
+	// Check results
+	err = <-done
+
+	// It should be failed to process
+	assert.Equal(t, ErrMaxPendingTasksExceeded, err)
+
+	// Check if dsa pending tasks state is correct
+	assert.Equal(t, int32(0), testDSA.Pending())
+
 	testDSA.taskflow.RemoveTask(checkTask.GetID())
 }
 
@@ -108,6 +193,9 @@ func TestDispatcher(t *testing.T) {
 
 	testDSA.taskflow.AddTask(checkTask)
 	testDSA.taskflow.Link(testDSA.dispatcher.task, 0, checkTask, 0)
+
+	// Check if dsa pending tasks state is correct
+	assert.Equal(t, int32(0), testDSA.Pending())
 
 	// Preparing request
 	req := &dsa_pb.BatchPublishRequest{

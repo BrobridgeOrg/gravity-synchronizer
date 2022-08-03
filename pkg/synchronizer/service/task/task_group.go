@@ -13,6 +13,10 @@ func NewTaskGroup() *TaskGroup {
 	}
 }
 
+func (group *TaskGroup) GetTaskCount() int32 {
+	return int32(len(group.tasks))
+}
+
 func (group *TaskGroup) AddTask(task *Task) {
 	group.tasks = append(group.tasks, task)
 }

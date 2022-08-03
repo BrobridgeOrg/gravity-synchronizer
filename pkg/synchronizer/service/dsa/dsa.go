@@ -1,6 +1,9 @@
 package dsa
 
 import (
+	"errors"
+	"sync/atomic"
+
 	"github.com/cfsghost/taskflow"
 
 	"github.com/BrobridgeOrg/gravity-synchronizer/pkg/synchronizer/service/rule"
@@ -8,9 +11,15 @@ import (
 	"github.com/spf13/viper"
 )
 
+var (
+	ErrMaxPendingTasksExceeded = errors.New("dsa: maximum pending tasks exceeded")
+)
+
 var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
 type DataSourceAdapter struct {
+	maxPending     int32
+	pending        int32
 	pipelineCount  int32
 	workerCount    int
 	ruleConfig     *rule.RuleConfig
@@ -25,6 +34,7 @@ type DataSourceAdapter struct {
 
 func NewDataSourceAdapter() *DataSourceAdapter {
 	return &DataSourceAdapter{
+		maxPending:  20000,
 		workerCount: 8,
 	}
 }
@@ -66,6 +76,9 @@ func (dsa *DataSourceAdapter) Init() error {
 	viper.SetDefault("pipeline.pipelineCount", 256)
 	dsa.pipelineCount = viper.GetInt32("pipeline.pipelineCount")
 
+	viper.SetDefault("dsa.maxPending", 20000)
+	dsa.maxPending = viper.GetInt32("dsa.maxPending")
+
 	// Initializing taskflow
 	taskflowOpts := taskflow.NewOptions()
 	taskflowOpts.WorkerCount = dsa.workerCount
@@ -78,6 +91,18 @@ func (dsa *DataSourceAdapter) Init() error {
 	}
 
 	return nil
+}
+
+func (dsa *DataSourceAdapter) Pending() int32 {
+	return atomic.LoadInt32(&dsa.pending)
+}
+
+func (dsa *DataSourceAdapter) increaseTaskCount(count int32) {
+	atomic.AddInt32(&dsa.pending, count)
+}
+
+func (dsa *DataSourceAdapter) decreaseTaskCount(count int32) {
+	atomic.AddInt32(&dsa.pending, -count)
 }
 
 func (dsa *DataSourceAdapter) SetWorkerCount(count int) {
