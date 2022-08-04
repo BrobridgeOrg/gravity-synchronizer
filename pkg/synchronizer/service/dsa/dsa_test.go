@@ -244,6 +244,9 @@ func TestDispatcher(t *testing.T) {
 		t.Error("counter is incorrect")
 	}
 
+	// Check if dsa pending tasks state is correct
+	assert.Equal(t, int32(0), testDSA.Pending())
+
 	testDSA.taskflow.RemoveTask(checkTask.GetID())
 }
 
@@ -312,4 +315,7 @@ func TestEmitter(t *testing.T) {
 	if int(packetGroup.completed) != totalPackets {
 		t.Error("counter is incorrect")
 	}
+
+	// Check if dsa pending tasks state is correct
+	assert.Equal(t, int32(0), testDSA.Pending())
 }

@@ -29,14 +29,24 @@ func (dispatcher *Dispatcher) Init(dsa *DataSourceAdapter) error {
 
 func (dispatcher *Dispatcher) handle(message *taskflow.Message) {
 
+	bundle := message.Data.(*Bundle)
+
 	packetGroup := NewPacketGroup()
 	packetGroup.completionHandler = func() {
 		dispatcher.dsa.completionHandler(message.Context.GetPrivData(), packetGroup, nil)
+
+		// update pending tasks
+		var taskCount int32
+
+		groups := bundle.GetTaskGroups()
+		for _, g := range groups {
+			taskCount += g.GetTaskCount()
+		}
+
+		dispatcher.dsa.decreaseTaskCount(taskCount)
 	}
 
 	// Push each task to shard handler
-	bundle := message.Data.(*Bundle)
-
 	groups := bundle.GetTaskGroups()
 	for _, group := range groups {
 

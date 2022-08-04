@@ -77,7 +77,7 @@ func (dsa *DataSourceAdapter) Init() error {
 	viper.SetDefault("pipeline.pipelineCount", 256)
 	dsa.pipelineCount = viper.GetInt32("pipeline.pipelineCount")
 
-	viper.SetDefault("dsa.maxPending", 20000)
+	viper.SetDefault("dsa.maxPending", 200000)
 	dsa.maxPending = viper.GetInt32("dsa.maxPending")
 
 	// Initializing taskflow

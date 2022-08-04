@@ -88,7 +88,7 @@ func (rh *RequestHandler) requestHandler(data interface{}, publish func(interfac
 	}
 
 	// Check if buffer is full
-	if int32(len(input.Requests)*len(rh.dsa.ruleConfig.Rules)) > rh.dsa.maxPending {
+	if int32(len(input.Requests)*len(rh.dsa.ruleConfig.Rules))+rh.dsa.Pending() > rh.dsa.maxPending {
 		log.Warn(ErrMaxPendingTasksExceeded)
 
 		if rh.dsa.completionHandler != nil {
