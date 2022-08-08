@@ -77,7 +77,8 @@ func (rh *RequestHandler) requestHandler(data interface{}, publish func(interfac
 	input := &dsa_pb.BatchPublishRequest{}
 	err := proto.Unmarshal(message.Data.([]byte), input)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("dsa: Failed to parse request: %v", err)
+
 		if rh.dsa.completionHandler != nil {
 			rh.dsa.completionHandler(message.Context.GetPrivData(), nil, ErrUnrecognizedRequest)
 		}
@@ -87,9 +88,13 @@ func (rh *RequestHandler) requestHandler(data interface{}, publish func(interfac
 		return
 	}
 
+	log.Infof("dsa: Incoming requests: %d", len(input.Requests))
+
 	// Check if buffer is full
 	if int32(len(input.Requests)*len(rh.dsa.ruleConfig.Rules))+rh.dsa.Pending() > rh.dsa.maxPending {
 		log.Warn(ErrMaxPendingTasksExceeded)
+		log.Warnf("dsa: max pending: %d", rh.dsa.maxPending)
+		log.Warnf("dsa: Curent pending: %d", rh.dsa.Pending())
 
 		if rh.dsa.completionHandler != nil {
 			rh.dsa.completionHandler(message.Context.GetPrivData(), nil, ErrMaxPendingTasksExceeded)
@@ -150,6 +155,8 @@ func (rh *RequestHandler) prepare(dsa *DataSourceAdapter, req *dsa_pb.PublishReq
 	var message map[string]interface{}
 	err := json.Unmarshal(req.Payload, &message)
 	if err != nil {
+		log.Warnf("dsa: Skip. failed to parse record: %v", err)
+		log.Warn(string(req.Payload))
 		return nil
 	}
 
