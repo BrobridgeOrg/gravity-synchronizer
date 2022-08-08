@@ -39,7 +39,7 @@ func (snapshot *SnapshotHandler) handle(request *eventstore.SnapshotRequest) err
 	primaryKeyValue, err := newData.GetPrimaryKeyValue()
 	if err != nil {
 		// Ignore
-		log.Error(err)
+		log.Errorf("snapshot_handler: failed to get primary key: %v", err)
 		return nil
 	}
 
@@ -76,20 +76,21 @@ func (snapshot *SnapshotHandler) handle(request *eventstore.SnapshotRequest) err
 	// Upsert to snapshot
 	err = request.Upsert(StrToBytes(newData.Table), primaryKey, data, func(origin []byte, newValue []byte) []byte {
 
-		// Preparing original record
-		originRecord := snapshotRecordPool.Get().(*gravity_sdk_types_snapshot_record.SnapshotRecord)
-		err := gravity_sdk_types_snapshot_record.Unmarshal(origin, originRecord)
+		// Preparing new record
+		newRecord := snapshotRecordPool.Get().(*gravity_sdk_types_snapshot_record.SnapshotRecord)
+		err := gravity_sdk_types_snapshot_record.Unmarshal(newValue, newRecord)
 		if err != nil {
-			log.Error(err)
+			log.Errorf("data_handler: failed to parse new record: %v", err)
 			return origin
 		}
 
-		// Preparing new record
-		newRecord := snapshotRecordPool.Get().(*gravity_sdk_types_snapshot_record.SnapshotRecord)
-		err = gravity_sdk_types_snapshot_record.Unmarshal(newValue, newRecord)
+		// Preparing original record
+		originRecord := snapshotRecordPool.Get().(*gravity_sdk_types_snapshot_record.SnapshotRecord)
+		err = gravity_sdk_types_snapshot_record.Unmarshal(origin, originRecord)
 		if err != nil {
-			log.Error(err)
-			return origin
+			log.Warnf("data_handler: failed to parse original record: %v", err)
+			// replace original data with new data
+			//return origin
 		}
 
 		// Merged new data to original data
