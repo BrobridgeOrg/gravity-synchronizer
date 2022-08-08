@@ -90,7 +90,7 @@ func (sub *Subscriber) Awake(pipeline *Pipeline) error {
 	err := connection.Publish(channel, data)
 	eventPool.Put(ev)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("subscriber(id=%s, pipeline=%d, lastSeq=%d): failed to awake: %v", sub.id, pipeline.id, pipeline.GetLastSequence(), err)
 		return err
 	}
 
@@ -102,7 +102,7 @@ func (sub *Subscriber) PullEvents(pipeline *Pipeline, startAt uint64, offset uin
 	// Getting events from event store
 	events, err := pipeline.eventStore.Fetch(startAt, offset, count)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("subscriber(id=%s, pipeline=%d): failed to fetch data from store: %v", sub.id, pipeline.id, err)
 		return nil, 0, errors.New("Failed to fetch data from store")
 	}
 

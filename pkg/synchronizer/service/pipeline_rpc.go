@@ -84,7 +84,6 @@ func (pipeline *Pipeline) rpc_pullEvents(ctx *broc.Context) (returnedValue inter
 	// Fetch data and push to subscriber
 	events, lastSeq, err := subscriber.PullEvents(pipeline, request.StartAt, request.Offset, int(request.Count))
 	if err != nil {
-		log.Error(err)
 		reply.Success = false
 		reply.Reason = "InternalError"
 		return
