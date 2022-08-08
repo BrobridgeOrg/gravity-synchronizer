@@ -2,6 +2,7 @@ package dsa
 
 import (
 	"github.com/cfsghost/taskflow"
+	log "github.com/sirupsen/logrus"
 )
 
 type Dispatcher struct {
@@ -42,6 +43,8 @@ func (dispatcher *Dispatcher) handle(message *taskflow.Message) {
 		for _, g := range groups {
 			taskCount += g.GetTaskCount()
 		}
+
+		log.Infof("dsa: updated %d records", taskCount)
 
 		dispatcher.dsa.decreaseTaskCount(taskCount)
 	}
