@@ -77,7 +77,7 @@ func (mh *MappingHandler) processMessage(message *taskflow.Message) {
 	record, err := mh.convert(r, t)
 	if err != nil {
 		// Failed to parse payload
-		log.Error(err)
+		log.Errorf("data_handler: failed to convert raw data: %v", err)
 
 		// Ignore
 		if message.Context.GetPrivData() != nil {
@@ -90,7 +90,7 @@ func (mh *MappingHandler) processMessage(message *taskflow.Message) {
 	if record == nil {
 
 		// Ignore empty data
-		log.Warn("Ignore empty payload")
+		log.Warn("data_handler: ignore empty payload")
 
 		if message.Context.GetPrivData() != nil {
 			tr := message.Context.GetPrivData().(*TaskRequest)
