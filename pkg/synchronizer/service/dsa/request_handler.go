@@ -67,7 +67,7 @@ func (rh *RequestHandler) handle(message *taskflow.Message) {
 	rh.incoming.Push(message)
 }
 
-func (rh *RequestHandler) requestHandler(data interface{}, publish func(interface{})) {
+func (rh *RequestHandler) requestHandler(data interface{}, done func(interface{})) {
 
 	message := data.(*taskflow.Message)
 
@@ -83,7 +83,7 @@ func (rh *RequestHandler) requestHandler(data interface{}, publish func(interfac
 			rh.dsa.completionHandler(message.Context.GetPrivData(), nil, ErrUnrecognizedRequest)
 		}
 
-		publish(nil)
+		done(nil)
 
 		return
 	}
@@ -100,7 +100,7 @@ func (rh *RequestHandler) requestHandler(data interface{}, publish func(interfac
 			rh.dsa.completionHandler(message.Context.GetPrivData(), nil, ErrMaxPendingTasksExceeded)
 		}
 
-		publish(nil)
+		done(nil)
 
 		return
 	}
@@ -146,7 +146,7 @@ func (rh *RequestHandler) requestHandler(data interface{}, publish func(interfac
 		rh.dsa.increaseTaskCount(group.GetTaskCount())
 	}
 
-	publish(message)
+	done(message)
 }
 
 func (rh *RequestHandler) prepare(dsa *DataSourceAdapter, req *dsa_pb.PublishRequest) *task.TaskGroup {
