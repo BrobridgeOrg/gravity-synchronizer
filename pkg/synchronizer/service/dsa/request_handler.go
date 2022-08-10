@@ -48,18 +48,15 @@ func (rh *RequestHandler) Init(dsa *DataSourceAdapter) error {
 }
 
 func (rh *RequestHandler) receiver() {
-	for {
-		select {
-		case data := <-rh.incoming.Output():
+	for data := range rh.incoming.Output() {
 
-			if data == nil {
-				// do nothing
-				continue
-			}
-
-			message := data.(*taskflow.Message)
-			message.Send(0, message.Data)
+		if data == nil {
+			// do nothing
+			continue
 		}
+
+		message := data.(*taskflow.Message)
+		message.Send(0, message.Data)
 	}
 }
 
