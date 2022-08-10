@@ -35,6 +35,8 @@ func (pg *PacketGroup) AddTask(t *task.Task) {
 func (pg *PacketGroup) Done() {
 	completed := atomic.AddInt32(&pg.completed, 1)
 	if int(completed) == len(pg.packets) {
-		pg.completionHandler()
+		if pg.completionHandler != nil {
+			pg.completionHandler()
+		}
 	}
 }

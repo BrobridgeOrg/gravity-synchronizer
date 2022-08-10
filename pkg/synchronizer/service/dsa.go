@@ -45,11 +45,14 @@ func (synchronizer *Synchronizer) initializeDataSourceAdapter() error {
 
 	synchronizer.dsa = dsa.NewDataSourceAdapter()
 	synchronizer.dsa.SetRuleConfig(synchronizer.ruleConfig)
+
+	// Data handling
 	synchronizer.dsa.OnEmitted(func(packet *dsa.PipelinePacket) {
 		err := synchronizer.handlePipelinePacket(packet)
 		packet.Done(err)
 	})
 
+	// Request is completed
 	synchronizer.dsa.OnCompleted(func(privData interface{}, data interface{}, err error) {
 
 		/*

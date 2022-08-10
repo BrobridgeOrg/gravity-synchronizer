@@ -105,24 +105,6 @@ func (rh *RequestHandler) requestHandler(data interface{}, done func(interface{}
 		return
 	}
 
-	// Setup completion handler
-	bundle.OnCompleted(func() {
-
-		if rh.dsa.completionHandler != nil {
-			rh.dsa.completionHandler(message.Context.GetPrivData(), nil, nil)
-		}
-
-		// update pending tasks
-		var taskCount int32
-
-		groups := bundle.GetTaskGroups()
-		for _, g := range groups {
-			taskCount += g.GetTaskCount()
-		}
-
-		rh.dsa.decreaseTaskCount(taskCount)
-	})
-
 	message.Data = bundle
 
 	// Filtering requests

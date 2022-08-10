@@ -69,7 +69,13 @@ func (mh *MappingHandler) processMessage(message *taskflow.Message) {
 	// Getting specific rule settings
 	r := mh.dataHandler.ruleConfig.Get(t.Rule)
 	if r == nil {
-		// Not found
+		// Not found rule
+
+		if message.Context.GetPrivData() != nil {
+			tr := message.Context.GetPrivData().(*TaskRequest)
+			tr.Done(nil)
+		}
+
 		return
 	}
 

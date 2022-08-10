@@ -29,7 +29,10 @@ func (emitter *Emitter) Init(dsa *DataSourceAdapter) error {
 func (emitter *Emitter) handle(message *taskflow.Message) {
 
 	packet := message.Data.(*PipelinePacket)
-	emitter.emittedHandler(packet)
+
+	if emitter.emittedHandler != nil {
+		emitter.emittedHandler(packet)
+	}
 }
 
 func (emitter *Emitter) onEmitted(fn func(*PipelinePacket)) {

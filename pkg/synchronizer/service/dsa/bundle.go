@@ -15,8 +15,7 @@ var bundlePool = sync.Pool{
 }
 
 type Bundle struct {
-	taskGroups        []*task.TaskGroup
-	completionHandler func()
+	taskGroups []*task.TaskGroup
 }
 
 func NewBundle() *Bundle {
@@ -34,8 +33,4 @@ func (bundle *Bundle) GetTaskGroups() []*task.TaskGroup {
 func (bundle *Bundle) Release() {
 	bundle.taskGroups = make([]*task.TaskGroup, 0)
 	bundlePool.Put(bundle)
-}
-
-func (bundle *Bundle) OnCompleted(fn func()) {
-	bundle.completionHandler = fn
 }

@@ -89,7 +89,8 @@ func TestRequestHandler(t *testing.T) {
 	assert.Equal(t, int32(1), testDSA.Pending())
 
 	// task is completed
-	bundle.completionHandler()
+	//bundle.completionHandler()
+	testDSA.decreaseTaskCount(1)
 
 	// Check if dsa pending tasks state is correct
 	assert.Equal(t, int32(0), testDSA.Pending())
@@ -240,9 +241,7 @@ func TestDispatcher(t *testing.T) {
 	packet.Done(nil)
 	packetGroup := <-packetResult
 
-	if int(packetGroup.completed) != 1 {
-		t.Error("counter is incorrect")
-	}
+	assert.Equal(t, int32(1), packetGroup.completed)
 
 	// Check if dsa pending tasks state is correct
 	assert.Equal(t, int32(0), testDSA.Pending())
@@ -261,11 +260,9 @@ func TestEmitter(t *testing.T) {
 	testDSA.taskflow.AddTask(testDSA.emitter.task)
 	testDSA.taskflow.Link(testDSA.dispatcher.task, 0, testDSA.emitter.task, 0)
 
-	packetCount := 0
-	packetBuffer := make(chan *PipelinePacket, 3)
+	packets := make(chan *PipelinePacket, 3)
 	testDSA.OnEmitted(func(packet *PipelinePacket) {
-		packetCount++
-		packetBuffer <- packet
+		packets <- packet
 	})
 
 	// Preparing request
@@ -301,20 +298,20 @@ func TestEmitter(t *testing.T) {
 	})
 
 	totalPackets := 0
-	for packet := range packetBuffer {
+	for packet := range packets {
+		totalPackets += int(packet.TaskGroup.GetTaskCount())
 		packet.Done(nil)
-		totalPackets++
 
-		if totalPackets == packetCount {
+		if totalPackets == 3 {
 			break
 		}
 	}
 
-	packetGroup := <-packetResult
+	assert.Equal(t, 3, totalPackets)
 
-	if int(packetGroup.completed) != totalPackets {
-		t.Error("counter is incorrect")
-	}
+	// Getting result
+	packetGroup := <-packetResult
+	assert.Equal(t, int32(len(packetGroup.packets)), packetGroup.completed)
 
 	// Check if dsa pending tasks state is correct
 	assert.Equal(t, int32(0), testDSA.Pending())

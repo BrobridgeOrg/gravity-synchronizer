@@ -2,7 +2,6 @@ package dsa
 
 import (
 	"github.com/cfsghost/taskflow"
-	log "github.com/sirupsen/logrus"
 )
 
 type Dispatcher struct {
@@ -39,17 +38,14 @@ func (dispatcher *Dispatcher) handle(message *taskflow.Message) {
 		// update pending tasks
 		var taskCount int32
 
-		groups := bundle.GetTaskGroups()
-		for _, g := range groups {
-			taskCount += g.GetTaskCount()
+		for _, pg := range packetGroup.packets {
+			taskCount += pg.TaskGroup.GetTaskCount()
 		}
-
-		log.Infof("dsa: updated %d records", taskCount)
 
 		dispatcher.dsa.decreaseTaskCount(taskCount)
 	}
 
-	// Push each task to shard handler
+	// grouping tasks by pipeline
 	groups := bundle.GetTaskGroups()
 	for _, group := range groups {
 
@@ -64,4 +60,6 @@ func (dispatcher *Dispatcher) handle(message *taskflow.Message) {
 	for _, packet := range packetGroup.packets {
 		message.Send(0, packet)
 	}
+
+	bundle.Release()
 }
