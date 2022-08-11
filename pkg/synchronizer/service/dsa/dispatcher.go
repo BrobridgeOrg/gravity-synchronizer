@@ -33,6 +33,7 @@ func (dispatcher *Dispatcher) handle(message *taskflow.Message) {
 
 	packetGroup := NewPacketGroup()
 	packetGroup.completionHandler = func() {
+
 		dispatcher.dsa.completionHandler(message.Context.GetPrivData(), packetGroup, nil)
 
 		// update pending tasks
@@ -43,6 +44,8 @@ func (dispatcher *Dispatcher) handle(message *taskflow.Message) {
 		}
 
 		dispatcher.dsa.decreaseTaskCount(taskCount)
+
+		message.Release()
 	}
 
 	// grouping tasks by pipeline

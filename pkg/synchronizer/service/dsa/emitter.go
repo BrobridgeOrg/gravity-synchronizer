@@ -33,6 +33,8 @@ func (emitter *Emitter) handle(message *taskflow.Message) {
 	if emitter.emittedHandler != nil {
 		emitter.emittedHandler(packet)
 	}
+
+	message.Release()
 }
 
 func (emitter *Emitter) onEmitted(fn func(*PipelinePacket)) {

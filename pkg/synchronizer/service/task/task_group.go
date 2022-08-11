@@ -1,10 +1,7 @@
 package task
 
-import "sync/atomic"
-
 type TaskGroup struct {
-	completed int32
-	tasks     []*Task
+	tasks []*Task
 }
 
 func NewTaskGroup() *TaskGroup {
@@ -25,12 +22,6 @@ func (group *TaskGroup) GetTasks() []*Task {
 	return group.tasks
 }
 
-func (group *TaskGroup) Done(task *Task) bool {
-
-	completed := atomic.AddInt32(&group.completed, 1)
-	if completed >= int32(len(group.tasks)) {
-		return true
-	}
-
-	return false
+func (group *TaskGroup) Release() {
+	group.tasks = make([]*Task, 0)
 }

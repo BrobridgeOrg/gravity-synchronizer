@@ -173,6 +173,8 @@ github.com/cfsghost/parallel-chunked-flow v0.0.6 h1:ObqjR98EuxkZ4UFe6zSVgFdNEVQu
 github.com/cfsghost/parallel-chunked-flow v0.0.6/go.mod h1:CfIVIBt1wN8w712B/6dsvwUn4ZJ+z9XSwj6Jmq74AqI=
 github.com/cfsghost/taskflow v0.0.2 h1:ahTTVBSM8/6f0pYSAKEgph7WrcNdLcLZd8odxVYEk6k=
 github.com/cfsghost/taskflow v0.0.2/go.mod h1:6iDt14KgVqDvrgAJPD2IVuE/fT3jZyTmpqRHVlmyCck=
+github.com/cfsghost/taskflow v0.0.3 h1:DCqZ2JQf1+a+L42xeiTAIp3TPQS2nw1BQ5+t1+PvUeg=
+github.com/cfsghost/taskflow v0.0.3/go.mod h1:6iDt14KgVqDvrgAJPD2IVuE/fT3jZyTmpqRHVlmyCck=
 github.com/chenzhuoyu/base64x v0.0.0-20211019084208-fb5309c8db06/go.mod h1:DH46F32mSOjUmXrMHnKwZdA8wcEefY7UVqBKYGjpdQY=
 github.com/chzyer/logex v1.1.10/go.mod h1:+Ywpsq7O8HXn0nuIou7OrIPyXbp3wmkHB+jjWRnGsAI=
 github.com/chzyer/readline v0.0.0-20180603132655-2972be24d48e/go.mod h1:nSuG5e5PlCu98SY8svDHJxuZscDgtXS6KTTbou5AhLI=

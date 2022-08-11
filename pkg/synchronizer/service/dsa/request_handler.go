@@ -50,13 +50,13 @@ func (rh *RequestHandler) Init(dsa *DataSourceAdapter) error {
 func (rh *RequestHandler) receiver() {
 	for data := range rh.incoming.Output() {
 
-		if data == nil {
-			// do nothing
-			continue
+		message := data.(*taskflow.Message)
+
+		if message.Data != nil {
+			message.Send(0, message.Data)
 		}
 
-		message := data.(*taskflow.Message)
-		message.Send(0, message.Data)
+		message.Release()
 	}
 }
 
@@ -80,7 +80,7 @@ func (rh *RequestHandler) requestHandler(data interface{}, done func(interface{}
 			rh.dsa.completionHandler(message.Context.GetPrivData(), nil, ErrUnrecognizedRequest)
 		}
 
-		done(nil)
+		done(message)
 
 		return
 	}
@@ -97,7 +97,7 @@ func (rh *RequestHandler) requestHandler(data interface{}, done func(interface{}
 			rh.dsa.completionHandler(message.Context.GetPrivData(), nil, ErrMaxPendingTasksExceeded)
 		}
 
-		done(nil)
+		done(message)
 
 		return
 	}
