@@ -73,6 +73,8 @@ func (synchronizer *Synchronizer) initializeDataSourceAdapter() error {
 		if err != nil {
 			//			encrypted, _ := request.key.Encryption().Encrypt(FailureReply(0, err.Error()))
 
+			log.Errorf("synchronizer: failed to process data: %v", err)
+
 			packet := &packet_pb.Packet{
 				Error:  true,
 				Reason: err.Error(),
