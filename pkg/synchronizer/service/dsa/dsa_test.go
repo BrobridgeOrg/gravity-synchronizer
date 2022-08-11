@@ -311,6 +311,7 @@ func TestEmitter(t *testing.T) {
 
 	// Getting result
 	packetGroup := <-packetResult
+
 	assert.Equal(t, int32(len(packetGroup.packets)), packetGroup.completed)
 
 	// Check if dsa pending tasks state is correct

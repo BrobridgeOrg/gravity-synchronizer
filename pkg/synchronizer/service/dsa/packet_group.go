@@ -1,6 +1,7 @@
 package dsa
 
 import (
+	"sync"
 	"sync/atomic"
 
 	"github.com/BrobridgeOrg/gravity-synchronizer/pkg/synchronizer/service/task"
@@ -12,10 +13,17 @@ type PacketGroup struct {
 	completionHandler func()
 }
 
+var pgPool = sync.Pool{
+	New: func() interface{} {
+		return &PacketGroup{}
+	},
+}
+
 func NewPacketGroup() *PacketGroup {
-	return &PacketGroup{
-		packets: make(map[int32]*PipelinePacket),
-	}
+	pg := pgPool.Get().(*PacketGroup)
+	pg.packets = make(map[int32]*PipelinePacket)
+	pg.completed = 0
+	return pg
 }
 
 func (pg *PacketGroup) AddTask(t *task.Task) {
@@ -38,5 +46,8 @@ func (pg *PacketGroup) Done() {
 		if pg.completionHandler != nil {
 			pg.completionHandler()
 		}
+
+		// Release
+		pgPool.Put(pg)
 	}
 }

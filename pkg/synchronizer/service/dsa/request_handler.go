@@ -3,6 +3,7 @@ package dsa
 import (
 	"fmt"
 	"reflect"
+	"sync"
 
 	"github.com/cfsghost/taskflow"
 
@@ -14,6 +15,12 @@ import (
 	"github.com/lithammer/go-jump-consistent-hash"
 	log "github.com/sirupsen/logrus"
 )
+
+var reqPool = sync.Pool{
+	New: func() interface{} {
+		return &dsa_pb.BatchPublishRequest{}
+	},
+}
 
 type RequestHandler struct {
 	dsa      *DataSourceAdapter
@@ -71,7 +78,9 @@ func (rh *RequestHandler) requestHandler(data interface{}, done func(interface{}
 	bundle := NewBundle()
 
 	// Parsing request
-	input := &dsa_pb.BatchPublishRequest{}
+	input := reqPool.Get().(*dsa_pb.BatchPublishRequest)
+	defer reqPool.Put(input)
+
 	err := proto.Unmarshal(message.Data.([]byte), input)
 	if err != nil {
 		log.Errorf("dsa: Failed to parse request: %v", err)
