@@ -89,7 +89,10 @@ func (dh *DataHandler) PushTaskGroup(privData interface{}, taskGroup *task.TaskG
 		tr.PrivData = privData
 		tr.Task = t
 		tr.OnCompleted = func(err error) {
-			e = err
+			if err != nil {
+				e = err
+			}
+
 			wg.Done()
 		}
 

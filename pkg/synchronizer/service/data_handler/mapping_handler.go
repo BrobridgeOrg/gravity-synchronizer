@@ -108,6 +108,7 @@ func (mh *MappingHandler) processMessage(message *taskflow.Message) {
 
 	message.Context.SetMeta("task", t)
 	message.Send(0, record)
+	message.Release()
 }
 
 func (mh *MappingHandler) convert(rule *rule.Rule, t *task.Task) (*gravity_sdk_types_record.Record, error) {
