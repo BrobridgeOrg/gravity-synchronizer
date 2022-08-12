@@ -3,7 +3,7 @@ module gravity-synchronizer
 go 1.15
 
 require (
-	github.com/BrobridgeOrg/EventStore v0.0.22
+	github.com/BrobridgeOrg/EventStore v0.0.24
 	github.com/BrobridgeOrg/broc v0.0.2
 	github.com/BrobridgeOrg/gravity-api v0.2.25
 	github.com/BrobridgeOrg/gravity-exporter-nats v0.0.0-20211027080937-4b988b57c4e8 // indirect
@@ -19,12 +19,14 @@ require (
 	github.com/lithammer/go-jump-consistent-hash v1.0.2
 	github.com/nats-io/jsm.go v0.0.27
 	github.com/nats-io/nats.go v1.13.1-0.20220121202836-972a071d373d
+	github.com/nats-io/nkeys v0.3.0 // indirect
 	github.com/prometheus/common v0.9.1
 	github.com/sirupsen/logrus v1.8.1
 	github.com/spf13/cobra v1.3.0
 	github.com/spf13/viper v1.10.1
 	github.com/stretchr/testify v1.7.0 // indirect
 	go.uber.org/ratelimit v0.2.0
+	golang.org/x/crypto v0.0.0-20220722155217-630584e8d5aa // indirect
 )
 
 replace github.com/BrobridgeOrg/gravity-synchronizer => ./
