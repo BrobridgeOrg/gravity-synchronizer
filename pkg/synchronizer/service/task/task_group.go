@@ -1,13 +1,21 @@
 package task
 
+import "sync"
+
+var tgPool = sync.Pool{
+	New: func() interface{} {
+		return &TaskGroup{}
+	},
+}
+
 type TaskGroup struct {
 	tasks []*Task
 }
 
 func NewTaskGroup() *TaskGroup {
-	return &TaskGroup{
-		tasks: make([]*Task, 0),
-	}
+	tg := tgPool.Get().(*TaskGroup)
+	tg.tasks = make([]*Task, 0)
+	return tg
 }
 
 func (group *TaskGroup) GetTaskCount() int32 {
@@ -24,4 +32,5 @@ func (group *TaskGroup) GetTasks() []*Task {
 
 func (group *TaskGroup) Release() {
 	group.tasks = make([]*Task, 0)
+	tgPool.Put(group)
 }

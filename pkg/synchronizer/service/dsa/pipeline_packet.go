@@ -21,6 +21,7 @@ func (pp *PipelinePacket) AddTask(t *task.Task) {
 }
 
 func (pp *PipelinePacket) Done(err error) {
+
 	if pp.Group == nil {
 		return
 	}

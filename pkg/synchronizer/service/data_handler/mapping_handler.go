@@ -88,7 +88,7 @@ func (mh *MappingHandler) processMessage(message *taskflow.Message) {
 		// Ignore
 		if message.Context.GetPrivData() != nil {
 			tr := message.Context.GetPrivData().(*TaskRequest)
-			tr.Done(nil)
+			tr.Done(err)
 		}
 		return
 	}
