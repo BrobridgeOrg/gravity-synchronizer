@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/signal"
 	"runtime"
+	"runtime/pprof"
 	"runtime/trace"
 	"strconv"
 	"strings"
@@ -62,8 +63,7 @@ func init() {
 		go func() {
 
 			host, _ := os.Hostname()
-			f, err := os.Create("/data/" + host + "-trace.out")
-			//f, err := os.Create("cpu-profile.prof")
+			f, err := os.Create("/data/" + host + "-cpu-profile.out")
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -77,9 +77,22 @@ func init() {
 			signal.Notify(sig, os.Interrupt, os.Kill, syscall.SIGTERM)
 			<-sig
 			trace.Stop()
+			writeHeapProfile("/data/" + host + "-mem-profile.out")
 			os.Exit(0)
 		}()
 	}
+}
+
+func writeHeapProfile(filename string) {
+
+	f, err := os.Create(filename)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	pprof.WriteHeapProfile(f)
+
+	f.Close()
 }
 
 func main() {

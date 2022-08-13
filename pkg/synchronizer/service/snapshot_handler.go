@@ -78,6 +78,8 @@ func (snapshot *SnapshotHandler) handle(request *eventstore.SnapshotRequest) err
 
 		// Preparing new record
 		newRecord := snapshotRecordPool.Get().(*gravity_sdk_types_snapshot_record.SnapshotRecord)
+		defer snapshotRecordPool.Put(newRecord)
+
 		err := gravity_sdk_types_snapshot_record.Unmarshal(newValue, newRecord)
 		if err != nil {
 			log.Errorf("data_handler: failed to parse new record: %v", err)
@@ -86,19 +88,15 @@ func (snapshot *SnapshotHandler) handle(request *eventstore.SnapshotRequest) err
 
 		// Preparing original record
 		originRecord := snapshotRecordPool.Get().(*gravity_sdk_types_snapshot_record.SnapshotRecord)
+		defer snapshotRecordPool.Put(originRecord)
+
 		err = gravity_sdk_types_snapshot_record.Unmarshal(origin, originRecord)
 		if err != nil {
 			log.Warnf("data_handler: failed to parse original record: %v", err)
-			// replace original data with new data
-			//return origin
 		}
 
 		// Merged new data to original data
 		updatedData := snapshot.merge(originRecord, newRecord)
-
-		// Release record
-		snapshotRecordPool.Put(originRecord)
-		snapshotRecordPool.Put(newRecord)
 
 		return updatedData
 	})
