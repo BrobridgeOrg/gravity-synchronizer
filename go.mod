@@ -9,7 +9,7 @@ require (
 	github.com/BrobridgeOrg/gravity-exporter-nats v0.0.0-20211027080937-4b988b57c4e8 // indirect
 	github.com/BrobridgeOrg/gravity-sdk v0.0.50
 	github.com/BrobridgeOrg/gravity-synchronizer v0.0.0-00010101000000-000000000000
-	github.com/BrobridgeOrg/schemer v0.0.11
+	github.com/BrobridgeOrg/schemer v0.0.12
 	github.com/BrobridgeOrg/sequential-data-flow v0.0.1
 	github.com/cfsghost/gosharding v0.0.3
 	github.com/cfsghost/parallel-chunked-flow v0.0.6

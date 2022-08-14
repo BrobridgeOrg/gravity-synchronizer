@@ -102,6 +102,8 @@ github.com/BrobridgeOrg/schemer v0.0.10 h1:e/Jwtt97t0kDp8Alw7hj3I+Jy8EEHNZqD7drm
 github.com/BrobridgeOrg/schemer v0.0.10/go.mod h1:ymLlI5Ch8MsmFn3Ah+NphZkNz1NmCar5eUfxCcFTXI8=
 github.com/BrobridgeOrg/schemer v0.0.11 h1:U1i/W+1Fo0AF8monsoqcHQMgmxl5ipR2ysZJAXUSb5I=
 github.com/BrobridgeOrg/schemer v0.0.11/go.mod h1:ymLlI5Ch8MsmFn3Ah+NphZkNz1NmCar5eUfxCcFTXI8=
+github.com/BrobridgeOrg/schemer v0.0.12 h1:sKAfKHE/oKAHO1DBWscg4kaje161QAJOZW4mf1AB5Dw=
+github.com/BrobridgeOrg/schemer v0.0.12/go.mod h1:ymLlI5Ch8MsmFn3Ah+NphZkNz1NmCar5eUfxCcFTXI8=
 github.com/BrobridgeOrg/sequential-data-flow v0.0.1 h1:l2oKsQK1acXyYWTjpsTLCP8CLMYRyEZ1Ni1BgYi1lS0=
 github.com/BrobridgeOrg/sequential-data-flow v0.0.1/go.mod h1:WpQ0+7QWx9HYFPqA9dISj2hQWInucux7RX+Rr4UvAa0=
 github.com/BurntSushi/toml v0.3.1 h1:WXkYYl6Yr3qBf1K79EBnL4mak0OimBfB0XUf9Vl28OQ=
