@@ -16,7 +16,7 @@ func (synchronizer *Synchronizer) initializeDataHandler() error {
 	})
 
 	// Setup worker count
-	viper.SetDefault("pipeline.workerCount", 16)
+	viper.SetDefault("pipeline.workerCount", 8)
 	workerCount := viper.GetInt("pipeline.workerCount")
 	synchronizer.dataHandler.SetWorkerCount(workerCount)
 
