@@ -16,7 +16,6 @@ import (
 	"github.com/BrobridgeOrg/gravity-sdk/core/keyring"
 	"github.com/BrobridgeOrg/gravity-synchronizer/pkg/app"
 	"github.com/BrobridgeOrg/schemer"
-	gosharding "github.com/cfsghost/gosharding"
 	jsoniter "github.com/json-iterator/go"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
@@ -27,7 +26,6 @@ var json = jsoniter.ConfigCompatibleWithStandardLibrary
 type Synchronizer struct {
 	app              app.App
 	gravityClient    *core.Client
-	shard            *gosharding.Shard
 	clientID         string
 	domain           string
 	pipelines        map[uint64]*Pipeline
@@ -121,12 +119,6 @@ func (synchronizer *Synchronizer) Init() error {
 
 	// Initializing event store
 	err = synchronizer.initializeEventStore()
-	if err != nil {
-		return err
-	}
-
-	// Initializing shard
-	err = synchronizer.initializeShard()
 	if err != nil {
 		return err
 	}
