@@ -86,7 +86,7 @@ func (es *EventStore) UpdateDurableState(durableName string, lastSeq uint64) err
 }
 
 func (es *EventStore) Subscribe(durableName string, seq uint64, fn func(event *eventstore.Event)) (*eventstore.Subscription, error) {
-	return es.store.Subscribe(durableName, seq, fn)
+	return es.store.Subscribe(fn, eventstore.DurableName(durableName), eventstore.StartAtSequence(seq))
 }
 
 func (es *EventStore) Fetch(startAt uint64, offset uint64, count int) ([]*eventstore.Event, error) {
