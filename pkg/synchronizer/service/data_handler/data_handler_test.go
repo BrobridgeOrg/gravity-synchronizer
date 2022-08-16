@@ -150,6 +150,13 @@ func TestSkipEmptyPayload(t *testing.T) {
 		t.Error(err)
 	}
 
+	// empty task data that will be ignored
+	invalidTaskData := createTestTask("accountCreated", []byte("XYZ"))
+	err = testDH.taskflow.PushWithContext(testDH.mappingHandler.task.GetID(), 0, taskflow.NewContext(), invalidTaskData)
+	if err != nil {
+		t.Error(err)
+	}
+
 	// send normal data again
 	normalTaskData = createTestTask("accountCreated", []byte(`{"id":1,"name":"fred"}`))
 	err = testDH.taskflow.PushWithContext(testDH.mappingHandler.task.GetID(), 0, taskflow.NewContext(), normalTaskData)

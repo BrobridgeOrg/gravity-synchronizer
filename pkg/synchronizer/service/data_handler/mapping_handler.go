@@ -83,7 +83,11 @@ func (mh *MappingHandler) processMessage(message *taskflow.Message) {
 	record, err := mh.convert(r, t)
 	if err != nil {
 		// Failed to parse payload
-		log.Errorf("data_handler: failed to convert raw data: %v", err)
+		log.WithFields(log.Fields{
+			"event":    t.EventName,
+			"pipeline": t.PipelineID,
+			"pk":       t.PrimaryKey,
+		}).Errorf("data_handler: failed to convert raw data: %v", err)
 
 		// Ignore
 		if message.Context.GetPrivData() != nil {
