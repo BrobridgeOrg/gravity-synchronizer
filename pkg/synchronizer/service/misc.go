@@ -1,6 +1,8 @@
 package synchronizer
 
-import "unsafe"
+import (
+	"unsafe"
+)
 
 func StrToBytes(s string) []byte {
 	x := (*[2]uintptr)(unsafe.Pointer(&s))

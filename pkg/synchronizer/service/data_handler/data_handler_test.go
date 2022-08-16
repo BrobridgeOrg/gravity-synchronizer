@@ -1,15 +1,19 @@
 package data_handler
 
 import (
+	"fmt"
 	"testing"
 
 	gravity_sdk_types_record "github.com/BrobridgeOrg/gravity-sdk/types/record"
 	"github.com/BrobridgeOrg/gravity-synchronizer/pkg/synchronizer/service/rule"
 	"github.com/BrobridgeOrg/gravity-synchronizer/pkg/synchronizer/service/task"
 	"github.com/cfsghost/taskflow"
+	"github.com/stretchr/testify/assert"
 )
 
 var testDH *DataHandler
+var testEvent string
+var testRule string
 
 func createTestTask(eventName string, payload []byte) *task.Task {
 
@@ -28,12 +32,16 @@ func createTestTask(eventName string, payload []byte) *task.Task {
 		}
 	}
 
+	testEvent = eventName
+	testRule = dt.Rule
+
 	return dt
 }
 
 func TestDataHandlerInitialization(t *testing.T) {
 
 	testDH = NewDataHandler()
+	testEvent = "accountCreated"
 
 	// Load rules
 	ruleConfig, err := rule.LoadRuleFile("../../../../rules/rules.json")
@@ -47,6 +55,15 @@ func TestDataHandlerInitialization(t *testing.T) {
 	err = testDH.Init()
 	if err != nil {
 		t.Error(err)
+	}
+
+	// Find rule
+	for _, r := range testDH.ruleConfig.Rules {
+
+		if r.Event == testEvent {
+			testRule = r.ID
+			break
+		}
 	}
 }
 
@@ -73,21 +90,14 @@ func TestMappingHandler(t *testing.T) {
 	testDH.taskflow.Link(testDH.mappingHandler.task, 0, checkTask, 0)
 
 	// Preparing data task from DSA
-	for i := 0; i < 10; i++ {
+	taskCount := 1000
+	for i := 0; i < taskCount; i++ {
 		dt := task.NewTask()
 		dt.PipelineID = 0
-		dt.PrimaryKey = "1"
-		dt.EventName = "accountCreated"
-		dt.Payload = []byte(`{"id":1,"name":"fred"}`)
-
-		// Find rule
-		for _, r := range testDH.ruleConfig.Rules {
-
-			if r.Event == dt.EventName {
-				dt.Rule = r.ID
-				break
-			}
-		}
+		dt.PrimaryKey = fmt.Sprintf("%d", i+1)
+		dt.EventName = testEvent
+		dt.Payload = []byte(fmt.Sprintf(`{"id":%d}`, i+1))
+		dt.Rule = testRule
 
 		//		group.AddTask(dt)
 		ctx := taskflow.NewContext()
@@ -97,17 +107,14 @@ func TestMappingHandler(t *testing.T) {
 		}
 	}
 
-	// Push task group to data handler
-	//	testDH.PushTaskGroup(nil, group)
-
 	totalResults := 0
 	for pj := range done {
 		totalResults++
-		if pj.EventName != "accountCreated" {
-			t.Fail()
-		}
 
-		if totalResults == 10 {
+		assert.Equal(t, pj.EventName, testEvent)
+		assert.Equal(t, uint64(totalResults), BytesToUint64(pj.Fields[0].Value.Value))
+
+		if totalResults == taskCount {
 			break
 		}
 	}
@@ -115,7 +122,7 @@ func TestMappingHandler(t *testing.T) {
 	testDH.taskflow.RemoveTask(checkTask.GetID())
 }
 
-func TestEmptyPayload(t *testing.T) {
+func TestSkipEmptyPayload(t *testing.T) {
 
 	// Preparing task to receive results
 	done := make(chan *gravity_sdk_types_record.Record, 10)
@@ -136,7 +143,7 @@ func TestEmptyPayload(t *testing.T) {
 		t.Error(err)
 	}
 
-	// empty task data
+	// empty task data that will be ignored
 	emptyTaskData := createTestTask("accountCreated", []byte(""))
 	err = testDH.taskflow.PushWithContext(testDH.mappingHandler.task.GetID(), 0, taskflow.NewContext(), emptyTaskData)
 	if err != nil {
@@ -153,9 +160,7 @@ func TestEmptyPayload(t *testing.T) {
 	totalResults := 0
 	for pj := range done {
 		totalResults++
-		if pj.EventName != "accountCreated" {
-			t.Fail()
-		}
+		assert.Equal(t, pj.EventName, testEvent)
 
 		if totalResults == 2 {
 			break
@@ -177,27 +182,30 @@ func TestStore(t *testing.T) {
 	testDH.taskflow.Link(testDH.mappingHandler.task, 0, testDH.store.task, 0)
 
 	// Initializing store handler
+	totalResults := 0
 	testDH.OnStore(func(privData interface{}, data []byte) error {
+		totalResults++
+
+		record := recordPool.Get().(*gravity_sdk_types_record.Record)
+		defer recordPool.Put(record)
+
+		gravity_sdk_types_record.Unmarshal(data, record)
+
+		assert.Equal(t, uint64(totalResults), BytesToUint64(record.Fields[0].Value.Value))
+
 		return nil
 	})
 
 	// Preparing data task from DSA
+	taskCount := 10000
 	group := task.NewTaskGroup()
-	for i := 0; i < 10; i++ {
+	for i := 0; i < taskCount; i++ {
 		dt := task.NewTask()
 		dt.PipelineID = 0
-		dt.PrimaryKey = "1"
-		dt.EventName = "accountCreated"
-		dt.Payload = []byte(`{"id":1,"name":"fred"}`)
-
-		// Find rule
-		for _, r := range testDH.ruleConfig.Rules {
-
-			if r.Event == dt.EventName {
-				dt.Rule = r.ID
-				break
-			}
-		}
+		dt.PrimaryKey = fmt.Sprintf("%d", i+1)
+		dt.EventName = testEvent
+		dt.Payload = []byte(fmt.Sprintf(`{"id":%d}`, i+1))
+		dt.Rule = testRule
 
 		group.AddTask(dt)
 	}
@@ -207,4 +215,6 @@ func TestStore(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
+
+	assert.Equal(t, taskCount, totalResults)
 }
