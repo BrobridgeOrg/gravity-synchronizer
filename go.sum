@@ -68,6 +68,8 @@ github.com/BrobridgeOrg/gravity-api v0.2.17 h1:ra9c0d+6yp+ccCKooeoSGtlR2UMPkRB5v
 github.com/BrobridgeOrg/gravity-api v0.2.17/go.mod h1:ky6XIYg5h95Cy+QjRQaI6LQABmQfqAAn+SCgbygxWOA=
 github.com/BrobridgeOrg/gravity-api v0.2.25 h1:MjolYO3TFXI2r8FUCo4vNDx0rzwymgDhHmoDCg/x/Is=
 github.com/BrobridgeOrg/gravity-api v0.2.25/go.mod h1:BO4mhqFUk99/sObzTFAxkIn3NMB0nBoQ29kETU9JDB4=
+github.com/BrobridgeOrg/gravity-api v0.2.26 h1:kPRvUnSY+9YkUeJrpJOsR5QUEHQoiLbyM+UIXlRvSOg=
+github.com/BrobridgeOrg/gravity-api v0.2.26/go.mod h1:BO4mhqFUk99/sObzTFAxkIn3NMB0nBoQ29kETU9JDB4=
 github.com/BrobridgeOrg/gravity-dispatcher v0.0.0-20220206181110-2ea65aa048be/go.mod h1:FcqEXThgifT/XebUWM8GfCui4OvA0Ca0w4h4UvPaeVI=
 github.com/BrobridgeOrg/gravity-exporter-nats v0.0.0-20211027080937-4b988b57c4e8 h1:Q5lQb9cZ8h7P2YzDu/jptjUENk3v95fvGuKmjjXG0Uc=
 github.com/BrobridgeOrg/gravity-exporter-nats v0.0.0-20211027080937-4b988b57c4e8/go.mod h1:6TMKRQP3jBlc9cy5Swu1ZqO1TpiSYdpBpJ1FYxS9/qA=
@@ -83,6 +85,8 @@ github.com/BrobridgeOrg/gravity-sdk v0.0.47/go.mod h1:rE77vTrHi+97PIWHc1lBa3yFoP
 github.com/BrobridgeOrg/gravity-sdk v0.0.49/go.mod h1:rE77vTrHi+97PIWHc1lBa3yFoPpUGmmdvPyToOPC7mg=
 github.com/BrobridgeOrg/gravity-sdk v0.0.50 h1:NhYJ9Kz/C+KEtGTOBYcxWnABCL/GR0jC0BhlXAYjXZQ=
 github.com/BrobridgeOrg/gravity-sdk v0.0.50/go.mod h1:rE77vTrHi+97PIWHc1lBa3yFoPpUGmmdvPyToOPC7mg=
+github.com/BrobridgeOrg/gravity-sdk v1.0.0 h1:Ot+sdIsGey0FVUiuyfG5OdymQOD4/IA6F/1m6x5sY6g=
+github.com/BrobridgeOrg/gravity-sdk v1.0.0/go.mod h1:K2sd+lJxUDKUPK90zsd1aDNhrJVhCLP0MGKJ4b1gP8M=
 github.com/BrobridgeOrg/gravity-snapshot v0.0.0-20220213082459-fd38b9058d95/go.mod h1:nxssa5hbZYu0/kPVm+w9AymHVGJcFZyZNOKXiRp+br4=
 github.com/BrobridgeOrg/gravity-transmitter-postgres v0.0.0-20210824004507-cf5a2b3fb5e7 h1:lncsaRgPXqiJdpZOnjHZpJ9p1K5tPOzjO75AJU9D2DY=
 github.com/BrobridgeOrg/gravity-transmitter-postgres v0.0.0-20210824004507-cf5a2b3fb5e7/go.mod h1:l4K0s5OrpC2WnZx+lt737ugCbH9UCAj/wxC2mKg2Wm4=

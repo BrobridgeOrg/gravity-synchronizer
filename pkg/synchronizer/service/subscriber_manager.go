@@ -3,6 +3,7 @@ package synchronizer
 import (
 	"sync"
 
+	//	gravity_subscriber_manager "github.com/BrobridgeOrg/gravity-sdk/subscriber_manager"
 	gravity_subscriber_manager "github.com/BrobridgeOrg/gravity-sdk/subscriber_manager"
 	log "github.com/sirupsen/logrus"
 )
@@ -49,6 +50,14 @@ func (sm *SubscriberManager) Initialize() error {
 
 		subscriber := NewSubscriber(sub.ID, sub.Name, sub.AppID)
 		subscriber.SubscribeToCollections(sub.Collections)
+
+		// Resume pipelines
+		for _, pid := range sub.Pipelines {
+			if p, ok := sm.synchronizer.pipelines[pid]; ok {
+				subscriber.suspendPipelines.Store(pid, p)
+			}
+		}
+
 		err := sm.Register(sub.ID, subscriber)
 		if err != nil {
 			log.Error(err)

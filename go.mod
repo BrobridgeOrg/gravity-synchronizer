@@ -5,9 +5,9 @@ go 1.15
 require (
 	github.com/BrobridgeOrg/EventStore v0.1.0
 	github.com/BrobridgeOrg/broc v0.0.2
-	github.com/BrobridgeOrg/gravity-api v0.2.25
+	github.com/BrobridgeOrg/gravity-api v0.2.26
 	github.com/BrobridgeOrg/gravity-exporter-nats v0.0.0-20211027080937-4b988b57c4e8 // indirect
-	github.com/BrobridgeOrg/gravity-sdk v0.0.50
+	github.com/BrobridgeOrg/gravity-sdk v1.0.0
 	github.com/BrobridgeOrg/gravity-synchronizer v0.0.0-00010101000000-000000000000
 	github.com/BrobridgeOrg/schemer v0.0.12
 	github.com/BrobridgeOrg/sequential-data-flow v0.0.1
@@ -34,6 +34,7 @@ replace github.com/BrobridgeOrg/gravity-synchronizer => ./
 //replace github.com/BrobridgeOrg/gravity-api => ../gravity-api
 
 //replace github.com/BrobridgeOrg/gravity-sdk => ../gravity-sdk
+//replace github.com/BrobridgeOrg/gravity-sdk => ../sdk/v1/gravity-sdk
 
 //replace github.com/BrobridgeOrg/broc => ../../broc
 

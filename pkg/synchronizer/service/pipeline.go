@@ -4,6 +4,7 @@ import (
 	"gravity-synchronizer/pkg/synchronizer/service/request"
 
 	"github.com/BrobridgeOrg/broc"
+	//	synchronizer_manager "github.com/BrobridgeOrg/gravity-sdk/synchronizer_manager"
 	synchronizer_manager "github.com/BrobridgeOrg/gravity-sdk/synchronizer_manager"
 	log "github.com/sirupsen/logrus"
 	"go.uber.org/ratelimit"

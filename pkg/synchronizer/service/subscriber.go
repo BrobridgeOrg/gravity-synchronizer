@@ -74,6 +74,11 @@ func (sub *Subscriber) UnsubscribeFromCollections(collections []string) ([]strin
 	return collections, nil
 }
 
+func (sub *Subscriber) RegisterPipeline(pipeline *Pipeline) error {
+	sub.suspendPipelines.Store(pipeline.id, pipeline)
+	return nil
+}
+
 func (sub *Subscriber) Awake(pipeline *Pipeline) error {
 
 	connection := sub.synchronizer.gravityClient.GetConnection()

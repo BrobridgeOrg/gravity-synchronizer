@@ -6,7 +6,11 @@ import (
 	"github.com/BrobridgeOrg/broc"
 	packet_pb "github.com/BrobridgeOrg/gravity-api/packet"
 	pipeline_pb "github.com/BrobridgeOrg/gravity-api/service/pipeline"
+
+	//	"github.com/BrobridgeOrg/gravity-sdk/core/keyring"
 	"github.com/BrobridgeOrg/gravity-sdk/core/keyring"
+
+	//	gravity_sdk_types_pipeline_event "github.com/BrobridgeOrg/gravity-sdk/types/pipeline_event"
 	gravity_sdk_types_pipeline_event "github.com/BrobridgeOrg/gravity-sdk/types/pipeline_event"
 	"github.com/BrobridgeOrg/gravity-synchronizer/pkg/synchronizer/service/middleware"
 	"github.com/golang/protobuf/proto"
@@ -172,7 +176,7 @@ func (pipeline *Pipeline) rpc_suspend(ctx *broc.Context) (returnedValue interfac
 		"pipeline":   pipeline.id,
 	}).Info("Subscriber is suspended")
 
-	subscriber.suspendPipelines.Store(pipeline.id, pipeline)
+	subscriber.RegisterPipeline(pipeline)
 	/*
 		// This subscriber shouldn't suspend
 		if pipeline.GetLastSequence() > request.Sequence {
