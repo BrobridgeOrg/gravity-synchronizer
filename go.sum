@@ -87,6 +87,8 @@ github.com/BrobridgeOrg/gravity-sdk v0.0.50 h1:NhYJ9Kz/C+KEtGTOBYcxWnABCL/GR0jC0
 github.com/BrobridgeOrg/gravity-sdk v0.0.50/go.mod h1:rE77vTrHi+97PIWHc1lBa3yFoPpUGmmdvPyToOPC7mg=
 github.com/BrobridgeOrg/gravity-sdk v1.0.0 h1:Ot+sdIsGey0FVUiuyfG5OdymQOD4/IA6F/1m6x5sY6g=
 github.com/BrobridgeOrg/gravity-sdk v1.0.0/go.mod h1:K2sd+lJxUDKUPK90zsd1aDNhrJVhCLP0MGKJ4b1gP8M=
+github.com/BrobridgeOrg/gravity-sdk v1.0.1 h1:ZK6ToBlFNlJ9Vsjnjmqhp7zdWlsWr6VL63s139MxKbI=
+github.com/BrobridgeOrg/gravity-sdk v1.0.1/go.mod h1:K2sd+lJxUDKUPK90zsd1aDNhrJVhCLP0MGKJ4b1gP8M=
 github.com/BrobridgeOrg/gravity-snapshot v0.0.0-20220213082459-fd38b9058d95/go.mod h1:nxssa5hbZYu0/kPVm+w9AymHVGJcFZyZNOKXiRp+br4=
 github.com/BrobridgeOrg/gravity-transmitter-postgres v0.0.0-20210824004507-cf5a2b3fb5e7 h1:lncsaRgPXqiJdpZOnjHZpJ9p1K5tPOzjO75AJU9D2DY=
 github.com/BrobridgeOrg/gravity-transmitter-postgres v0.0.0-20210824004507-cf5a2b3fb5e7/go.mod h1:l4K0s5OrpC2WnZx+lt737ugCbH9UCAj/wxC2mKg2Wm4=

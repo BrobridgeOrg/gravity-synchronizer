@@ -1,11 +1,16 @@
 package synchronizer
 
 import (
+	"errors"
 	"sync"
 
 	//	gravity_subscriber_manager "github.com/BrobridgeOrg/gravity-sdk/subscriber_manager"
 	gravity_subscriber_manager "github.com/BrobridgeOrg/gravity-sdk/subscriber_manager"
 	log "github.com/sirupsen/logrus"
+)
+
+var (
+	ErrSubscriberNotFound = errors.New("subscriber manager: subscriber not found")
 )
 
 type SubscriberManager struct {
@@ -98,6 +103,25 @@ func (sm *SubscriberManager) Get(id string) *Subscriber {
 	}
 
 	return element.(*Subscriber)
+}
+
+func (sm *SubscriberManager) RegisterPipeline(id string, pipeline *Pipeline) error {
+
+	s := sm.Get(id)
+	if s == nil {
+		return ErrSubscriberNotFound
+	}
+
+	s.suspendPipelines.Store(pipeline.id, pipeline)
+
+	// Update controller
+	pipelines := make([]uint64, 0)
+	s.suspendPipelines.Range(func(key interface{}, value interface{}) bool {
+		pipelines = append(pipelines, key.(uint64))
+		return true
+	})
+
+	return sm.subscriberManager.UpdateSubscriberPipelines(id, pipelines)
 }
 
 func (sm *SubscriberManager) AwakeAllSubscribers(pipeline *Pipeline) error {

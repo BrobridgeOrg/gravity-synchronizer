@@ -164,8 +164,9 @@ func (pipeline *Pipeline) rpc_suspend(ctx *broc.Context) (returnedValue interfac
 			return
 		}
 	*/
-	subscriber := pipeline.synchronizer.subscriberMgr.Get(request.SubscriberID)
-	if subscriber == nil {
+
+	err = pipeline.synchronizer.subscriberMgr.RegisterPipeline(request.SubscriberID, pipeline)
+	if err == ErrSubscriberNotFound {
 		reply.Success = false
 		reply.Reason = "NotFoundSubscriber"
 		return
@@ -176,7 +177,6 @@ func (pipeline *Pipeline) rpc_suspend(ctx *broc.Context) (returnedValue interfac
 		"pipeline":   pipeline.id,
 	}).Info("Subscriber is suspended")
 
-	subscriber.RegisterPipeline(pipeline)
 	/*
 		// This subscriber shouldn't suspend
 		if pipeline.GetLastSequence() > request.Sequence {
