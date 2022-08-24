@@ -7,7 +7,7 @@ require (
 	github.com/BrobridgeOrg/broc v0.0.2
 	github.com/BrobridgeOrg/gravity-api v0.2.26
 	github.com/BrobridgeOrg/gravity-exporter-nats v0.0.0-20211027080937-4b988b57c4e8 // indirect
-	github.com/BrobridgeOrg/gravity-sdk v1.0.1
+	github.com/BrobridgeOrg/gravity-sdk v1.0.4
 	github.com/BrobridgeOrg/gravity-synchronizer v0.0.0-00010101000000-000000000000
 	github.com/BrobridgeOrg/schemer v0.0.12
 	github.com/BrobridgeOrg/sequential-data-flow v0.0.2
@@ -18,7 +18,7 @@ require (
 	github.com/json-iterator/go v1.1.12
 	github.com/lithammer/go-jump-consistent-hash v1.0.2
 	github.com/nats-io/jsm.go v0.0.27
-	github.com/nats-io/nats.go v1.13.1-0.20220121202836-972a071d373d
+	github.com/nats-io/nats.go v1.16.0
 	github.com/nats-io/nkeys v0.3.0 // indirect
 	github.com/prometheus/common v0.9.1
 	github.com/sirupsen/logrus v1.8.1
@@ -32,7 +32,7 @@ replace github.com/BrobridgeOrg/gravity-synchronizer => ./
 
 //replace github.com/BrobridgeOrg/gravity-api => ../gravity-api
 
-replace github.com/BrobridgeOrg/gravity-sdk => ../sdk/v1/gravity-sdk
+//replace github.com/BrobridgeOrg/gravity-sdk => ../sdk/v1/gravity-sdk
 
 //replace github.com/BrobridgeOrg/broc => ../../broc
 
