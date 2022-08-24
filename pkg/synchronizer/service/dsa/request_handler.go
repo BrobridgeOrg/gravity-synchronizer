@@ -118,12 +118,14 @@ func (rh *RequestHandler) requestHandler(data interface{}, done func(interface{}
 
 		// Ignore if event name is empty
 		if len(req.EventName) == 0 {
+			log.Warnf("dsa: ignore unknown event: %s", req.EventName)
 			continue
 		}
 
 		group := rh.prepare(rh.dsa, req)
 		if group == nil {
 			// No matched rules
+			log.Warnf("dsa: ignore event: %s", req.EventName)
 			continue
 		}
 

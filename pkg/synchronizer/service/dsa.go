@@ -199,6 +199,7 @@ func (synchronizer *Synchronizer) handlePipelinePacket(packet *dsa.PipelinePacke
 	pipeline, ok := synchronizer.pipelines[uint64(packet.PipelineID)]
 	if !ok {
 		// TODO: support to redirect packet to external node
+		log.Warnf("synchronizer: pipeline not found: %d", packet.PipelineID)
 		return nil
 	}
 

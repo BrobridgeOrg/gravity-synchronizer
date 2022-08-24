@@ -70,6 +70,7 @@ func (mh *MappingHandler) processMessage(message *taskflow.Message) {
 	r := mh.dataHandler.ruleConfig.Get(t.Rule)
 	if r == nil {
 		// Not found rule
+		log.Errorf("data_handler: no such rule: %s", t.Rule)
 
 		if message.Context.GetPrivData() != nil {
 			tr := message.Context.GetPrivData().(*TaskRequest)
