@@ -57,6 +57,8 @@ github.com/BrobridgeOrg/EventStore v0.0.24 h1:XEPoPxi9RKCSFvA/er+n51XG+49TRKXYab
 github.com/BrobridgeOrg/EventStore v0.0.24/go.mod h1:kyHXZaSccxwZVND6QnLMCzY2LDuH0uw18odHmK2X4Ts=
 github.com/BrobridgeOrg/EventStore v0.1.0 h1:T7eejMkOscEa95lKSpS4ZPf6zLzWsZJO4KWmwgJd47c=
 github.com/BrobridgeOrg/EventStore v0.1.0/go.mod h1:kyHXZaSccxwZVND6QnLMCzY2LDuH0uw18odHmK2X4Ts=
+github.com/BrobridgeOrg/EventStore v0.1.1 h1:13ZyCAidyHtRtFlC6L5kcvZB/VqiXKTzDAdemC9F4bQ=
+github.com/BrobridgeOrg/EventStore v0.1.1/go.mod h1:kyHXZaSccxwZVND6QnLMCzY2LDuH0uw18odHmK2X4Ts=
 github.com/BrobridgeOrg/broc v0.0.2 h1:qtUADIDd8QeYFvwMketpqYuSOdmJehfwar/BWJu8x8o=
 github.com/BrobridgeOrg/broc v0.0.2/go.mod h1:0VzzGhU+ASQqkmmupOT3V4xKUfYeY0oNPhzHYwwX4s8=
 github.com/BrobridgeOrg/broton v0.0.3 h1:MnI03phuuc44MAa/UoGeI09P/xTTsaFC3ovE190Gv1g=

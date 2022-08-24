@@ -3,7 +3,7 @@ module gravity-synchronizer
 go 1.15
 
 require (
-	github.com/BrobridgeOrg/EventStore v0.1.0
+	github.com/BrobridgeOrg/EventStore v0.1.1
 	github.com/BrobridgeOrg/broc v0.0.2
 	github.com/BrobridgeOrg/gravity-api v0.2.26
 	github.com/BrobridgeOrg/gravity-exporter-nats v0.0.0-20211027080937-4b988b57c4e8 // indirect
@@ -33,7 +33,7 @@ replace github.com/BrobridgeOrg/gravity-synchronizer => ./
 
 //replace github.com/BrobridgeOrg/gravity-api => ../gravity-api
 
-//replace github.com/BrobridgeOrg/gravity-sdk => ../sdk/v1/gravity-sdk
+replace github.com/BrobridgeOrg/gravity-sdk => ../sdk/v1/gravity-sdk
 
 //replace github.com/BrobridgeOrg/broc => ../../broc
 

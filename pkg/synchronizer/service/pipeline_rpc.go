@@ -14,6 +14,7 @@ import (
 	gravity_sdk_types_pipeline_event "github.com/BrobridgeOrg/gravity-sdk/types/pipeline_event"
 	"github.com/BrobridgeOrg/gravity-synchronizer/pkg/synchronizer/service/middleware"
 	"github.com/golang/protobuf/proto"
+	"github.com/sirupsen/logrus"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -341,6 +342,13 @@ func (pipeline *Pipeline) rpc_pullSnapshot(ctx *broc.Context) (returnedValue int
 
 	reply.Records = make([][]byte, len(records))
 	for i, record := range records {
+
+		if len(record.Data) == 0 {
+			log.WithFields(logrus.Fields{
+				"key": record.Key,
+			}).Warnf("pipeline_rpc: snapshot recrod is empty")
+		}
+
 		reply.Records[i] = record.Data
 	}
 
