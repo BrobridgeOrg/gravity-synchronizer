@@ -10,7 +10,7 @@ require (
 	github.com/BrobridgeOrg/gravity-sdk v1.0.1
 	github.com/BrobridgeOrg/gravity-synchronizer v0.0.0-00010101000000-000000000000
 	github.com/BrobridgeOrg/schemer v0.0.12
-	github.com/BrobridgeOrg/sequential-data-flow v0.0.1
+	github.com/BrobridgeOrg/sequential-data-flow v0.0.2
 	github.com/cfsghost/gosharding v0.0.3
 	github.com/cfsghost/parallel-chunked-flow v0.0.6
 	github.com/cfsghost/taskflow v0.0.3
@@ -24,7 +24,6 @@ require (
 	github.com/sirupsen/logrus v1.8.1
 	github.com/spf13/cobra v1.3.0
 	github.com/spf13/viper v1.10.1
-	github.com/stretchr/testify v1.7.0 // indirect
 	go.uber.org/ratelimit v0.2.0
 	golang.org/x/crypto v0.0.0-20220722155217-630584e8d5aa // indirect
 )
