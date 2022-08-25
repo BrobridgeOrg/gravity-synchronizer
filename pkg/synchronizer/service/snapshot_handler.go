@@ -62,16 +62,14 @@ func (snapshot *SnapshotHandler) handle(request *eventstore.SnapshotRequest) err
 
 	// Preparing record
 	newRecord := snapshotRecordPool.Get().(*gravity_sdk_types_snapshot_record.SnapshotRecord)
-	newRecord.Payload = newData.GetPayload()
+	defer snapshotRecordPool.Put(newRecord)
 
+	newRecord.Payload = newData.GetPayload()
 	data, err := newRecord.ToBytes()
 	if err != nil {
 		log.Error(err)
 		return nil
 	}
-
-	// Release record
-	snapshotRecordPool.Put(newRecord)
 
 	// Upsert to snapshot
 	err = request.Upsert(StrToBytes(newData.Table), primaryKey, data, snapshot.upsert)
