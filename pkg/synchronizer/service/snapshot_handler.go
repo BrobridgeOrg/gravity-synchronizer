@@ -74,38 +74,39 @@ func (snapshot *SnapshotHandler) handle(request *eventstore.SnapshotRequest) err
 	snapshotRecordPool.Put(newRecord)
 
 	// Upsert to snapshot
-	err = request.Upsert(StrToBytes(newData.Table), primaryKey, data, func(origin []byte, newValue []byte) []byte {
-
-		// Preparing new record
-		newRecord := snapshotRecordPool.Get().(*gravity_sdk_types_snapshot_record.SnapshotRecord)
-		defer snapshotRecordPool.Put(newRecord)
-
-		err := gravity_sdk_types_snapshot_record.Unmarshal(newValue, newRecord)
-		if err != nil {
-			log.Errorf("data_handler: failed to parse new record: %v", err)
-			return origin
-		}
-
-		// Preparing original record
-		originRecord := snapshotRecordPool.Get().(*gravity_sdk_types_snapshot_record.SnapshotRecord)
-		defer snapshotRecordPool.Put(originRecord)
-
-		err = gravity_sdk_types_snapshot_record.Unmarshal(origin, originRecord)
-		if err != nil {
-			log.Warnf("data_handler: failed to parse original record: %v", err)
-		}
-
-		// Merged new data to original data
-		updatedData := snapshot.merge(originRecord, newRecord)
-
-		return updatedData
-	})
-
+	err = request.Upsert(StrToBytes(newData.Table), primaryKey, data, snapshot.upsert)
 	if err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func (snapshot *SnapshotHandler) upsert(origin []byte, newValue []byte) []byte {
+
+	// Preparing new record
+	newRecord := snapshotRecordPool.Get().(*gravity_sdk_types_snapshot_record.SnapshotRecord)
+	defer snapshotRecordPool.Put(newRecord)
+
+	err := gravity_sdk_types_snapshot_record.Unmarshal(newValue, newRecord)
+	if err != nil {
+		log.Errorf("data_handler: failed to parse new record: %v", err)
+		return origin
+	}
+
+	// Preparing original record
+	originRecord := snapshotRecordPool.Get().(*gravity_sdk_types_snapshot_record.SnapshotRecord)
+	defer snapshotRecordPool.Put(originRecord)
+
+	err = gravity_sdk_types_snapshot_record.Unmarshal(origin, originRecord)
+	if err != nil {
+		log.Warnf("data_handler: failed to parse original record: %v", err)
+	}
+
+	// Merged new data to original data
+	updatedData := snapshot.merge(originRecord, newRecord)
+
+	return updatedData
 }
 
 func (snapshot *SnapshotHandler) applyChanges(orig *gravity_sdk_types_record.Value, changes *gravity_sdk_types_record.Value) {
