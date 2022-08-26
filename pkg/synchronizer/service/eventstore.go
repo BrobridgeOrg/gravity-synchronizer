@@ -37,7 +37,7 @@ func (es *EventStore) Init() error {
 	es.store = store
 
 	// Adding event souce to all stores
-	es.synchronizer.storeMgr.AddEventSource(es)
+	//es.synchronizer.storeMgr.AddEventSource(es)
 
 	return nil
 }
@@ -47,7 +47,7 @@ func (es *EventStore) Close() {
 	es.store.Close()
 
 	// Remove event source from stores
-	es.synchronizer.storeMgr.RemoveEventSource(es.id)
+	//es.synchronizer.storeMgr.RemoveEventSource(es.id)
 }
 
 /*

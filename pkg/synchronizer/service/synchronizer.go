@@ -39,9 +39,9 @@ type Synchronizer struct {
 	dataHandler     *data_handler.DataHandler
 	snapshotHandler *SnapshotHandler
 	eventStore      *eventstore.EventStore
-	storeMgr        *StoreManager
-	subscriberMgr   *SubscriberManager
-	collectionMgr   *CollectionManager
+	//	storeMgr        *StoreManager
+	subscriberMgr *SubscriberManager
+	collectionMgr *CollectionManager
 
 	// RPC
 	eventStoreRPC *broc.Broc
@@ -58,7 +58,7 @@ func NewSynchronizer(a app.App) *Synchronizer {
 	}
 
 	synchronizer.controller = NewController(synchronizer)
-	synchronizer.storeMgr = NewStoreManager(synchronizer)
+	//	synchronizer.storeMgr = NewStoreManager(synchronizer)
 	synchronizer.subscriberMgr = NewSubscriberManager(synchronizer)
 	synchronizer.collectionMgr = NewCollectionManager(synchronizer)
 
@@ -134,13 +134,13 @@ func (synchronizer *Synchronizer) Init() error {
 	if err != nil {
 		return err
 	}
-
-	// Initializing stores
-	err = synchronizer.storeMgr.Init()
-	if err != nil {
-		return err
-	}
-
+	/*
+		// Initializing stores
+		err = synchronizer.storeMgr.Init()
+		if err != nil {
+			return err
+		}
+	*/
 	// Recovery subscriptions
 	err = synchronizer.recoveryPipelines()
 	if err != nil {

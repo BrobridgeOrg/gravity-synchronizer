@@ -88,7 +88,7 @@ func (snapshot *SnapshotHandler) upsert(origin []byte, newValue []byte) []byte {
 
 	err := gravity_sdk_types_snapshot_record.Unmarshal(newValue, newRecord)
 	if err != nil {
-		log.Errorf("data_handler: failed to parse new record: %v", err)
+		log.Errorf("snapshot_handler: failed to parse new record: %v", err)
 		return origin
 	}
 
@@ -98,13 +98,11 @@ func (snapshot *SnapshotHandler) upsert(origin []byte, newValue []byte) []byte {
 
 	err = gravity_sdk_types_snapshot_record.Unmarshal(origin, originRecord)
 	if err != nil {
-		log.Warnf("data_handler: failed to parse original record: %v", err)
+		log.Warnf("snapshot_handler: failed to parse original record: %v", err)
 	}
 
 	// Merged new data to original data
-	updatedData := snapshot.merge(originRecord, newRecord)
-
-	return updatedData
+	return snapshot.merge(originRecord, newRecord)
 }
 
 func (snapshot *SnapshotHandler) applyChanges(orig *gravity_sdk_types_record.Value, changes *gravity_sdk_types_record.Value) {
