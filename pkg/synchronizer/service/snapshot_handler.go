@@ -34,6 +34,11 @@ func (snapshot *SnapshotHandler) handle(request *eventstore.SnapshotRequest) err
 	newData := recordPool.Get().(*gravity_sdk_types_record.Record)
 	defer recordPool.Put(newData)
 	err := gravity_sdk_types_record.Unmarshal(request.Data, newData)
+	if err != nil {
+		// Ignore
+		log.Errorf("snapshot_handler: failed to parse record: %v", err)
+		return nil
+	}
 
 	// Getting data of primary key
 	primaryKeyValue, err := newData.GetPrimaryKeyValue()
@@ -45,13 +50,14 @@ func (snapshot *SnapshotHandler) handle(request *eventstore.SnapshotRequest) err
 
 	if primaryKeyValue == nil {
 		// Ignore record which has no primary key
+		log.Warn("snapshot_handler: ignore record because it has no primary key")
 		return nil
 	}
 
 	primaryKey, err := primaryKeyValue.GetBytes()
 	if err != nil {
 		// Ignore
-		log.Error(err)
+		log.Errorf("snapshot_handler: failed to get primary key: %v", err)
 		return nil
 	}
 
@@ -67,13 +73,14 @@ func (snapshot *SnapshotHandler) handle(request *eventstore.SnapshotRequest) err
 	newRecord.Payload = newData.GetPayload()
 	data, err := newRecord.ToBytes()
 	if err != nil {
-		log.Error(err)
+		log.Errorf("snapshot_handler: failed to prepare snapshot record: %v", err)
 		return nil
 	}
 
 	// Upsert to snapshot
 	err = request.Upsert(StrToBytes(newData.Table), primaryKey, data, snapshot.upsert)
 	if err != nil {
+		log.Errorf("snapshot_handler: failed to write snapshot record: %v", err)
 		return err
 	}
 
@@ -157,7 +164,10 @@ func (snapshot *SnapshotHandler) merge(origRecord *gravity_sdk_types_snapshot_re
 
 	snapshot.applyChanges(origRecord.Payload, updates.Payload)
 
-	data, _ := origRecord.ToBytes()
+	data, err := origRecord.ToBytes()
+	if err != nil {
+		log.Errorf("snapshot_handler: failed to merge snapshot record: %v", err)
+	}
 
 	return data
 }
