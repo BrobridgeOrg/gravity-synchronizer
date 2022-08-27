@@ -62,6 +62,8 @@ github.com/BrobridgeOrg/gravity-sdk v0.0.15/go.mod h1:vT/C81wbuOwRptqaFVSA+IZdWU
 github.com/BrobridgeOrg/gravity-sdk v0.0.40/go.mod h1:ys7MFpiYDONGUKCR8pA7qn9AZV9OcqsQd64XEgOwVT0=
 github.com/BrobridgeOrg/gravity-sdk v1.0.4 h1:aLQciYdt7j28mElsGjLPoquc6HrhNR21WptMdYjOYLc=
 github.com/BrobridgeOrg/gravity-sdk v1.0.4/go.mod h1:tqavvY91ghaABmRiqy3APASCTira6IUcuelIimAr+Bo=
+github.com/BrobridgeOrg/gravity-sdk v1.0.5 h1:G3FcjwFsbjq1Om2+/I+cqoHWVF0VCXAYg6AqYOrNNec=
+github.com/BrobridgeOrg/gravity-sdk v1.0.5/go.mod h1:tqavvY91ghaABmRiqy3APASCTira6IUcuelIimAr+Bo=
 github.com/BrobridgeOrg/gravity-transmitter-postgres v0.0.0-20210824004507-cf5a2b3fb5e7/go.mod h1:l4K0s5OrpC2WnZx+lt737ugCbH9UCAj/wxC2mKg2Wm4=
 github.com/BrobridgeOrg/schemer v0.0.12 h1:sKAfKHE/oKAHO1DBWscg4kaje161QAJOZW4mf1AB5Dw=
 github.com/BrobridgeOrg/schemer v0.0.12/go.mod h1:ymLlI5Ch8MsmFn3Ah+NphZkNz1NmCar5eUfxCcFTXI8=
