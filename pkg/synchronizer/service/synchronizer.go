@@ -129,6 +129,11 @@ func (synchronizer *Synchronizer) Init() error {
 		return err
 	}
 
+	// Recovery subscriptions
+	err = synchronizer.recoveryPipelines()
+	if err != nil {
+		return err
+	}
 	// Initializing subscriber
 	err = synchronizer.subscriberMgr.Initialize()
 	if err != nil {
@@ -141,11 +146,6 @@ func (synchronizer *Synchronizer) Init() error {
 			return err
 		}
 	*/
-	// Recovery subscriptions
-	err = synchronizer.recoveryPipelines()
-	if err != nil {
-		return err
-	}
 
 	// Initializing Event Store RPC handlers
 	err = synchronizer.initEventStoreRPC()
