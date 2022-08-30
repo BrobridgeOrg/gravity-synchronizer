@@ -103,9 +103,13 @@ func (snapshot *SnapshotHandler) upsert(origin []byte, newValue []byte) []byte {
 	originRecord := snapshotRecordPool.Get().(*gravity_sdk_types_snapshot_record.SnapshotRecord)
 	defer snapshotRecordPool.Put(originRecord)
 
-	err = gravity_sdk_types_snapshot_record.Unmarshal(origin, originRecord)
-	if err != nil {
-		log.Warnf("snapshot_handler: failed to parse original record: %v", err)
+	if origin != nil && len(origin) > 0 {
+		err = gravity_sdk_types_snapshot_record.Unmarshal(origin, originRecord)
+		if err != nil {
+			log.Warnf("snapshot_handler: failed to parse original record: %v", err)
+		}
+	} else {
+		originRecord.Reset()
 	}
 
 	// Merged new data to original data
