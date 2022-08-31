@@ -89,6 +89,8 @@ func (rh *RequestHandler) requestHandler(data interface{}, done func(interface{}
 			rh.dsa.completionHandler(message.Context.GetPrivData(), nil, ErrUnrecognizedRequest)
 		}
 
+		message.Data = nil
+
 		done(message)
 
 		return
@@ -100,11 +102,13 @@ func (rh *RequestHandler) requestHandler(data interface{}, done func(interface{}
 	if int32(len(input.Requests)*len(rh.dsa.ruleConfig.Rules))+rh.dsa.Pending() > rh.dsa.maxPending {
 		log.Warn(ErrMaxPendingTasksExceeded)
 		log.Warnf("dsa: max pending: %d", rh.dsa.maxPending)
-		log.Warnf("dsa: Curent pending: %d", rh.dsa.Pending())
+		log.Warnf("dsa: current pending: %d", rh.dsa.Pending())
 
 		if rh.dsa.completionHandler != nil {
 			rh.dsa.completionHandler(message.Context.GetPrivData(), nil, ErrMaxPendingTasksExceeded)
 		}
+
+		message.Data = nil
 
 		done(message)
 
