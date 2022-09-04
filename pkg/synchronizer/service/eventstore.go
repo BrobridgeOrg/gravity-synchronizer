@@ -71,6 +71,10 @@ func (es *EventStore) GetLastSequence() uint64 {
 	return es.store.GetLastSequence()
 }
 
+func (es *EventStore) GetSnapshotLastSequence() uint64 {
+	return es.store.GetSnapshotLastSequence()
+}
+
 func (es *EventStore) GetDurableState(durableName string) (uint64, error) {
 
 	lastSeq, err := es.store.GetDurableState(durableName)

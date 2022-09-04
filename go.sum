@@ -56,6 +56,8 @@ github.com/BrobridgeOrg/EventStore v0.1.3 h1:SYiqaokNuPQu7wB38/nZ/i2BWIPUqKUaWqD
 github.com/BrobridgeOrg/EventStore v0.1.3/go.mod h1:kyHXZaSccxwZVND6QnLMCzY2LDuH0uw18odHmK2X4Ts=
 github.com/BrobridgeOrg/EventStore v0.1.5 h1:6FHz8olyz0338z89+H1H/ZyQIJSDHBtuzF0V18Uyj4A=
 github.com/BrobridgeOrg/EventStore v0.1.5/go.mod h1:kyHXZaSccxwZVND6QnLMCzY2LDuH0uw18odHmK2X4Ts=
+github.com/BrobridgeOrg/EventStore v0.1.6 h1:8dXwOT1/IEKuwz5anL1C56rmqt047G9wy7kBGq/5grM=
+github.com/BrobridgeOrg/EventStore v0.1.6/go.mod h1:kyHXZaSccxwZVND6QnLMCzY2LDuH0uw18odHmK2X4Ts=
 github.com/BrobridgeOrg/broc v0.0.2 h1:qtUADIDd8QeYFvwMketpqYuSOdmJehfwar/BWJu8x8o=
 github.com/BrobridgeOrg/broc v0.0.2/go.mod h1:0VzzGhU+ASQqkmmupOT3V4xKUfYeY0oNPhzHYwwX4s8=
 github.com/BrobridgeOrg/broton v0.0.3/go.mod h1:li0lNQCnArnT1YdrTQp14eDsYG6dV5McaOh8eQPjw8c=
@@ -64,6 +66,8 @@ github.com/BrobridgeOrg/gravity-api v0.2.17/go.mod h1:ky6XIYg5h95Cy+QjRQaI6LQABm
 github.com/BrobridgeOrg/gravity-api v0.2.25/go.mod h1:BO4mhqFUk99/sObzTFAxkIn3NMB0nBoQ29kETU9JDB4=
 github.com/BrobridgeOrg/gravity-api v0.2.26 h1:kPRvUnSY+9YkUeJrpJOsR5QUEHQoiLbyM+UIXlRvSOg=
 github.com/BrobridgeOrg/gravity-api v0.2.26/go.mod h1:BO4mhqFUk99/sObzTFAxkIn3NMB0nBoQ29kETU9JDB4=
+github.com/BrobridgeOrg/gravity-api v0.2.27 h1:VOZyBSDi8IjtyqL/xapVgwb53qzIbu5jU5/hl/snm2o=
+github.com/BrobridgeOrg/gravity-api v0.2.27/go.mod h1:BO4mhqFUk99/sObzTFAxkIn3NMB0nBoQ29kETU9JDB4=
 github.com/BrobridgeOrg/gravity-sdk v0.0.15/go.mod h1:vT/C81wbuOwRptqaFVSA+IZdWUvBhYrg+ArDQh+Lg4U=
 github.com/BrobridgeOrg/gravity-sdk v0.0.40/go.mod h1:ys7MFpiYDONGUKCR8pA7qn9AZV9OcqsQd64XEgOwVT0=
 github.com/BrobridgeOrg/gravity-sdk v1.0.4 h1:aLQciYdt7j28mElsGjLPoquc6HrhNR21WptMdYjOYLc=
