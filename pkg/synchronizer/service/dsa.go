@@ -186,7 +186,37 @@ func (synchronizer *Synchronizer) startDSAEventReceiver() error {
 		return err
 	}
 
+	streamName := fmt.Sprintf("%s.dsa.incoming", synchronizer.domain)
+
+	// Check if the stream already exists
+	stream, err := js.StreamInfo(streamName)
+	if err != nil {
+		log.Warn(err)
+	}
+
 	subj := fmt.Sprintf("%s.dsa.event", synchronizer.domain)
+
+	if stream == nil {
+		// Initializing stream
+		log.WithFields(log.Fields{
+			"stream":  streamName,
+			"subject": subj,
+		}).Infof("Stream doesn't exist, creating stream...")
+
+		_, err := js.AddStream(&nats.StreamConfig{
+			Name:        streamName,
+			Description: "Gravity incoming event store",
+			Subjects: []string{
+				subj,
+			},
+			Retention: nats.InterestPolicy,
+		})
+
+		if err != nil {
+			return err
+		}
+	}
+
 	ch := make(chan *nats.Msg)
 	sub, err := js.ChanQueueSubscribe(subj, synchronizer.clientID, ch)
 	if err != nil {
