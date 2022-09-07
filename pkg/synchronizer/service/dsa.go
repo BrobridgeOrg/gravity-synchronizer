@@ -2,6 +2,7 @@ package synchronizer
 
 import (
 	"errors"
+	"fmt"
 	"gravity-synchronizer/pkg/synchronizer/service/dsa"
 	"sync"
 
@@ -16,14 +17,42 @@ import (
 	"github.com/spf13/viper"
 )
 
-type DSARequest struct {
-	msg *nats.Msg
-	key *keyring.KeyInfo
+var batchReqPool = sync.Pool{
+	New: func() interface{} {
+		return &dsa_pb.BatchPublishRequest{}
+	},
 }
 
 var dsaPublishReplyPool = sync.Pool{
 	New: func() interface{} {
 		return &dsa_pb.BatchPublishReply{}
+	},
+}
+
+var pubReqPool = sync.Pool{
+	New: func() interface{} {
+		return &dsa_pb.PublishRequest{}
+	},
+}
+
+type DSARequest struct {
+	msg *nats.Msg
+	key *keyring.KeyInfo
+}
+
+type DSAMessage struct {
+	msg *nats.Msg
+}
+
+var dsaReqPool = sync.Pool{
+	New: func() interface{} {
+		return &DSARequest{}
+	},
+}
+
+var dsaMsgPool = sync.Pool{
+	New: func() interface{} {
+		return &DSAMessage{}
 	},
 }
 
@@ -69,36 +98,54 @@ func (synchronizer *Synchronizer) initializeDataSourceAdapter() error {
 			m.Respond(SuccessReply)
 		*/
 
-		request := privData.(*DSARequest)
+		switch v := privData.(type) {
+		case *DSARequest:
 
-		// Failed
-		if err != nil {
-			//			encrypted, _ := request.key.Encryption().Encrypt(FailureReply(0, err.Error()))
+			request := v
+			defer dsaReqPool.Put(request)
 
-			log.Errorf("synchronizer: failed to process data: %v", err)
+			// Failed
+			if err != nil {
+				//			encrypted, _ := request.key.Encryption().Encrypt(FailureReply(0, err.Error()))
+
+				log.Errorf("synchronizer: failed to process data: %v", err)
+
+				packet := &packet_pb.Packet{
+					Error:  true,
+					Reason: err.Error(),
+				}
+
+				returnedData, _ := proto.Marshal(packet)
+
+				request.msg.Respond(returnedData)
+				return
+			}
+
+			// Encrypt
+			if request.key != nil {
+				encrypted, _ := request.key.Encryption().Encrypt(SuccessReply)
+				packet := &packet_pb.Packet{
+					Error:   false,
+					Payload: encrypted,
+				}
+
+				returnedData, _ := proto.Marshal(packet)
+				request.msg.Respond(returnedData)
+
+				return
+			}
 
 			packet := &packet_pb.Packet{
-				Error:  true,
-				Reason: err.Error(),
+				Error:   false,
+				Payload: SuccessReply,
 			}
 
 			returnedData, _ := proto.Marshal(packet)
-
 			request.msg.Respond(returnedData)
-			return
+		case *DSAMessage:
+			v.msg.Ack()
+			dsaMsgPool.Put(v)
 		}
-
-		// Encrypt
-		encrypted, _ := request.key.Encryption().Encrypt(SuccessReply)
-		packet := &packet_pb.Packet{
-			Error:   false,
-			Payload: encrypted,
-		}
-
-		returnedData, _ := proto.Marshal(packet)
-
-		request.msg.Respond(returnedData)
-		//		request.msg.Respond(encrypted)
 	})
 
 	// Setup worker count
@@ -116,7 +163,65 @@ func (synchronizer *Synchronizer) initializeDataSourceAdapter() error {
 		return err
 	}
 
+	// For events
+	err = synchronizer.startDSAEventReceiver()
+	if err != nil {
+		return err
+	}
+
+	// For batch
+	err = synchronizer.startDSARequestReceiver()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (synchronizer *Synchronizer) startDSAEventReceiver() error {
+
+	nc := synchronizer.gravityClient.GetConnection()
+	js, err := nc.JetStream()
+	if err != nil {
+		return err
+	}
+
+	subj := fmt.Sprintf("%s.dsa.event", synchronizer.domain)
+	ch := make(chan *nats.Msg)
+	sub, err := js.ChanQueueSubscribe(subj, synchronizer.clientID, ch)
+	if err != nil {
+		return err
+	}
+
+	sub.SetPendingLimits(-1, -1)
+	nc.Flush()
+	defer sub.Unsubscribe()
+
+	for msg := range ch {
+
+		// Parsing single publish request
+		preq := pubReqPool.Get().(*dsa_pb.PublishRequest)
+		err = proto.Unmarshal(msg.Data, preq)
+		if err != nil {
+			log.Errorf("dsa: %v", err)
+			msg.Ack()
+			continue
+		}
+
+		// Prepare DSA request
+		dsam := dsaMsgPool.Get().(*DSAMessage)
+		dsam.msg = msg
+
+		synchronizer.dsa.PushData(dsam, preq)
+	}
+
+	return nil
+}
+
+func (synchronizer *Synchronizer) startDSARequestReceiver() error {
+
 	// Subscribe to quque to receive events
+	// Warning: this is legacy way which is not safe to receive data
 	connection := synchronizer.gravityClient.GetConnection()
 	sub, err := connection.QueueSubscribe(synchronizer.domain+".dsa.batch", "synchronizer", func(m *nats.Msg) {
 		//		synchronizer.dsa.PushData(m, m.Data)
@@ -132,20 +237,20 @@ func (synchronizer *Synchronizer) initializeDataSourceAdapter() error {
 	return nil
 }
 
-func (synchronizer *Synchronizer) handleBatchMsg(m *nats.Msg, rules ...string) error {
+func (synchronizer *Synchronizer) decodeMsg(m *nats.Msg, rules ...string) ([]byte, *DSARequest, error) {
 
 	var packet packet_pb.Packet
 	err := proto.Unmarshal(m.Data, &packet)
 	if err != nil {
 		// invalid request
-		return errors.New("InvalidRequest")
+		return nil, nil, errors.New("InvalidRequest")
 	}
 
 	// Using appID to find key info
 	keyInfo := synchronizer.keyring.Get(packet.AppID)
 	if keyInfo == nil {
 		// No such app ID
-		return errors.New("NotFoundAppID")
+		return nil, nil, errors.New("NotFoundAppID")
 	}
 
 	// check permissions
@@ -159,30 +264,28 @@ func (synchronizer *Synchronizer) handleBatchMsg(m *nats.Msg, rules ...string) e
 
 		// No permission
 		if !hasPerm {
-			return errors.New("Forbidden")
+			return nil, nil, errors.New("Forbidden")
 		}
 	}
 
 	// Decrypt
 	data, err := keyInfo.Encryption().Decrypt(packet.Payload)
 	if err != nil {
-		return errors.New("InvalidKey")
+		return nil, nil, errors.New("InvalidKey")
 	}
 
 	// pass decrypted payload to next handler
 	var payload packet_pb.Payload
 	err = proto.Unmarshal(data, &payload)
 	if err != nil {
-		return errors.New("InvalidPayload")
+		return nil, nil, errors.New("InvalidPayload")
 	}
 
 	// Prepare DSA request
-	request := &DSARequest{
-		msg: m,
-		key: keyInfo,
-	}
+	request := dsaReqPool.Get().(*DSARequest)
+	request.msg = m
+	request.key = keyInfo
 
-	synchronizer.dsa.PushData(request, payload.Data)
 	/*
 		// Encrypt
 		encrypted, err := keyInfo.Encryption().Encrypt(returnedData.([]byte))
@@ -190,6 +293,18 @@ func (synchronizer *Synchronizer) handleBatchMsg(m *nats.Msg, rules ...string) e
 			return nil, nil
 		}
 	*/
+
+	return payload.Data, request, nil
+}
+
+func (synchronizer *Synchronizer) handleBatchMsg(m *nats.Msg, rules ...string) error {
+
+	payload, request, err := synchronizer.decodeMsg(m, rules...)
+	if err != nil {
+		return err
+	}
+
+	synchronizer.dsa.PushData(request, payload)
 	return nil
 }
 

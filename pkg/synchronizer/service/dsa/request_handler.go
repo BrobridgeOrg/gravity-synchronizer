@@ -77,26 +77,46 @@ func (rh *RequestHandler) requestHandler(data interface{}, done func(interface{}
 
 	bundle := NewBundle()
 
-	// Parsing request
-	input := reqPool.Get().(*dsa_pb.BatchPublishRequest)
-	defer reqPool.Put(input)
+	var input *dsa_pb.BatchPublishRequest
 
-	err := proto.Unmarshal(message.Data.([]byte), input)
-	if err != nil {
-		log.Errorf("dsa: Failed to parse request: %v", err)
+	switch v := message.Data.(type) {
+	case []byte:
 
-		if rh.dsa.completionHandler != nil {
-			rh.dsa.completionHandler(message.Context.GetPrivData(), nil, ErrUnrecognizedRequest)
+		// Parsing request
+		input = reqPool.Get().(*dsa_pb.BatchPublishRequest)
+		defer reqPool.Put(input)
+
+		err := proto.Unmarshal(message.Data.([]byte), input)
+		if err != nil {
+			log.Errorf("dsa: Failed to parse request: %v", err)
+
+			if rh.dsa.completionHandler != nil {
+				rh.dsa.completionHandler(message.Context.GetPrivData(), nil, ErrUnrecognizedRequest)
+			}
+
+			message.Data = nil
+
+			done(message)
+
+			log.Infof("dsa: Incoming requests: %d", len(input.Requests))
+
+			return
 		}
+	case *dsa_pb.BatchPublishRequest:
+		input = v
+		defer reqPool.Put(input)
 
-		message.Data = nil
+	case *dsa_pb.PublishRequest:
 
-		done(message)
+		// Parsing request
+		input = reqPool.Get().(*dsa_pb.BatchPublishRequest)
+		defer reqPool.Put(input)
+		input.Reset()
 
-		return
+		input.Requests = []*dsa_pb.PublishRequest{v}
+	default:
+		log.Warn("dsa: invalid type of message data")
 	}
-
-	log.Infof("dsa: Incoming requests: %d", len(input.Requests))
 
 	// Check if buffer is full
 	if int32(len(input.Requests)*len(rh.dsa.ruleConfig.Rules))+rh.dsa.Pending() > rh.dsa.maxPending {

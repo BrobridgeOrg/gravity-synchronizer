@@ -98,6 +98,104 @@ func TestRequestHandler(t *testing.T) {
 	testDSA.taskflow.RemoveTask(checkTask.GetID())
 }
 
+func TestRequestHandlerWithoutParsing(t *testing.T) {
+
+	// Preparing task to receive results
+	done := make(chan *taskflow.Message, 1)
+	defer close(done)
+	checkTask := taskflow.NewTask(1, 0)
+	checkTask.SetHandler(func(message *taskflow.Message) {
+		done <- message
+	})
+
+	testDSA.taskflow.AddTask(checkTask)
+	testDSA.taskflow.Link(testDSA.requestHandler.task, 0, checkTask, 0)
+
+	// Preparing request
+	req := &dsa_pb.BatchPublishRequest{
+		Requests: []*dsa_pb.PublishRequest{
+			&dsa_pb.PublishRequest{
+				EventName: "accountCreated",
+				Payload:   []byte(`{"id":1,"name":"fred"}`),
+			},
+		},
+	}
+
+	ctx := taskflow.NewContext()
+	testDSA.taskflow.PushWithContext(1, 0, ctx, req)
+
+	// Check results
+	message := <-done
+	bundle := message.Data.(*Bundle)
+	if len(bundle.GetTaskGroups()) == 0 {
+		t.Fail()
+	}
+
+	event := bundle.GetTaskGroups()[0].GetTasks()[0]
+	if event.EventName != "accountCreated" {
+		t.Error("event name is incorrect")
+	}
+
+	// Check if dsa pending tasks state is correct
+	assert.Equal(t, int32(1), testDSA.Pending())
+
+	// task is completed
+	//bundle.completionHandler()
+	testDSA.decreaseTaskCount(1)
+
+	// Check if dsa pending tasks state is correct
+	assert.Equal(t, int32(0), testDSA.Pending())
+
+	testDSA.taskflow.RemoveTask(checkTask.GetID())
+}
+
+func TestRequestHandlerWithSinglePublishRequest(t *testing.T) {
+
+	// Preparing task to receive results
+	done := make(chan *taskflow.Message, 1)
+	defer close(done)
+	checkTask := taskflow.NewTask(1, 0)
+	checkTask.SetHandler(func(message *taskflow.Message) {
+		done <- message
+	})
+
+	testDSA.taskflow.AddTask(checkTask)
+	testDSA.taskflow.Link(testDSA.requestHandler.task, 0, checkTask, 0)
+
+	// Preparing request
+	req := &dsa_pb.PublishRequest{
+		EventName: "accountCreated",
+		Payload:   []byte(`{"id":1,"name":"fred"}`),
+	}
+
+	ctx := taskflow.NewContext()
+	testDSA.taskflow.PushWithContext(1, 0, ctx, req)
+
+	// Check results
+	message := <-done
+	bundle := message.Data.(*Bundle)
+	if len(bundle.GetTaskGroups()) == 0 {
+		t.Fail()
+	}
+
+	event := bundle.GetTaskGroups()[0].GetTasks()[0]
+	if event.EventName != "accountCreated" {
+		t.Error("event name is incorrect")
+	}
+
+	// Check if dsa pending tasks state is correct
+	assert.Equal(t, int32(1), testDSA.Pending())
+
+	// task is completed
+	//bundle.completionHandler()
+	testDSA.decreaseTaskCount(1)
+
+	// Check if dsa pending tasks state is correct
+	assert.Equal(t, int32(0), testDSA.Pending())
+
+	testDSA.taskflow.RemoveTask(checkTask.GetID())
+}
+
 func TestMaxPendingLimit(t *testing.T) {
 
 	done := make(chan error, 1)
