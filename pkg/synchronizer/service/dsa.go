@@ -186,7 +186,7 @@ func (synchronizer *Synchronizer) startDSAEventReceiver() error {
 		return err
 	}
 
-	streamName := fmt.Sprintf("%s.dsa.incoming", synchronizer.domain)
+	streamName := fmt.Sprintf("%s_dsa_incoming", synchronizer.domain)
 
 	// Check if the stream already exists
 	stream, err := js.StreamInfo(streamName)
