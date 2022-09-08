@@ -209,7 +209,7 @@ func (synchronizer *Synchronizer) startDSAEventReceiver() error {
 			Subjects: []string{
 				subj,
 			},
-			Retention: nats.InterestPolicy,
+			Retention: nats.LimitsPolicy,
 		})
 
 		if err != nil {
