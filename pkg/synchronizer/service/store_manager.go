@@ -8,6 +8,11 @@ import (
 	"github.com/spf13/viper"
 )
 
+type Store struct {
+	Name       string
+	Collection string `json:"collection"`
+}
+
 type StoreConfig struct {
 	Stores map[string]StoreEntry `json:"stores"`
 }
@@ -86,34 +91,5 @@ func (sm *StoreManager) LoadStore(name string, entry *StoreEntry) (*Store, error
 		Collection: entry.Collection,
 	}
 
-	s.Init()
-
 	return s, nil
-}
-
-func (sm *StoreManager) AddEventSource(eventStore *EventStore) error {
-
-	log.WithFields(log.Fields{
-		"source": eventStore.id,
-	}).Info("Adding event source")
-
-	for _, s := range sm.stores {
-
-		err := s.AddEventSource(eventStore)
-		if err != nil {
-			log.Error(err)
-			return err
-		}
-	}
-
-	return nil
-}
-
-func (sm *StoreManager) RemoveEventSource(id uint64) error {
-
-	for _, s := range sm.stores {
-		s.RemoveEventSource(id)
-	}
-
-	return nil
 }

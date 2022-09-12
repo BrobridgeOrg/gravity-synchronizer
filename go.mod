@@ -3,7 +3,7 @@ module gravity-synchronizer
 go 1.15
 
 require (
-	github.com/BrobridgeOrg/EventStore v0.1.7
+	github.com/BrobridgeOrg/EventStore v0.2.0
 	github.com/BrobridgeOrg/broc v0.0.2
 	github.com/BrobridgeOrg/gravity-api v0.2.27
 	github.com/BrobridgeOrg/gravity-sdk v1.0.7
@@ -37,4 +37,5 @@ replace github.com/BrobridgeOrg/gravity-synchronizer => ./
 //replace github.com/cfsghost/taskflow => /Users/fred/works/opensource/taskflow
 
 //replace github.com/BrobridgeOrg/EventStore => /Users/fred/works/Brobridge/EventStore
+
 //replace github.com/BrobridgeOrg/schemer => /Users/fred/works/Brobridge/schemer

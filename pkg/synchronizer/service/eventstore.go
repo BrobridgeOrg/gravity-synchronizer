@@ -68,13 +68,14 @@ func (es *EventStore) CreateSnapshot() (*eventstore.SnapshotView, error) {
 }
 
 func (es *EventStore) GetLastSequence() uint64 {
-	return es.store.GetLastSequence()
+	return es.store.State().LastSeq()
 }
 
 func (es *EventStore) GetSnapshotLastSequence() uint64 {
-	return es.store.GetSnapshotLastSequence()
+	return es.store.State().SnapshotLastSeq()
 }
 
+/*
 func (es *EventStore) GetDurableState(durableName string) (uint64, error) {
 
 	lastSeq, err := es.store.GetDurableState(durableName)
@@ -84,9 +85,9 @@ func (es *EventStore) GetDurableState(durableName string) (uint64, error) {
 
 	return lastSeq, nil
 }
-
+*/
 func (es *EventStore) UpdateDurableState(durableName string, lastSeq uint64) error {
-	return es.store.UpdateDurableState(durableName, lastSeq)
+	return es.store.UpdateDurableState(nil, durableName, lastSeq)
 }
 
 func (es *EventStore) Subscribe(durableName string, seq uint64, fn func(event *eventstore.Event)) (*eventstore.Subscription, error) {
