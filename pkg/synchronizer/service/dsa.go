@@ -218,12 +218,13 @@ func (synchronizer *Synchronizer) startDSAEventReceiver() error {
 	}
 
 	ch := make(chan *nats.Msg)
-	sub, err := js.ChanQueueSubscribe(subj, synchronizer.clientID, ch)
+	//sub, err := js.ChanQueueSubscribe(subj, synchronizer.clientID, ch)
+	sub, err := js.ChanQueueSubscribe(subj, synchronizer.clientID, ch, nats.MaxAckPending(1))
 	if err != nil {
 		return err
 	}
 
-	sub.SetPendingLimits(-1, -1)
+	//sub.SetPendingLimits(-1, -1)
 	nc.Flush()
 	defer sub.Unsubscribe()
 
