@@ -134,7 +134,9 @@ func (pipeline *Pipeline) rpc_getState(ctx *broc.Context) (returnedValue interfa
 
 	// Getting last sequence
 	reply.LastSeq = pipeline.eventStore.GetLastSequence()
+	reply.Count = pipeline.eventStore.store.State().Count()
 	reply.SnapshotLastSeq = pipeline.eventStore.GetSnapshotLastSequence()
+	reply.SnapshotCount = pipeline.eventStore.store.State().SnapshotCount()
 
 	return
 }
