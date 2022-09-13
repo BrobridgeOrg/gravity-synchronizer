@@ -218,7 +218,7 @@ func (synchronizer *Synchronizer) startDSAEventReceiver() error {
 	}
 
 	ch := make(chan *nats.Msg)
-	sub, err := js.ChanQueueSubscribe(subj, synchronizer.clientID, ch)
+	sub, err := js.ChanQueueSubscribe(subj, synchronizer.clientID, ch, nats.ManualAck())
 	if err != nil {
 		return err
 	}
