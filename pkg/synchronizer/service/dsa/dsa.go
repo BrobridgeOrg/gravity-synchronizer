@@ -114,9 +114,11 @@ func (dsa *DataSourceAdapter) SetRuleConfig(ruleConfig *rule.RuleConfig) {
 	dsa.ruleConfig = ruleConfig
 }
 
-func (dsa *DataSourceAdapter) PushData(privData interface{}, data interface{}) error {
+func (dsa *DataSourceAdapter) PushData(privData interface{}, rev uint64, data interface{}) error {
 	ctx := taskflow.NewContext()
+	ctx.Reset()
 	ctx.SetPrivData(privData)
+	ctx.SetMeta("rev", rev)
 	return dsa.taskflow.PushWithContext(1, 0, ctx, data)
 }
 

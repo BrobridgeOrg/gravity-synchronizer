@@ -10,9 +10,9 @@ func (synchronizer *Synchronizer) initializeDataHandler() error {
 
 	synchronizer.dataHandler = data_handler.NewDataHandler()
 	synchronizer.dataHandler.SetRuleConfig(synchronizer.ruleConfig)
-	synchronizer.dataHandler.OnStore(func(privData interface{}, data []byte) error {
+	synchronizer.dataHandler.OnStore(func(privData interface{}, rev uint64, data []byte) error {
 		pipeline := privData.(*Pipeline)
-		return pipeline.store(data)
+		return pipeline.store(data, rev)
 	})
 
 	// Setup worker count

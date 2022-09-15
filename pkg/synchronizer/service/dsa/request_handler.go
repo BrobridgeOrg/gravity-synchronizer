@@ -137,6 +137,12 @@ func (rh *RequestHandler) requestHandler(data interface{}, done func(interface{}
 
 	message.Data = bundle
 
+	rev := uint64(0)
+	v, ok := message.Context.GetMeta("rev")
+	if ok {
+		rev = v.(uint64)
+	}
+
 	// Filtering requests
 	for _, req := range input.Requests {
 
@@ -146,7 +152,7 @@ func (rh *RequestHandler) requestHandler(data interface{}, done func(interface{}
 			continue
 		}
 
-		group := rh.prepare(rh.dsa, req)
+		group := rh.prepare(rh.dsa, rev, req)
 		if group == nil {
 			// No matched rules
 			log.Warnf("dsa: ignore event: %s", req.EventName)
@@ -163,7 +169,7 @@ func (rh *RequestHandler) requestHandler(data interface{}, done func(interface{}
 	done(message)
 }
 
-func (rh *RequestHandler) prepare(dsa *DataSourceAdapter, req *dsa_pb.PublishRequest) *task.TaskGroup {
+func (rh *RequestHandler) prepare(dsa *DataSourceAdapter, rev uint64, req *dsa_pb.PublishRequest) *task.TaskGroup {
 
 	// Parse message
 	var message map[string]interface{}
@@ -187,6 +193,7 @@ func (rh *RequestHandler) prepare(dsa *DataSourceAdapter, req *dsa_pb.PublishReq
 
 		// Prepare event
 		task := task.NewTask()
+		task.Rev = rev
 		task.Rule = r.ID
 		task.PipelineID = jump.HashString(primaryKey, dsa.pipelineCount, jump.NewCRC64())
 		task.PrimaryKey = primaryKey

@@ -1,8 +1,6 @@
 package synchronizer
 
 import (
-	"gravity-synchronizer/pkg/synchronizer/service/request"
-
 	"github.com/BrobridgeOrg/broc"
 	//	synchronizer_manager "github.com/BrobridgeOrg/gravity-sdk/synchronizer_manager"
 	synchronizer_manager "github.com/BrobridgeOrg/gravity-sdk/synchronizer_manager"
@@ -129,33 +127,11 @@ func (pipeline *Pipeline) AwakeSubscriber() {
 	}
 }
 
-func (pipeline *Pipeline) handleRequest(req request.Request) {
-	/*
-		id := atomic.AddUint64((*uint64)(&counter), 1)
-		if id%1000 == 0 {
-			log.Info(id)
-		}
-	*/
-	// Event sourcing
-	err := pipeline.eventStore.Write(req.Data())
-	if err != nil {
-		req.Error(err)
-		//		req.Respond(FailureReply)
-		return
-	}
-
-	//	req.Respond(SuccessReply)
-	req.Respond()
-
-	// Awake susbscriber to receive data from this pipeline
-	pipeline.AwakeSubscriber()
-}
-
 func (pipeline *Pipeline) GetLastSequence() uint64 {
 	return pipeline.eventStore.GetLastSequence()
 }
 
-func (pipeline *Pipeline) store(data []byte) error {
+func (pipeline *Pipeline) store(data []byte, rev uint64) error {
 	/*
 		id := atomic.AddUint64((*uint64)(&counter), 1)
 		log.WithFields(log.Fields{
@@ -169,7 +145,7 @@ func (pipeline *Pipeline) store(data []byte) error {
 		}
 	*/
 	// Event sourcing
-	err := pipeline.eventStore.Write(data)
+	err := pipeline.eventStore.Write(data, rev)
 	if err != nil {
 		return err
 	}

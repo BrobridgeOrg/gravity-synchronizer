@@ -3,7 +3,7 @@ module gravity-synchronizer
 go 1.15
 
 require (
-	github.com/BrobridgeOrg/EventStore v0.2.0
+	github.com/BrobridgeOrg/EventStore v0.2.1
 	github.com/BrobridgeOrg/broc v0.0.2
 	github.com/BrobridgeOrg/gravity-api v0.2.28
 	github.com/BrobridgeOrg/gravity-sdk v1.0.9
@@ -11,7 +11,7 @@ require (
 	github.com/BrobridgeOrg/schemer v0.0.12
 	github.com/BrobridgeOrg/sequential-data-flow v0.0.2
 	github.com/cfsghost/gosharding v0.0.3
-	github.com/cfsghost/taskflow v0.0.3
+	github.com/cfsghost/taskflow v0.0.5
 	github.com/golang/protobuf v1.5.2
 	github.com/json-iterator/go v1.1.12
 	github.com/lithammer/go-jump-consistent-hash v1.0.2

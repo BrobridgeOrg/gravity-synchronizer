@@ -2,6 +2,7 @@ package task
 
 type Task struct {
 	PipelineID int32
+	Rev        uint64
 	EventName  string
 	PrimaryKey string
 	Payload    []byte

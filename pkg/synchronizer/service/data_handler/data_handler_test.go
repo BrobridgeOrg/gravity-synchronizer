@@ -190,7 +190,7 @@ func TestStore(t *testing.T) {
 
 	// Initializing store handler
 	totalResults := 0
-	testDH.OnStore(func(privData interface{}, data []byte) error {
+	testDH.OnStore(func(privData interface{}, rev uint64, data []byte) error {
 		totalResults++
 
 		record := recordPool.Get().(*gravity_sdk_types_record.Record)
@@ -198,6 +198,7 @@ func TestStore(t *testing.T) {
 
 		gravity_sdk_types_record.Unmarshal(data, record)
 
+		assert.Equal(t, uint64(totalResults), rev)
 		assert.Equal(t, uint64(totalResults), BytesToUint64(record.Fields[0].Value.Value))
 
 		return nil
@@ -209,6 +210,7 @@ func TestStore(t *testing.T) {
 	for i := 0; i < taskCount; i++ {
 		dt := task.NewTask()
 		dt.PipelineID = 0
+		dt.Rev = uint64(i + 1)
 		dt.PrimaryKey = fmt.Sprintf("%d", i+1)
 		dt.EventName = testEvent
 		dt.Payload = []byte(fmt.Sprintf(`{"id":%d}`, i+1))

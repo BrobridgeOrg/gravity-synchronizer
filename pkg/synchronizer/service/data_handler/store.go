@@ -41,7 +41,7 @@ func (store *Store) handle(message *taskflow.Message) {
 		return
 	}
 
-	err = store.dataHandler.storeHandler(tr.PrivData, data)
+	err = store.dataHandler.storeHandler(tr.PrivData, tr.Task.Rev, data)
 	if err != nil {
 		tr.Done(err)
 		return

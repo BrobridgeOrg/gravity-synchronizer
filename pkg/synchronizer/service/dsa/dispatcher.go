@@ -45,6 +45,7 @@ func (dispatcher *Dispatcher) handle(message *taskflow.Message) {
 
 		dispatcher.dsa.decreaseTaskCount(taskCount)
 
+		message.Context.Release()
 		message.Release()
 	}
 

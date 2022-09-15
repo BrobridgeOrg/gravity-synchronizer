@@ -52,6 +52,8 @@ github.com/BrobridgeOrg/EventStore v0.1.7 h1:rj4kblpoTr113I5Fyv+wdxJSff6/1wwYnuO
 github.com/BrobridgeOrg/EventStore v0.1.7/go.mod h1:kyHXZaSccxwZVND6QnLMCzY2LDuH0uw18odHmK2X4Ts=
 github.com/BrobridgeOrg/EventStore v0.2.0 h1:1a79YBi7OjilTxyGbp/A5wRnLih4cQMAI3QosmKCJwk=
 github.com/BrobridgeOrg/EventStore v0.2.0/go.mod h1:kyHXZaSccxwZVND6QnLMCzY2LDuH0uw18odHmK2X4Ts=
+github.com/BrobridgeOrg/EventStore v0.2.1 h1:7+OnkRk7YLhWFeYkXDU7LhxGggr8A+z3LGyAgQMRUvo=
+github.com/BrobridgeOrg/EventStore v0.2.1/go.mod h1:kyHXZaSccxwZVND6QnLMCzY2LDuH0uw18odHmK2X4Ts=
 github.com/BrobridgeOrg/broc v0.0.2 h1:qtUADIDd8QeYFvwMketpqYuSOdmJehfwar/BWJu8x8o=
 github.com/BrobridgeOrg/broc v0.0.2/go.mod h1:0VzzGhU+ASQqkmmupOT3V4xKUfYeY0oNPhzHYwwX4s8=
 github.com/BrobridgeOrg/broton v0.0.3/go.mod h1:li0lNQCnArnT1YdrTQp14eDsYG6dV5McaOh8eQPjw8c=
@@ -126,6 +128,10 @@ github.com/cfsghost/gosharding v0.0.3/go.mod h1:6ZK113qaOR6gZTOx1at5+iqofivR6kjv
 github.com/cfsghost/parallel-chunked-flow v0.0.6/go.mod h1:CfIVIBt1wN8w712B/6dsvwUn4ZJ+z9XSwj6Jmq74AqI=
 github.com/cfsghost/taskflow v0.0.3 h1:DCqZ2JQf1+a+L42xeiTAIp3TPQS2nw1BQ5+t1+PvUeg=
 github.com/cfsghost/taskflow v0.0.3/go.mod h1:6iDt14KgVqDvrgAJPD2IVuE/fT3jZyTmpqRHVlmyCck=
+github.com/cfsghost/taskflow v0.0.4 h1:IrinfjtvtkR5cH/ph8jgQS/u3ItS8CobWo1He7i+HyY=
+github.com/cfsghost/taskflow v0.0.4/go.mod h1:6iDt14KgVqDvrgAJPD2IVuE/fT3jZyTmpqRHVlmyCck=
+github.com/cfsghost/taskflow v0.0.5 h1:acNzOLba+aV8AcPpc4W75ezO5P/lPYx+9u1yOriQEow=
+github.com/cfsghost/taskflow v0.0.5/go.mod h1:6iDt14KgVqDvrgAJPD2IVuE/fT3jZyTmpqRHVlmyCck=
 github.com/chzyer/logex v1.1.10/go.mod h1:+Ywpsq7O8HXn0nuIou7OrIPyXbp3wmkHB+jjWRnGsAI=
 github.com/chzyer/readline v0.0.0-20180603132655-2972be24d48e/go.mod h1:nSuG5e5PlCu98SY8svDHJxuZscDgtXS6KTTbou5AhLI=
 github.com/chzyer/test v0.0.0-20180213035817-a1ea475d72b1/go.mod h1:Q3SI9o4m/ZMnBNeIyt5eFwwo7qiLfzFZmjNmxjkiQlU=

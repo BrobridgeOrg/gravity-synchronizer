@@ -67,12 +67,24 @@ func (es *EventStore) CreateSnapshot() (*eventstore.SnapshotView, error) {
 	return view, nil
 }
 
+func (es *EventStore) GetRevision() uint64 {
+	return es.store.State().Rev()
+}
+
 func (es *EventStore) GetLastSequence() uint64 {
 	return es.store.State().LastSeq()
 }
 
+func (es *EventStore) GetCount() uint64 {
+	return es.store.State().Count()
+}
+
 func (es *EventStore) GetSnapshotLastSequence() uint64 {
 	return es.store.State().SnapshotLastSeq()
+}
+
+func (es *EventStore) GetSnapshotCount() uint64 {
+	return es.store.State().SnapshotCount()
 }
 
 /*
@@ -98,10 +110,10 @@ func (es *EventStore) Fetch(startAt uint64, offset uint64, count int) ([]*events
 	return es.store.Fetch(startAt, offset, count)
 }
 
-func (es *EventStore) Write(data []byte) error {
+func (es *EventStore) Write(data []byte, rev uint64) error {
 
 	// Event sourcing
-	seq, err := es.store.Write(data)
+	seq, err := es.store.Write(data, rev)
 	if err != nil {
 
 		log.WithFields(log.Fields{

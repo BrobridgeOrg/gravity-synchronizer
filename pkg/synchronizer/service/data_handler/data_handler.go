@@ -20,7 +20,7 @@ type DataHandler struct {
 	store          Store
 
 	// Handlers
-	storeHandler func(interface{}, []byte) error
+	storeHandler func(interface{}, uint64, []byte) error
 }
 
 func NewDataHandler() *DataHandler {
@@ -118,6 +118,6 @@ func (dh *DataHandler) PushData(privData interface{}, data interface{}) error {
 	return nil
 }
 
-func (dh *DataHandler) OnStore(fn func(interface{}, []byte) error) {
+func (dh *DataHandler) OnStore(fn func(interface{}, uint64, []byte) error) {
 	dh.storeHandler = fn
 }

@@ -217,8 +217,23 @@ func (synchronizer *Synchronizer) startDSAEventReceiver() error {
 		}
 	}
 
+	// Getting last position of event store
+	log.Info("Loading earliest revision from each pipeline store...")
+	lastPos := uint64(0)
+	for _, p := range synchronizer.pipelines {
+		r := p.eventStore.GetRevision()
+		if lastPos == uint64(0) || lastPos > r {
+			lastPos = r
+		}
+	}
+
+	log.WithFields(log.Fields{
+		"position": lastPos,
+	}).Info("Got last position to recover events...")
+
 	ch := make(chan *nats.Msg)
-	sub, err := js.ChanQueueSubscribe(subj, synchronizer.clientID, ch, nats.ManualAck(), nats.MaxAckPending(1))
+	//	sub, err := js.ChanQueueSubscribe(subj, synchronizer.clientID, ch, nats.ManualAck(), nats.MaxAckPending(1))
+	sub, err := js.ChanSubscribe(subj, ch, nats.BindStream(streamName), nats.StartSequence(lastPos), nats.MaxAckPending(10240))
 	if err != nil {
 		return err
 	}
@@ -242,7 +257,9 @@ func (synchronizer *Synchronizer) startDSAEventReceiver() error {
 		dsam := dsaMsgPool.Get().(*DSAMessage)
 		dsam.msg = msg
 
-		synchronizer.dsa.PushData(dsam, preq)
+		meta, _ := msg.Metadata()
+
+		synchronizer.dsa.PushData(dsam, meta.Sequence.Stream, preq)
 	}
 
 	return nil
@@ -334,7 +351,7 @@ func (synchronizer *Synchronizer) handleBatchMsg(m *nats.Msg, rules ...string) e
 		return err
 	}
 
-	synchronizer.dsa.PushData(request, payload)
+	synchronizer.dsa.PushData(request, uint64(0), payload)
 	return nil
 }
 
