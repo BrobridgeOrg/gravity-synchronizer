@@ -238,7 +238,7 @@ func (synchronizer *Synchronizer) startDSAEventReceiver() error {
 
 	ch := make(chan *nats.Msg)
 	//	sub, err := js.ChanQueueSubscribe(subj, synchronizer.clientID, ch, nats.ManualAck(), nats.MaxAckPending(1))
-	sub, err := js.ChanSubscribe(subj, ch, nats.BindStream(streamName), nats.StartSequence(lastPos), nats.MaxAckPending(10240))
+	sub, err := js.ChanSubscribe(subj, ch, nats.BindStream(streamName), nats.StartSequence(lastPos), nats.MaxAckPending(8192))
 	if err != nil {
 		return err
 	}
@@ -264,7 +264,7 @@ func (synchronizer *Synchronizer) startDSAEventReceiver() error {
 
 		meta, _ := msg.Metadata()
 
-		synchronizer.dsa.PushData(dsam, meta.Sequence.Stream, preq)
+		synchronizer.dsa.PushData(dsam, meta.Sequence.Consumer, preq)
 	}
 
 	return nil
