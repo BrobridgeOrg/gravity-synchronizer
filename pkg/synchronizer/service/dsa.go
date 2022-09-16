@@ -227,6 +227,11 @@ func (synchronizer *Synchronizer) startDSAEventReceiver() error {
 		}
 	}
 
+	// Default is first message
+	if lastPos == uint64(0) {
+		lastPos = 1
+	}
+
 	log.WithFields(log.Fields{
 		"position": lastPos,
 	}).Info("Got last position to recover events...")
