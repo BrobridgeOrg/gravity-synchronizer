@@ -21,6 +21,8 @@ require (
 	github.com/spf13/viper v1.10.1
 	github.com/stretchr/testify v1.8.0
 	go.uber.org/ratelimit v0.2.0
+	golang.org/x/crypto v0.0.0-20220314234659-1baeb1ce4c0b // indirect
+	golang.org/x/text v0.3.8 // indirect
 )
 
 replace github.com/BrobridgeOrg/gravity-synchronizer => ./

@@ -9,6 +9,7 @@ maxReconnects = -1
 
 [dsa]
 workerCount = 4
+maxPending = 50000
 
 [pipeline]
 pipelineCount = 4
